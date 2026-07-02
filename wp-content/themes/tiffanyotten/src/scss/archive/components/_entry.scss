@@ -1,0 +1,124 @@
+.entry-default {
+	color: inherit;
+	width: calc((100% * (1/2)) - 1rem);
+	box-sizing: border-box;
+	display: flex;
+	justify-content: flex-start;
+	text-decoration: none;
+	flex-direction: column;
+	gap: 1.5rem;
+	@media (max-width: 1080px) {
+		width: 100%;
+	}
+	@media (max-width: 800px) {
+		width: calc((100% * (1/2)) - 1rem);
+	}
+	@media (max-width: 640px) {
+		width: 100%;
+	}
+	.upper {
+		display: flex;
+		gap: 1.5rem;
+		flex-direction: column;
+	}
+	.graphic {
+		position: relative;
+		img {
+			border-radius: 4px;
+			display: block;
+			width: 100%;
+			height: auto;
+		}
+	}
+	.tax {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		padding: 4px 8px;
+		background-color: #F5F5F5;
+		border-radius: 4px;
+
+		color: #114;
+		font-family: 'gordita-medium';
+		font-size: 14px;
+		font-weight: 500;
+	}
+	.context {
+		width: calc( 100% );
+		display: flex;
+		flex-direction: column;
+		gap: .5rem;
+	}
+	.meta {
+		display: flex;
+		flex-direction: column;
+		gap: .75rem;
+		color:  rgba(106, 106, 106, 0.70);
+		font-size: 14px;
+	}
+	.date-time {
+		display: flex;
+		justify-content: flex-start;
+		gap: 1rem;
+	}
+	.date {
+		display: flex;
+
+		&::before {
+			content: "";
+			display: block;
+			width: 18px;
+			height: 18px;
+			margin-right: 0.5rem;
+			background: url( /wp-content/themes/bmr/assets/svg/calendar.svg ) no-repeat;
+			background-size: cover;
+		}
+	}
+	.time {
+		display: flex;
+
+		 &::before {
+			content: "";
+			display: block;
+			width: 18px;
+			height: 18px;
+			margin-right: 0.5rem;
+			background: url( /wp-content/themes/bmr/assets/svg/clock.svg ) no-repeat;
+			background-size: cover;
+		}
+	}
+	.event-location {
+		display: flex;
+
+		 &::before {
+			content: "";
+			display: block;
+			width: 18px;
+			height: 18px;
+			margin-right: 0.5rem;
+			background: url( /wp-content/themes/bmr/assets/svg/map-pin.svg ) no-repeat;
+			background-size: cover;
+		}
+	}
+	.info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+
+		h5 {
+			font-family: 'gordita-medium';
+			font-size: 24px;
+			font-weight: 500;
+			color: #114;
+		}
+		p {
+			color: #8F8F8F;
+			font-size: 18px;
+		}
+	}
+	.cta {
+		width: fit-content;
+		border: 0;
+		margin-top: auto;
+	}
+}

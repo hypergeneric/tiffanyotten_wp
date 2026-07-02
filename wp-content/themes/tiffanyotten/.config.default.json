@@ -1,0 +1,31 @@
+{   
+    "production":true,
+    "local_url":"https://tiffanyotten.lndo.site/",
+    "css":{
+        "sources":[
+            {
+                "source":"src/scss/style.scss",
+                "destination":"assets/css",
+                "filename":"style.css"
+            },{
+                "source":"src/scss/editor.scss",
+                "destination":"admin/css",
+                "filename":"style.css"
+            }
+        ]
+    },
+    "js":{
+        "sources":[
+            { 
+                "source":"src/js/footer/**/*.js",
+                "destination":"assets/js",
+                "filename":"footer.js",
+                "minify":true,
+                "order":[
+                    "external/**/*.js",
+                    "partials/**/*.js"
+                ]
+            }
+        ]
+    }
+}

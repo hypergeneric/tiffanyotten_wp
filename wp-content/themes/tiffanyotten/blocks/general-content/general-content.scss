@@ -1,0 +1,21 @@
+@import '../../src/scss/modules/vars';
+
+section.general-content {
+	padding-bottom: 0;
+	overflow: hidden;
+	position: relative;
+
+	.entry-content {
+		
+		h1, h2, h3, h4, h5, h6 {
+			margin-bottom: 1rem;
+		}
+		p, ul {
+			margin-bottom: 1rem;
+		}
+		a {
+			color: inherit;
+			text-decoration: underline;
+		}
+	}
+}

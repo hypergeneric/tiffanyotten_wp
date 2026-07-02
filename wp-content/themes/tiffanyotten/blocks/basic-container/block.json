@@ -1,0 +1,28 @@
+{
+	"name": "acf/basic-container",
+	"title": "Basic Container",
+	"description": "A layout container for wrapping other ACF blocks with shared background and spacing.",
+	"category": "tiffanyotten",
+	"icon": "screenoptions",
+	"keywords": [
+		"container",
+		"section",
+		"wrapper",
+		"background"
+	],
+	"acf": {
+		"mode": "preview",
+		"renderTemplate": "basic-container.php"
+	},
+	"providesContext": {
+		"tiffanyotten/containerData": "data"
+	},
+	"supports": {
+		"anchor": true,
+		"align": [
+			"wide",
+			"full"
+		],
+		"jsx": true
+	}
+}

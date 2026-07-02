@@ -1,0 +1,13 @@
+@import '../../src/scss/modules/vars';
+
+.inline-cta-group {
+    .inner {
+        display: flex;
+    }
+    .inner.center {
+        justify-content: center;
+    }
+    .inner.right {
+        justify-content: flex-end;
+    }
+}

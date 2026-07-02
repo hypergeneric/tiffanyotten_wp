@@ -1,0 +1,118 @@
+@import '../../src/scss/modules/vars';
+
+section.image-gallery {
+	position: relative;
+	z-index: 1;
+	
+	.container {
+		&::before {
+			position: absolute;
+			left: 50%;
+			bottom: 0;
+			transform: translateX(-50%);
+			width: 80%;
+			height: 1px;
+		}
+	}
+	.inner {
+		display: flex;
+		flex-direction: column;
+		gap: 4rem;
+
+		@media ( max-width: $tablet_tall ) {
+			flex-direction: column;
+			gap: 2rem;
+		}
+	}
+	.heading-wrap {
+		display: flex;
+		justify-content: center;
+		width: 100%;
+	}
+	.heading {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		max-width: 800px;
+		padding-top: 2rem;
+
+		br {
+			@media (max-width: $tablet_wide ) {
+				display: none;
+			}
+		}
+	}
+	.heading-image {
+		height: auto;
+		img, svg {
+			width: 360px;
+		}
+	}
+	.gallery {
+		display: flex;
+		gap: 24px;
+
+		@media ( max-width: $mobile_wide ) {
+			gap: 16px;
+			flex-direction: column;
+		}
+	}
+
+	.gallery-left {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+		width: 50%;
+
+		@media ( max-width: $mobile_wide ) {
+			gap: 16px;
+			width: 100%;
+		}
+	}
+
+	.gallery-right {
+		width: 50%;
+
+		@media ( max-width: $mobile_wide ) {
+			width: 100%;
+		}
+	}
+
+	.left-image {
+		position: relative;
+		max-height: 50%;
+		overflow: hidden;
+
+		@media ( max-width: $mobile_wide ) {
+			max-height: 600px;
+			height: 375px;
+			
+			img {
+				position: absolute;
+				left: 0;
+				top: 0;
+				object-fit: cover;
+				height: 100%;
+			}
+		}
+	}
+
+	.right-image {
+		position: relative;
+		max-height: 100%;
+		overflow: hidden;
+
+		@media ( max-width: $mobile_wide ) {
+			max-height: 600px;
+			height: 375px;
+			
+			img {
+				position: absolute;
+				left: 0;
+				top: 0;
+				object-fit: cover;
+				height: 100%;
+			}
+		}
+	}
+}

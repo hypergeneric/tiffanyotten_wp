@@ -1,0 +1,64 @@
+@import '../../src/scss/modules/vars';
+
+section.entry-columns {
+	.entries {
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	.entry {
+		text-decoration: none;
+		width: calc(50% - 16px);
+		margin-bottom: 16px;
+
+		@media ( max-width: $mobile_wide ) {
+			width: 100%;
+		}
+	}
+	.entry-text {
+		display: flex;
+		flex-direction: column;
+		gap: 4px; 
+		margin-top: 1rem;
+
+		h5 {
+			font-size: 24px;
+			margin-bottom: 8px;
+		}
+		.cta {
+			margin-top: 0.5rem;
+			width: fit-content;
+		}
+	}
+
+	&.cols-2 {
+		.entry {
+			gap: 3rem;
+			width: calc( ( 100% / 2 ) - 1rem );
+			@media ( max-width: $mobile_wide ) {
+				width: calc( ( 100% ) );
+			}
+		}
+	}
+	&.cols-3 {
+		.entry {
+			width: calc( ( 100% / 3 ) - 1rem );
+			@media ( max-width: $tablet_wide ) {
+				width: calc( ( 100% / 2 ) - 1rem );
+			}
+			@media ( max-width: $mobile_wide ) {
+				width: calc( ( 100% ) );
+			}
+		}
+	}
+	&.cols-4 {
+		.entry {
+			width: calc( ( 100% / 4 ) - 1rem );
+			@media ( max-width: $tablet_wide ) {
+				width: calc( ( 100% / 2 ) - 1rem );
+			}
+			@media ( max-width: $mobile_wide ) {
+				width: calc( ( 100% ) );
+			}
+		}
+	}
+}

@@ -1,0 +1,36 @@
+@import '../../src/scss/modules/vars';
+
+.page-head {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: calc( 90dvh - var( --spacing-top ) - var( --spacing-bottom ) );
+
+    h1 {
+        margin-bottom: 1rem;
+
+        @media ( max-width: $mobile_wide ) {
+            br {
+                display: none;
+            }
+        }
+    }
+    .heading {
+        margin-top: 4rem;
+        @media (max-width: $tablet_wide ) {
+            margin-top: 8rem;
+        }
+        @media ( max-width: $mobile_wide ) {
+            padding-bottom: 2rem;
+            margin-top: 0;
+        }
+    }
+    .body-text {
+        opacity: 0.8;
+        max-width: 70%;
+
+        @media ( max-width: $mobile_wide ) {
+            max-width: 100%;
+        }
+    }
+}

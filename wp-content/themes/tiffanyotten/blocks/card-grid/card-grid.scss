@@ -1,0 +1,104 @@
+@import '../../src/scss/modules/vars';
+
+section.card-grid {
+	.entries {
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+	.entry {
+		text-decoration: none;
+		width: calc(50% - 16px);
+		margin-bottom: 16px;
+
+		@media ( max-width: $mobile_wide ) {
+			width: 100%;
+		}
+	}
+	.entry-inner {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+	.entry-text {
+		display: flex;
+		flex-direction: column;
+		gap: 16px; 
+		height: inherit;
+		padding: 1.5rem;
+		border-radius: 4px;
+		background-color: rgba(255, 255, 255, 0.50);
+		
+		.cta {
+			margin-top: auto;
+			width: fit-content;
+		}
+		p {
+			color: var(--theme-fonts-body-text) !important;
+			margin-bottom: 1rem;
+		}
+		strong {
+			font-family: 'gordita-bold';
+			font-weight: 700;
+		}
+		ul {
+			padding-left: 0;
+			margin: 0;
+
+			br {
+				display: none;
+			}
+		}
+		li {
+			display: flex;
+			align-items: center;
+			margin-bottom: 0.5rem;
+			color: #114;
+			color: var(--Text-Default, #114);
+			font-family: 'gordita-medium';
+			font-size: 16px;
+			font-style: normal;
+			font-weight: 500;
+
+			&::marker {
+				display: none;
+			}
+			&::before {
+				content: "";
+				display: block;
+				min-width: 22px;
+				height: 22px;
+				margin-right: 10px;
+				margin-bottom: 4px;
+				background: url( /wp-content/themes/bmr/assets/img/check-circle.png ) no-repeat;
+				background-size: cover;
+			}
+		}
+	}
+
+	&.split-text {
+		.entries {
+			gap: 4rem;
+			@media ( max-width: $mobile_wide ) {
+				gap: 2rem;
+			}
+		}
+		.entry {
+			width: calc(50% - 4rem);
+
+			@media ( max-width: $tablet_wide ) {
+				width: calc(50% - 2rem);
+			}
+			@media ( max-width: $mobile_wide ) {
+				width: 100%;
+			}
+		}
+		.entry-text {
+			border: 0;
+			padding: 0;
+			background-color: transparent;
+		}
+		h3 {
+			color: #F26419;
+		}
+	}
+}

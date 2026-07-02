@@ -1,0 +1,20 @@
+name: tiffanyotten
+recipe: wordpress
+config:
+  webroot: .
+  php: '8.0'
+  database: mysql:8.0
+proxy:
+  appserver:
+    - tiffanyotten.lndo.site
+  adminer:
+    - adminer.tiffanyotten.lndo.site
+services:
+  database:
+    type: mysql:8.0
+  adminer:
+    type: compose
+    services:
+      image: dehy/adminer
+      command: /bin/s6-svscan /etc/services.d
+    portforward: true

@@ -1,0 +1,18 @@
+{
+	"name": "acf/pros-cons",
+	"title": "Pros and Cons",
+	"description": "A Pros and Cons section/component.",
+	"category": "tiffanyotten",
+	"icon": "",
+	"keywords": [],
+	"acf": {
+		"mode": "preview",
+		"renderTemplate": "pros-cons.php"
+	},
+	"usesContext": [
+		"tiffanyotten/containerData"
+	],
+	"supports": {
+		"anchor": true
+	}
+}

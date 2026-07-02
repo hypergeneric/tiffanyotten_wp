@@ -1,0 +1,244 @@
+@import '../../src/scss/modules/vars';
+
+section.side-by-side {
+	overflow: hidden;
+	position: relative;
+	.heading {
+		width: calc( 50% - 2rem );
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		@media ( max-width: $mobile_wide ) {
+			width: 100%;
+		}
+	}
+	.eyebrow {
+		color: #F26419;
+	}
+	.heading-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+	.content {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		position: relative;
+
+		@media ( max-width: $mobile_wide ) {
+			flex-direction: column-reverse;
+			min-height: auto !important;
+		}
+	}
+	.body-text {
+		p {
+			opacity: 0.8;
+		}
+		ul {
+			padding-left: 1rem;
+		}
+		li {
+			display: flex;
+			align-items: flex-start;
+			margin-bottom: 1rem;
+			&::marker {
+				display: none;
+			}
+			&::before {
+				content: "";
+				display: block;
+				min-width: 20px;
+				height: 20px;
+				margin-right: 14px;
+				background: url( /wp-content/themes/bmr/assets/img/check-circle.png ) no-repeat;
+				background-size: cover;
+			}
+		}
+		.orange {
+			color: #F26419;
+		}
+	}
+	.icon {
+		img {
+			height: 75px;
+			width: auto;
+		}
+	}
+	&.orient-left {
+		.content {
+			flex-direction: row-reverse;
+
+			@media ( max-width: $mobile_wide ) {
+				flex-direction: column-reverse;
+			}
+		}
+	}
+	&.image-contain {
+		.graphic {
+			box-sizing: border-box;
+			width: calc( 50% - 2rem );
+			z-index: 3;
+			position: relative;
+
+			@media ( max-width: $mobile_wide ) {
+				width: 100%;
+				margin-bottom: 31px;
+			}
+		}
+	}
+	&.image-clip-edge {
+		.graphic {
+			box-sizing: border-box;
+			position: absolute;
+			top: 0;
+			left: calc( 50% + 2rem );
+			width: calc( 50vw - 2rem );
+			height: 100%;
+			overflow: hidden;
+			z-index: 3;
+
+			picture, img, video, iframe, .video-object {
+				height: 100%;
+				width: auto;
+				@media (max-width: $mobile_wide ) {
+					width: 100%;
+					height: auto;
+				}
+			}
+
+			@media ( max-width: $mobile_wide ) {
+				overflow: visible;
+				position: relative;
+				width: 100%;
+				left: 0;
+			}
+		}
+		&.orient-left {
+			.graphic {
+				left: auto;
+				right: calc( 50% + 2rem );
+				direction: rtl;
+				@media (max-width: $mobile_wide ) {
+					right: 0;
+				}
+			}
+		}
+	}
+	&.hero-top {
+		.content {
+			@media (max-width: $mobile_wide ) {
+				flex-direction: column-reverse;
+			}
+		}
+	}
+	.alt-deco {
+		display: none;
+	}
+}
+
+.numbered-side-by-side {
+	counter-reset: sidebyside;
+}
+.numbered-side-by-side section.side-by-side {
+	overflow: visible;
+	.heading {
+		position: relative;
+
+		&::before {
+			counter-increment: sidebyside;
+			content: counter(sidebyside);
+
+			display: grid;
+			place-items: center;
+
+			width: 40px;
+			height: 40px;
+			margin: 0 0 0.5rem;
+
+			border-radius: 999px;
+			background: var( --theme-ui-background );
+			color: var( --theme-ui-foreground );
+			font-size: 20px;
+			line-height: 1;
+			z-index: 3;
+
+			@media (max-width: $mobile_wide ) {
+				margin-top: 1rem;
+			}
+		}
+		.entry-num-border {
+			position: absolute;
+			left: -4px;
+			top: -4px;
+			width: 48px;
+			height: 48px;
+
+			border-radius: 999px;
+			background: var( --theme-ui-background );
+			opacity: 0.7;
+			z-index: 2;
+
+			@media (max-width: $mobile_wide ) {
+				top: 12px;
+			}
+		}
+		.body-text {
+			li::before {
+				background: url( /wp-content/themes/tiffanyotten-bmr/assets/svg/check-circle-light.svg ) no-repeat;
+				background-size: cover;
+			}
+		}
+	}
+	.content {
+		@media (max-width: $mobile_wide ) {
+			flex-direction: column-reverse !important;
+		}
+	}
+	.graphic {
+		@media (max-width: $mobile_wide ) {
+			margin-bottom: 1rem;
+		}
+	}
+}
+
+section.side-by-side-alt {
+	overflow: visible;
+	position: relative;
+
+	@media (max-width: $mobile_wide ) {
+		padding-bottom: 12rem;
+	}
+	.heading {
+		width: calc( 50% - 4rem );
+
+		@media (max-width: $mobile_wide ) {
+			width: 100%;
+		}
+	}
+	.alt-deco {
+		display: block;
+		content: "";
+		position: absolute;
+		right: 0;
+		top: 0;
+		width: 390px;
+		height: 516px;
+		background: url( /wp-content/themes/tiffanyotten-bmr/assets/svg/service_details_deco.svg ) no-repeat;
+		background-size: cover;
+		z-index: 2;
+
+		@media (max-width: $tablet_wide ) {
+			width: 300px;
+			height: 400px;
+		}
+		@media (max-width: $mobile_wide ) {
+			width: 226px;
+			height: 214px;
+			left: 50%;
+			top: 70%;
+			transform: translateX(-50%);
+			background: url( /wp-content/themes/tiffanyotten-bmr/assets/svg/sun.svg ) no-repeat;
+		}
+	}
+}

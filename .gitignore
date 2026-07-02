@@ -1,48 +1,49 @@
-# Wordpress - ignore core, configuration, examples, uploads and logs.
-# https://github.com/github/gitignore/blob/main/WordPress.gitignore
 
-# Core
-#
-# Note: if you want to stage/commit WP core files
-# you can delete this whole section/until Configuration.
-/wp-admin/
-/wp-content/index.php
-/wp-content/languages
-/wp-content/plugins/index.php
-/wp-content/themes/index.php
-/wp-includes/
-/index.php
-/license.txt
-/readme.html
-/wp-*.php
-/xmlrpc.php
+# ignore everything in the root except the "wp-content" directory.
+/*
+!wp-content/
+!.editorconfig
+!.gitignore
+!.htaccess.local
+!.lando.yml
+!readme.md
+!wp-config-lando.php
+!apple-touch-icon.png
+!favicon.ico
+!favicon.svg
+!favicon-96x96.png
+!site.webmanifest
+!web-app-manifest-192x192.png
+!web-app-manifest-512x512.png
 
-# Configuration
-wp-config.php
+# ignore OS generated files
+ehthumbs.db
+Thumbs.db
+.DS_Store
 
-# Example themes
-/wp-content/themes/twenty*/
-
-# Example plugin
-/wp-content/plugins/hello.php
-
-# Uploads
-/wp-content/uploads/
-
-# Log files
+# ignore log files and databases
 *.log
+*.sql
+*.sqlite
 
-# htaccess
-/.htaccess
+# ignore everything in the "wp-content" directory, except:
+# "mu-plugins" directory
+# "plugins" directory
+# "themes" directory
+!wp-content/plugins/**/.*
 
-# All plugins
-#
-# Note: If you wish to whitelist plugins,
-# uncomment the next line
-#/wp-content/plugins
+# ignore specific themes
+wp-content/uploads
+wp-content/upgrade
+wp-content/upgrade-temp-backup
+wp-content/aiowps_backups
 
-# All themes
-#
-# Note: If you wish to whitelist themes,
-# uncomment the next line
-#/wp-content/themes
+wp-content/themes/*/.config.json
+wp-content/themes/*/admin/css-dev/
+wp-content/themes/*/assets/css-dev/
+wp-content/themes/*/assets/js-dev/
+
+# ignore node/grunt dependency directories
+node_modules/
+.sass-cache/
+yarn.lock

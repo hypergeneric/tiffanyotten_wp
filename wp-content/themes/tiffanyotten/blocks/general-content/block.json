@@ -1,0 +1,18 @@
+{
+	"name": "acf/general-content",
+	"title": "General Content",
+	"description": "A general content section/component.",
+	"category": "tiffanyotten",
+	"icon": "",
+	"keywords": [],
+	"acf": {
+		"mode": "preview",
+		"renderTemplate": "general-content.php"
+	},
+	"usesContext": [
+		"tiffanyotten/containerData"
+	],
+	"supports": {
+		"anchor": true
+	}
+}

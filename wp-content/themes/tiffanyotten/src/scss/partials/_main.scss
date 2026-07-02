@@ -1,0 +1,229 @@
+footer ,
+section {
+
+	--swiper-theme-color: var( --theme-ui-background );
+
+	position: relative;
+	background: none no-repeat center center;
+	background-size: cover;
+
+	--space-default: 6rem;
+	--space-default-tablet: 5rem;
+	--space-default-mobile: 4rem;
+	--space-xlarge: 12rem;
+	--space-xlarge-tablet: 10rem;
+	--space-xlarge-mobile: 6rem;
+	--space-large: 10rem;
+	--space-large-tablet: 8rem;
+	--space-large-mobile: 4rem;
+	--space-small: 3rem;
+	--space-small-tablet: 2rem;
+	--space-small-mobile: 1rem;
+	--spacing-top: var(--space-default);
+	--spacing-bottom: var(--space-default);
+	padding-top: var(--spacing-top);
+	padding-bottom: var(--spacing-bottom);
+	@media (max-width: $tablet_wide) {
+		--spacing-top: var(--space-default-tablet);
+		--spacing-bottom: var(--space-default-tablet);
+	}
+	@media (max-width: $mobile_wide) {
+		--spacing-top: var(--space-default-mobile);
+		--spacing-bottom: var(--space-default-mobile);
+	}
+	&.spacing-top-xlarge {
+		--spacing-top: var(--space-xlarge);
+		@media (max-width: 1000px) {
+			--spacing-top: var(--space-xlarge-tablet);
+		}
+		@media (max-width: $tablet_wide) {
+			--spacing-top: var(--space-xlarge-mobile);
+		}
+	}
+	&.spacing-bottom-xlarge {
+		--spacing-bottom: var(--space-xlarge);
+		@media (max-width: 1000px) {
+			--spacing-bottom: var(--space-xlarge-tablet);
+		}
+		@media (max-width: $tablet_wide) {
+			--spacing-bottom: var(--space-xlarge-mobile);
+		}
+	}
+	&.spacing-top-large {
+		--spacing-top: var(--space-large);
+		@media (max-width: 1000px) {
+			--spacing-top: var(--space-large-tablet);
+		}
+		@media (max-width: $tablet_wide) {
+			--spacing-top: var(--space-large-mobile);
+		}
+	}
+	&.spacing-bottom-large {
+		--spacing-bottom: var(--space-large);
+		@media (max-width: 1000px) {
+			--spacing-bottom: var(--space-large-tablet);
+		}
+		@media (max-width: $tablet_wide) {
+			--spacing-bottom: var(--space-large-mobile);
+		}
+	}
+	&.spacing-top-small {
+		--spacing-top: var(--space-small);
+		@media (max-width: 1000px) {
+			--spacing-top: var(--space-small-tablet);
+		}
+		@media (max-width: $tablet_wide) {
+			--spacing-top: var(--space-small-mobile);
+		}
+	}
+	&.spacing-bottom-small {
+		--spacing-bottom: var(--space-small);
+		@media (max-width: 1000px) {
+			--spacing-bottom: var(--space-small-tablet);
+		}
+		@media (max-width: $tablet_wide) {
+			--spacing-bottom: var(--space-small-mobile);
+		}
+	}
+	&.spacing-top-none {
+		--spacing-top: 0;
+	}
+	&.spacing-bottom-none {
+		--spacing-bottom: 0;
+	}
+
+	h1, h2, h3, h4, h5, h6, p {	
+		margin: 0;
+	}
+
+	color: var( --theme-fonts-base-text );
+	h1, h2, h3, h4, h5, h6 {
+		color: var( --theme-fonts-heading-text );
+	}
+	.body-text {
+		color: var( --theme-fonts-body-text );
+	}
+
+	.light ,
+	&.dark .light ,
+	&.light {
+		color: var( --theme-fonts-base-text-dark );
+		h1, h2, h3, h4, h5, h6 {
+			color: var( --theme-fonts-heading-text-dark );
+		}
+		.body-text {
+			color: var( --theme-fonts-body-text-dark );
+		}
+	}
+
+	.dark ,
+	&.light .dark ,
+	&.dark {
+		color: var( --theme-fonts-base-text );
+		h1, h2, h3, h4, h5, h6 {
+			color: var( --theme-fonts-heading-text );
+		}
+		.body-text {
+			color: var( --theme-fonts-body-text );
+		}
+	}
+
+	picture ,
+	video ,
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	.graphic {
+		.video-object {
+			position: relative;
+			.video-overlay {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				z-index: 1;
+				pointer-events: none;
+			}
+			iframe {
+				display: block;
+				height: auto;
+				width: 100%;
+				border: none;
+			}
+		}
+	}
+
+	.underlay {
+		--background-image: none;
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 1;
+		overflow: hidden;
+		background-position: center center;
+		background-repeat: no-repeat;
+		background-size: cover;
+		background-image: var(--background-image);
+		video {
+			animation-name: fadeIn;
+			position: absolute;
+			top:0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+		}
+		&.sizing-cover {
+			background-size: cover;
+			video {
+				object-fit: cover;
+			}
+		}
+		&.sizing-contain {
+			background-size: contain;
+			video {
+				object-fit: contain;
+			}
+		}
+	}
+	.underlay + .container {
+		position: relative;
+		z-index: 2;
+	}
+
+	.container {
+		max-width: var( --theme-content-width );
+		margin: 0 auto;
+		.inner {
+			margin: 0 1rem;
+		}
+		.container {
+			max-width: none;
+			margin: auto;
+			.inner {
+				margin: 0;
+			}
+		}
+	}
+
+	.flex {
+		display: flex;
+	}
+	.flex-v {
+		flex-direction: column;
+	}
+
+}
+
+@font-face {
+	font-family: 'Poppins';
+	src: url( /wp-content/themes/bmr/assets/fonts/poppins/Poppins-Medium.ttf ) format('truetype');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}

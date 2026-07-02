@@ -1,0 +1,18 @@
+{
+	"name": "acf/inline-cta-group",
+	"title": "Inline CTA Group",
+	"description": "A Inline CTA Group section/component.",
+	"category": "tiffanyotten",
+	"icon": "",
+	"keywords": [],
+	"acf": {
+		"mode": "preview",
+		"renderTemplate": "inline-cta-group.php"
+	},
+	"usesContext": [
+		"tiffanyotten/containerData"
+	],
+	"supports": {
+		"anchor": true
+	}
+}

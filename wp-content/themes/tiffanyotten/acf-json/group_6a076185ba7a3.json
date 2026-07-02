@@ -1,0 +1,48 @@
+{
+    "key": "group_6a076185ba7a3",
+    "title": "Block: Icon Grid Vertical Lines",
+    "fields": [
+        {
+            "key": "field_6a0761862f99b",
+            "label": "Icon Grid Vertical Lines",
+            "name": "icon_grid_vertical_lines",
+            "aria-label": "",
+            "type": "clone",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "clone": [
+                "group_6732466230b88"
+            ],
+            "display": "seamless",
+            "layout": "block",
+            "prefix_label": 0,
+            "prefix_name": 0
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "block",
+                "operator": "==",
+                "value": "acf\/icon-grid-vertical-lines"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "display_title": "",
+    "modified": 1778868776
+}

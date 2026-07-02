@@ -1,0 +1,18 @@
+{
+	"name": "acf/locations-grid",
+	"title": "Locations Grid",
+	"description": "A Locations Grid section/component.",
+	"category": "tiffanyotten",
+	"icon": "",
+	"keywords": [],
+	"acf": {
+		"mode": "preview",
+		"renderTemplate": "locations-grid.php"
+	},
+	"usesContext": [
+		"tiffanyotten/containerData"
+	],
+	"supports": {
+		"anchor": true
+	}
+}

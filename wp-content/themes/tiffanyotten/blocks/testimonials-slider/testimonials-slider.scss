@@ -1,0 +1,139 @@
+@import '../../src/scss/modules/vars';
+
+section.testimonials-slider {
+    overflow-x: hidden;
+
+    @media ( max-width: $mobile_wide ) {
+        padding-bottom: 12rem;
+    }
+
+    .heading {
+        margin-bottom: 4rem;
+
+        img {
+            max-width: 480px;
+            margin: auto;
+
+            @media ( max-width: $mobile_wide ) {
+                max-width: 240px;
+            }
+        }
+        .large {
+            font-family: 'gordita-medium';
+            font-weight: 500;
+            font-size: 24px;
+            text-align: center;
+            margin-top: 1.5rem;
+
+            .orange {
+                color: #F26419;
+            }
+
+            @media ( max-width: $mobile_wide ) {
+                font-family: 'gordita';
+                font-weight: 400;
+                font-size: 18px;
+            }
+        }
+    }
+    .entry {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        text-align: center;
+        
+        div, p {
+            max-width: 70%;
+            margin: auto;
+
+            @media ( max-width: $mobile_wide ) {
+                max-width: 100%;
+            }
+        }
+        .large {
+            margin-bottom: 4rem;
+        }
+        .bold {
+            font-family: 'gordita-bold';
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .small {
+            color: rgba(17, 17, 68, 0.80);
+            text-align: center;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 120%;
+        }
+    }
+    .swiper-container {
+        position: relative;
+    }
+    .swiper-slide {
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .swiper-slide-active {
+        opacity: 1;
+    }
+    .swiper-pagination {
+        bottom: -2rem;
+    }
+
+    /* Change arrow color */
+    .swiper-button-next,
+    .swiper-button-prev {
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        transition: all 0.3s ease;
+        border: 0;
+        background: var(--Background-Stone, #F5F1ED);
+        box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.20);
+
+        path {
+            fill: #114;
+        }
+
+        @media ( max-width: $mobile_wide ) {
+            top: unset;
+            bottom: -8rem;
+        }
+    }
+
+    .swiper-button-next {
+        right: 2rem;
+        @media ( max-width: $mobile_wide ) {
+            right: 38%;
+            left: auto;
+        }
+        @media ( max-width: $mobile_tall ) {
+            right: 35%;
+        }
+    }
+    .swiper-button-prev {
+        left: 2rem;
+        @media ( max-width: $mobile_wide ) {
+            left: 38%;
+            right: auto;
+        }
+        @media ( max-width: $mobile_tall ) {
+            left: 35%;
+        }
+    }
+
+    /* Adjust the icon size (default is 44px) */
+    .swiper-button-next:after,
+    .swiper-button-prev:after {
+        display: none;
+    }
+    .swiper-button-disabled {
+        background-color: transparent;
+
+        path {
+            opacity: 0.5;
+        }
+    }
+}

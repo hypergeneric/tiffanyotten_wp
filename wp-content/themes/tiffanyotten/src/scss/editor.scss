@@ -1,0 +1,54 @@
+@import 'modules/_vars.scss';
+@import 'partials/_main.scss';
+@import 'modules/_post-content.scss';
+
+.acf-block-preview {
+  border: 1px #eee solid;
+}
+
+html :where(.wp-block) {
+  max-width: 1280px;
+}
+
+.acf-image-select ul {
+	display: flex;
+	flex-wrap: wrap;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.acf-image-select li {
+	display: block;
+	padding: 1rem;
+	width: 250px;
+}
+.acf-image-select li label {
+	cursor: pointer;
+	display: block !important;
+}
+.acf-image-select li label input {
+	display: none;
+}
+.acf-image-select li label p {
+	border: 1px #ccc solid;
+	margin: 0;
+	padding: 5px 10px;
+	font-weight: bold;
+	text-align: center;
+}
+.acf-image-select li label img {
+	border: solid 10px #CCC;
+	width: 230px;
+	height: 230px;
+	object-fit: contain;
+	background: #f8f8f8;
+}
+.acf-image-select li label.selected img {
+	border: solid 10px #2271b1;
+}
+.acf-image-select li label.selected p {
+	color: #2271b1;
+}
+.acf-image-select li label:hover img {
+	border: solid 10px #666;
+}
