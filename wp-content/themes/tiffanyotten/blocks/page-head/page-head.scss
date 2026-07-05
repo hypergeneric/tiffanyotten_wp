@@ -3,8 +3,9 @@
 .page-head {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    min-height: calc( 90dvh - var( --spacing-top ) - var( --spacing-bottom ) );
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 90dvh;
 
     h1 {
         margin-bottom: 1rem;
@@ -15,19 +16,16 @@
             }
         }
     }
+    .eyebrow {
+        margin-bottom: 1rem;
+    }
     .heading {
-        margin-top: 4rem;
-        @media (max-width: $tablet_wide ) {
-            margin-top: 8rem;
-        }
         @media ( max-width: $mobile_wide ) {
             padding-bottom: 2rem;
-            margin-top: 0;
         }
     }
     .body-text {
-        opacity: 0.8;
-        max-width: 70%;
+        max-width: 60%;
 
         @media ( max-width: $mobile_wide ) {
             max-width: 100%;

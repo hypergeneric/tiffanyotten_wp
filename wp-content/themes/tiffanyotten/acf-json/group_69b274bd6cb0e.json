@@ -861,6 +861,52 @@
             "palette_colors": ""
         },
         {
+            "key": "field_6a68a1000c01",
+            "label": "Eyebrow Text Color ( Dark Text )",
+            "name": "themeoption_fonts_eyebrow_text_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#C6D500",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000c02",
+            "label": "Eyebrow Text Color ( Light Text )",
+            "name": "themeoption_fonts_eyebrow_text_dark_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#C6D500",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
             "key": "field_6a02c160f0667",
             "label": "Typography",
             "name": "",
@@ -1077,10 +1123,13 @@
                         "h6": "H6",
                         "p": "Paragraph",
                         "p.small": "Paragraph, Small",
+                        "p.lead": "Paragraph, Lead",
                         "p.large": "Paragraph, Large",
+                        "p.xlarge": "Paragraph, XLarge",
                         "blockquote": "Blockquote",
                         "eyebrow": "Eyebrow",
-                        "navitem": "Navigation"
+                        "navitem": "Navigation",
+                        "cta": "CTA \/ Button"
                     },
                     "default_value": false,
                     "return_format": "value",
@@ -1340,6 +1389,139 @@
             ]
         },
         {
+            "key": "field_6a68a1000b00",
+            "label": "Buttons",
+            "name": "",
+            "aria-label": "",
+            "type": "tab",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "placement": "top",
+            "endpoint": 0,
+            "selected": 0
+        },
+        {
+            "key": "field_6a68a1000b01",
+            "label": "Background Color",
+            "name": "themeoption_button_background_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#C6D500",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000b02",
+            "label": "Text Color",
+            "name": "themeoption_button_text_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#8451A3",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000b03",
+            "label": "Background Color, Hover",
+            "name": "themeoption_button_background_hover_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "Leave empty to reuse the base background color on hover.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000b04",
+            "label": "Text Color, Hover",
+            "name": "themeoption_button_text_hover_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "Leave empty to reuse the base text color on hover.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000b05",
+            "label": "Border Radius",
+            "name": "themeoption_button_radius_int",
+            "aria-label": "",
+            "type": "number",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": 50,
+            "min": "",
+            "max": "",
+            "allow_in_bindings": 0,
+            "placeholder": "",
+            "step": "",
+            "prepend": "",
+            "append": "px"
+        },
+        {
             "key": "field_6a02b362f2edb",
             "label": "Theme Overrides",
             "name": "",
@@ -1397,5 +1579,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1779262235
+    "modified": 1783123200
 }

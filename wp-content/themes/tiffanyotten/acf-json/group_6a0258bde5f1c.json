@@ -113,7 +113,9 @@
             "choices": {
                 "p": "Default",
                 "small": "Small",
-                "large": "Large"
+                "lead": "Lead ( Semibold )",
+                "large": "Large",
+                "xlarge": "XLarge"
             },
             "default_value": false,
             "return_format": "value",
@@ -132,7 +134,7 @@
             {
                 "param": "block",
                 "operator": "==",
-                "value": "acf\/basic-heading"
+                "value": "acf/basic-heading"
             }
         ]
     ],
@@ -146,5 +148,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1778573414
+    "modified": 1783123200
 }

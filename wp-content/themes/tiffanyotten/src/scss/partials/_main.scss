@@ -103,6 +103,9 @@ section {
 	.body-text {
 		color: var( --theme-fonts-body-text );
 	}
+	.eyebrow {
+		color: var( --theme-fonts-eyebrow-text );
+	}
 
 	.light ,
 	&.dark .light ,
@@ -113,6 +116,9 @@ section {
 		}
 		.body-text {
 			color: var( --theme-fonts-body-text-dark );
+		}
+		.eyebrow {
+			color: var( --theme-fonts-eyebrow-text-dark );
 		}
 	}
 
@@ -125,6 +131,9 @@ section {
 		}
 		.body-text {
 			color: var( --theme-fonts-body-text );
+		}
+		.eyebrow {
+			color: var( --theme-fonts-eyebrow-text );
 		}
 	}
 

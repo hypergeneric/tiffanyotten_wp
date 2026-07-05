@@ -1,8 +1,6 @@
 <?php
 
 $root_node      = get_field( 'root_node', 'options' );
-$login_cta = get_field( 'login_cta', 'options' );
-$login_cta_2 = get_field( 'login_cta_2', 'options' );
 $main_cta  = get_field( 'main_cta', 'options' );
 $current_page   = get_request_uri();
 
@@ -71,16 +69,6 @@ $current_page   = get_request_uri();
 	</div>
 	<?php } ?>
 	<div class="utility">
-		<?php if( !empty($login_cta) || !empty($login_cta_2)): ?>
-			<div class="mobile-login-options">
-				<?php if( !empty($login_cta)): ?>
-					<a id="login-cta" class="mobile cta cta-alt login" href="<?php echo $login_cta['url']; ?>" target="<?php echo $login_cta['target']; ?>"><?php echo $login_cta['title']; ?></a>
-				<?php endif; ?>
-				<?php if( !empty($login_cta_2)): ?>
-					<a id="login-cta" class="mobile cta cta-alt login" href="<?php echo $login_cta_2['url']; ?>" target="<?php echo $login_cta_2['target']; ?>"><?php echo $login_cta_2['title']; ?></a>
-				<?php endif; ?>
-			</div>
-		<?php endif; ?>
 		<?php if( !empty($main_cta)): ?>
 			<a id="header-cta" class="mobile cta demo" href="<?php echo $main_cta['url']; ?>" target="<?php echo $main_cta['target']; ?>"><?php echo $main_cta['title']; ?></a>
 		<?php endif; ?>

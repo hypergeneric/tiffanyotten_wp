@@ -262,13 +262,13 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 		$text_transform         = ! empty( $size['text_transform'] ) ? sanitize_text_field( $size['text_transform'] ) : '';
 		$weight                 = ! empty( $size['weight'] ) ? sanitize_text_field( $size['weight'] ) : '';
 		$size_desktop           = isset( $size['size_desktop'] ) ? (float) $size['size_desktop'] : 0;
-		$size_mobile            = isset( $size['size_mobile'] ) ? (float) $size['size_mobile'] : 0;
+		$size_mobile            = ! empty( $size['size_mobile'] ) ? (float) $size['size_mobile'] : $size_desktop;
 		$line_height_desktop    = isset( $size['line_height_desktop'] ) ? (float) $size['line_height_desktop'] : 0;
-		$line_height_mobile     = isset( $size['line_height_mobile'] ) ? (float) $size['line_height_mobile'] : 0;
+		$line_height_mobile     = ! empty( $size['line_height_mobile'] ) ? (float) $size['line_height_mobile'] : $line_height_desktop;
 		$letter_spacing_desktop = isset( $size['letter_spacing_desktop'] ) ? (float) $size['letter_spacing_desktop'] : 0;
 		$letter_spacing_mobile  = isset( $size['letter_spacing_mobile'] ) ? (float) $size['letter_spacing_mobile'] : 0;
 
-		$allowed_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'p.small', 'p.large', 'blockquote', 'eyebrow', 'navitem' ];
+		$allowed_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'p.small', 'p.lead', 'p.large', 'p.xlarge', 'blockquote', 'eyebrow', 'navitem', 'cta' ];
 
 		if ( empty( $tag ) || empty( $font_face ) || ! in_array( $tag, $allowed_tags, true ) ) {
 			continue;
@@ -278,6 +278,11 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 			$tag = "p, ul, ol";
 		} else if ( $tag == 'eyebrow' ) {
 			$tag = ".eyebrow";
+		} else if ( $tag == 'cta' ) {
+			$tag = ".cta";
+		} else if ( strpos( $tag, 'p.' ) === 0 ) {
+			$class = '.' . $tag;
+			$tag   = $tag . ", " . $class . ", " . $class . " p, " . $class . " ul, " . $class . " ol";
 		} else {
 			$tag = $tag . ", ." . $tag;
 		}
