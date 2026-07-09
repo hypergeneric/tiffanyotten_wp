@@ -14,8 +14,7 @@ $context = isset( $context ) && is_array( $context ) ? $context : [];
 
 list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $context);
 
-$primary_cta      = tiffanyotten_block_value('primary_cta', $args);
-$secondary_cta    = tiffanyotten_block_value('secondary_cta', $args);
+$cta              = tiffanyotten_cta_args( $args );
 $alignment		  = tiffanyotten_block_value('alignment', $args);
 
 ?>
@@ -24,11 +23,8 @@ $alignment		  = tiffanyotten_block_value('alignment', $args);
 	<div class="container">
 		<div class="inner <?php echo esc_attr($alignment); ?>">
 
-			<?php if ( $primary_cta || $secondary_cta ) : ?>
-				<?php get_template_part( 'templates/_partials/cta-group', null, [
-					'primary_cta' => $primary_cta,
-					'secondary_cta' => $secondary_cta,
-				] ); ?>
+			<?php if ( $cta['primary_cta'] || $cta['secondary_cta'] ) : ?>
+				<?php get_template_part( 'templates/_partials/cta-group', null, $cta ); ?>
 			<?php endif; ?>
 
 		</div>

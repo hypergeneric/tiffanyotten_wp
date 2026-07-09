@@ -1615,6 +1615,52 @@
             "palette_colors": ""
         },
         {
+            "key": "field_6a68a1001501",
+            "label": "Inverted Background Color",
+            "name": "themeoption_button_inverted_background_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#9F3DDB",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1001502",
+            "label": "Inverted Text Color",
+            "name": "themeoption_button_inverted_text_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#C6D500",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
             "key": "field_6a68a1000b05",
             "label": "Border Radius",
             "name": "themeoption_button_radius_int",
@@ -1695,5 +1741,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1783559484
+    "modified": 1783564894
 }

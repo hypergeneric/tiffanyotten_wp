@@ -19,7 +19,6 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $con
 
 ?>
 <section id="<?php echo esc_attr($blockid); ?>" class="<?php echo esc_attr($blockslug); ?>">
-	<div class="bg-deco"></div>
 	<?php print_background_markup( $args ); ?>
 	<div class="container">
 		<div class="inner">

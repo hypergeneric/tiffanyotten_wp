@@ -13,8 +13,7 @@ $minimum_height   = tiffanyotten_block_value('minimum_height', $args);
 $hero_mobile_top  = tiffanyotten_block_value('hero_mobile_top', $args);
 
 $heading          = tiffanyotten_heading_args( $args );
-$primary_cta      = tiffanyotten_block_value('primary_cta', $args);
-$secondary_cta    = tiffanyotten_block_value('secondary_cta', $args);
+$cta              = tiffanyotten_cta_args( $args );
 
 $hero_icon         = tiffanyotten_block_value('hero_icon', $args);
 $hero_image        = tiffanyotten_block_value('hero_image', $args);
@@ -49,11 +48,8 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [ 'image-'.$ima
 							</div>
 						<?php endif; ?>
 						<?php get_template_part( 'templates/_partials/heading', null, $heading ); ?>
-						<?php if ( $primary_cta || $secondary_cta ) : ?>
-							<?php get_template_part( 'templates/_partials/cta-group', null, [
-								'primary_cta' => $primary_cta,
-								'secondary_cta' => $secondary_cta,
-							] ); ?>
+						<?php if ( $cta['primary_cta'] || $cta['secondary_cta'] ) : ?>
+							<?php get_template_part( 'templates/_partials/cta-group', null, $cta ); ?>
 						<?php endif; ?>
 					</div>
 				<?php endif; ?>

@@ -73,6 +73,16 @@ function tiffanyotten_heading_args( $args=null, $prefix='' ) {
 	];
 }
 
+function tiffanyotten_cta_args( $args=null, $prefix='' ) {
+	return [
+		'primary_cta'   => tiffanyotten_block_value( $prefix . 'primary_cta', $args ),
+		'secondary_cta' => tiffanyotten_block_value( $prefix . 'secondary_cta', $args ),
+		'cta_style'     => tiffanyotten_block_value( $prefix . 'cta_style', $args ),
+		'cta_size'      => tiffanyotten_block_value( $prefix . 'cta_size', $args ),
+		'cta_shadow'    => tiffanyotten_block_value( $prefix . 'cta_shadow', $args ),
+	];
+}
+
 function tiffanyotten_get_block_meta( $block, $classes=[], $args=null, $context=null ) {
 	$slug    = str_contains( $block['name'], '/' ) ? explode( "/", $block['name'] )[1] : $block['name'];
 	$id      = $slug . '-' . $block['id'];

@@ -154,6 +154,7 @@ section {
 	.eyebrow-chip.eyebrow-chip {
 		display: inline-block;
 		width: fit-content;
+		margin-bottom: 2rem;
 		padding: 0.65em 2.3em;
 		border: 1px solid transparent;
 		border-radius: 58px;
@@ -161,10 +162,8 @@ section {
 		box-shadow: 0 4px 4px rgba( 0, 0, 0, 0.25 );
 		color: var( --theme-accent, #{$accent} );
 	}
-	.light .eyebrow-chip.eyebrow-chip {
-		background-color: transparent;
-		border-color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
-		color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
+	.heading-content .eyebrow-chip.eyebrow-chip {
+		margin-bottom: 0;
 	}
 
 	.highlight {
@@ -200,14 +199,6 @@ section {
 			color: var( --theme-accent, #{$accent} );
 		}
 	}
-	.light h1 strong , .light h1 em ,
-	.light h2 strong , .light h2 em ,
-	.light h3 strong , .light h3 em ,
-	.light h4 strong , .light h4 em ,
-	.light h5 strong , .light h5 em ,
-	.light h6 strong , .light h6 em {
-		color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
-	}
 	.body-text a {
 		color: var( --theme-fonts-link-text, #{$accent} );
 
@@ -215,14 +206,30 @@ section {
 			color: var( --theme-fonts-link-text-hover, var( --theme-fonts-link-text, #{$accent} ) );
 		}
 	}
-	.light .highlight {
-		color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
-	}
-	.light .body-text a {
-		color: var( --theme-fonts-link-text-dark, #{$lime} );
 
-		&:hover {
-			color: var( --theme-fonts-link-text-dark-hover, var( --theme-fonts-link-text-dark, #{$lime} ) );
+	.light ,
+	&.dark .light ,
+	&.light {
+		.eyebrow-chip.eyebrow-chip {
+			background-color: transparent;
+			border-color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
+			color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
+		}
+		.highlight {
+			color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
+		}
+		h1, h2, h3, h4, h5, h6 {
+			strong ,
+			em {
+				color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
+			}
+		}
+		.body-text a {
+			color: var( --theme-fonts-link-text-dark, #{$lime} );
+
+			&:hover {
+				color: var( --theme-fonts-link-text-dark-hover, var( --theme-fonts-link-text-dark, #{$lime} ) );
+			}
 		}
 	}
 
@@ -314,6 +321,10 @@ section {
 	}
 	.flex-v {
 		flex-direction: column;
+	}
+
+	.swiper-slide {
+		box-sizing: border-box;
 	}
 
 }

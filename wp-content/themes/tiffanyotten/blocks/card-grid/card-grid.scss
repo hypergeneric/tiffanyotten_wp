@@ -6,7 +6,6 @@ section.card-grid {
 		gap: 1.5rem;
 	}
 	.entry {
-		box-sizing: border-box;
 		display: block;
 		text-decoration: none;
 		width: calc( 50% - 0.75rem );
@@ -85,10 +84,13 @@ section.card-grid {
 		border-color: transparent;
 	}
 	&.layout-inline {
+		.entry {
+			padding: 2.5rem 2rem;
+		}
 		.entry-inner {
 			flex-direction: row;
 			align-items: center;
-			gap: 1.25rem;
+			gap: 1.5rem;
 		}
 		.entry-text {
 			justify-content: center;
@@ -96,7 +98,7 @@ section.card-grid {
 		.image-wrap {
 			img ,
 			svg {
-				height: 72px;
+				height: 100px;
 			}
 		}
 		h3 {

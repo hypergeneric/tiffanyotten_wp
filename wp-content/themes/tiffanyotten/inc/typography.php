@@ -246,12 +246,48 @@ function cr_log_interval( $total_intervals, $start, $end, $fixed = 0 ) {
 	return array_reverse( $result );
 }
 
+function cr_get_typography_font_families() {
+	$fontfaces = get_field( 'theme_typography_fontfaces', 'option' );
+	$families  = [];
+
+	if ( empty( $fontfaces ) || ! is_array( $fontfaces ) ) {
+		return $families;
+	}
+
+	foreach ( $fontfaces as $fontface ) {
+		$handle = ! empty( $fontface['font_handle'] ) ? sanitize_html_class( $fontface['font_handle'] ) : '';
+
+		if ( empty( $handle ) ) {
+			continue;
+		}
+
+		$family = '"' . $handle . '"';
+		$source = ! empty( $fontface['source'] ) ? $fontface['source'] : '';
+		$style  = ! empty( $fontface['font_style'] ) ? $fontface['font_style'] : '';
+		$url    = ! empty( $fontface['google_font_url'] ) ? $fontface['google_font_url'] : '';
+
+		if ( 'google' === $source ) {
+			if ( $url && preg_match( '/[?&]family=([^:&]+)/', $url, $m ) ) {
+				$family = '"' . str_replace( '+', ' ', urldecode( $m[1] ) ) . '", sans-serif';
+			} elseif ( $style && preg_match( '/font-family\s*:\s*([^;}]+)/i', $style, $m ) ) {
+				$family = trim( $m[1] );
+			}
+		}
+
+		$families[ $handle ] = $family;
+	}
+
+	return $families;
+}
+
 function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 	$sizes = get_field( 'theme_typography_sizes', 'option' );
 
 	if ( empty( $sizes ) || ! is_array( $sizes ) ) {
 		return '';
 	}
+
+	$families = cr_get_typography_font_families();
 
 	$breakpoints = [ 1400, 1280, 1080, 900, 640, 480 ];
 	$css         = [];
@@ -306,13 +342,15 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 		$last_line_height    = $line_heights[0];
 		$last_letter_spacing = $letter_spacings[0];
 
+		$font_family = isset( $families[ $font_face ] ) ? $families[ $font_face ] : '"' . $font_face . '"';
+
 		$css[] = sprintf(
-			"%s {\n\tfont-size: %spx;\n\tfont-weight: %s;\n\ttext-transform: %s;\n\tfont-family: \"%s\";\n\tline-height: %s;\n\tletter-spacing: %spx;\n}",
+			"%s {\n\tfont-size: %spx;\n\tfont-weight: %s;\n\ttext-transform: %s;\n\tfont-family: %s;\n\tline-height: %s;\n\tletter-spacing: %spx;\n}",
 			$selector,
 			$last_font_size,
 			esc_html( $weight ),
 			esc_html( $text_transform ),
-			esc_html( $font_face ),
+			$font_family,
 			$last_line_height,
 			$last_letter_spacing
 		);

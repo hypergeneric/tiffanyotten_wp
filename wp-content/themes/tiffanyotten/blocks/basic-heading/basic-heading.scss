@@ -27,39 +27,8 @@ section.basic-heading {
 		flex-direction: column;
 		gap: 1.5rem;
 	}
-	.layout-side-by-side {
-		text-align: left;
-
-		.eyebrow {
-			width: 100%;
-		}
-		.body-text {
-			display: flex;
-			flex-direction: column;
-			justify-content: flex-end;
-
-			p {
-				font-size: 18px;
-				margin: 0;
-			}
-			strong {
-				font-family: 'gordita-bold';
-				font-weight: 700;
-			}
-		}
-		.heading-content {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			column-gap: 2rem;
-			row-gap: 1rem;
-
-			@media ( max-width: $mobile_wide ) {
-				grid-template-columns: 1fr;
-			}
-		}
-		br {
-			display: none;
-		}
+	.cta-wrap {
+		justify-content: center;
 	}
 	.layout-left {
 		text-align: left;
@@ -68,6 +37,9 @@ section.basic-heading {
 
 		.eyebrow-chip {
 			align-self: flex-start;
+		}
+		.cta-wrap {
+			justify-content: flex-start;
 		}
 
 		@media ( max-width: $tablet_wide ) {

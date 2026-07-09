@@ -15,8 +15,7 @@ $context = isset( $context ) && is_array( $context ) ? $context : [];
 list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $context);
 
 $heading          = tiffanyotten_heading_args( $args );
-$primary_cta      = tiffanyotten_block_value('primary_cta', $args);
-$secondary_cta    = tiffanyotten_block_value('secondary_cta', $args);
+$cta              = tiffanyotten_cta_args( $args );
 
 ?>
 <section id="<?php echo esc_attr($blockid); ?>" class="<?php echo esc_attr($blockslug); ?>"> 
@@ -27,11 +26,8 @@ $secondary_cta    = tiffanyotten_block_value('secondary_cta', $args);
 			<?php if ( $heading['eyebrow'] || $heading['title'] || $heading['blurb'] ) : ?>
 				<div class="heading">
 					<?php get_template_part( 'templates/_partials/heading', null, $heading ); ?>
-					<?php if ( $primary_cta || $secondary_cta ) : ?>
-						<?php get_template_part( 'templates/_partials/cta-group', null, [
-							'primary_cta' => $primary_cta,
-							'secondary_cta' => $secondary_cta,
-						] ); ?>
+					<?php if ( $cta['primary_cta'] || $cta['secondary_cta'] ) : ?>
+						<?php get_template_part( 'templates/_partials/cta-group', null, $cta ); ?>
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
