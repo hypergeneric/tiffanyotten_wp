@@ -1,12 +1,10 @@
 @import '../../src/scss/modules/vars';
 
 section.general-content {
-	padding-bottom: 0;
 	overflow: hidden;
 	position: relative;
 
 	.entry-content {
-		
 		h1, h2, h3, h4, h5, h6 {
 			margin-bottom: 1rem;
 		}
@@ -14,7 +12,7 @@ section.general-content {
 			margin-bottom: 1rem;
 		}
 		a {
-			color: inherit;
+			color: var( --theme-fonts-link-text, #{$accent} );
 			text-decoration: underline;
 		}
 	}

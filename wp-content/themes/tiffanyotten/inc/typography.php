@@ -246,12 +246,48 @@ function cr_log_interval( $total_intervals, $start, $end, $fixed = 0 ) {
 	return array_reverse( $result );
 }
 
+function cr_get_typography_font_families() {
+	$fontfaces = get_field( 'theme_typography_fontfaces', 'option' );
+	$families  = [];
+
+	if ( empty( $fontfaces ) || ! is_array( $fontfaces ) ) {
+		return $families;
+	}
+
+	foreach ( $fontfaces as $fontface ) {
+		$handle = ! empty( $fontface['font_handle'] ) ? sanitize_html_class( $fontface['font_handle'] ) : '';
+
+		if ( empty( $handle ) ) {
+			continue;
+		}
+
+		$family = '"' . $handle . '"';
+		$source = ! empty( $fontface['source'] ) ? $fontface['source'] : '';
+		$style  = ! empty( $fontface['font_style'] ) ? $fontface['font_style'] : '';
+		$url    = ! empty( $fontface['google_font_url'] ) ? $fontface['google_font_url'] : '';
+
+		if ( 'google' === $source ) {
+			if ( $url && preg_match( '/[?&]family=([^:&]+)/', $url, $m ) ) {
+				$family = '"' . str_replace( '+', ' ', urldecode( $m[1] ) ) . '", sans-serif';
+			} elseif ( $style && preg_match( '/font-family\s*:\s*([^;}]+)/i', $style, $m ) ) {
+				$family = trim( $m[1] );
+			}
+		}
+
+		$families[ $handle ] = $family;
+	}
+
+	return $families;
+}
+
 function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 	$sizes = get_field( 'theme_typography_sizes', 'option' );
 
 	if ( empty( $sizes ) || ! is_array( $sizes ) ) {
 		return '';
 	}
+
+	$families = cr_get_typography_font_families();
 
 	$breakpoints = [ 1400, 1280, 1080, 900, 640, 480 ];
 	$css         = [];
@@ -262,13 +298,13 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 		$text_transform         = ! empty( $size['text_transform'] ) ? sanitize_text_field( $size['text_transform'] ) : '';
 		$weight                 = ! empty( $size['weight'] ) ? sanitize_text_field( $size['weight'] ) : '';
 		$size_desktop           = isset( $size['size_desktop'] ) ? (float) $size['size_desktop'] : 0;
-		$size_mobile            = isset( $size['size_mobile'] ) ? (float) $size['size_mobile'] : 0;
+		$size_mobile            = ! empty( $size['size_mobile'] ) ? (float) $size['size_mobile'] : $size_desktop;
 		$line_height_desktop    = isset( $size['line_height_desktop'] ) ? (float) $size['line_height_desktop'] : 0;
-		$line_height_mobile     = isset( $size['line_height_mobile'] ) ? (float) $size['line_height_mobile'] : 0;
+		$line_height_mobile     = ! empty( $size['line_height_mobile'] ) ? (float) $size['line_height_mobile'] : $line_height_desktop;
 		$letter_spacing_desktop = isset( $size['letter_spacing_desktop'] ) ? (float) $size['letter_spacing_desktop'] : 0;
 		$letter_spacing_mobile  = isset( $size['letter_spacing_mobile'] ) ? (float) $size['letter_spacing_mobile'] : 0;
 
-		$allowed_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'p.small', 'p.large', 'blockquote', 'eyebrow', 'navitem' ];
+		$allowed_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'p.small', 'p.lead', 'p.large', 'p.xlarge', 'blockquote', 'eyebrow', 'navitem', 'cta', 'display' ];
 
 		if ( empty( $tag ) || empty( $font_face ) || ! in_array( $tag, $allowed_tags, true ) ) {
 			continue;
@@ -278,11 +314,25 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 			$tag = "p, ul, ol";
 		} else if ( $tag == 'eyebrow' ) {
 			$tag = ".eyebrow";
+		} else if ( $tag == 'cta' ) {
+			$tag = ".cta";
+		} else if ( $tag == 'display' ) {
+			$tag = ".display";
+		} else if ( strpos( $tag, 'p.' ) === 0 ) {
+			$class = '.' . $tag;
+			$tag   = $tag . ", " . $class . ", " . $class . " p, " . $class . " ul, " . $class . " ol";
 		} else {
 			$tag = $tag . ", ." . $tag;
 		}
 
-		$selector = trim( $selector_prefix . ' ' . $tag );
+		$selector = $tag;
+		if ( $selector_prefix ) {
+			$parts = array_map( 'trim', explode( ',', $tag ) );
+			foreach ( $parts as $i => $part ) {
+				$parts[ $i ] = $selector_prefix . ' ' . $part;
+			}
+			$selector = implode( ', ', $parts );
+		}
 
 		$font_sizes      = cr_log_interval( count( $breakpoints ), $size_mobile, $size_desktop, 0 );
 		$line_heights    = cr_log_interval( count( $breakpoints ), $line_height_mobile, $line_height_desktop, 2 );
@@ -292,13 +342,15 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 		$last_line_height    = $line_heights[0];
 		$last_letter_spacing = $letter_spacings[0];
 
+		$font_family = isset( $families[ $font_face ] ) ? $families[ $font_face ] : '"' . $font_face . '"';
+
 		$css[] = sprintf(
-			"%s {\n\tfont-size: %spx;\n\tfont-weight: %s;\n\ttext-transform: %s;\n\tfont-family: \"%s\";\n\tline-height: %s;\n\tletter-spacing: %spx;\n}",
+			"%s {\n\tfont-size: %spx;\n\tfont-weight: %s;\n\ttext-transform: %s;\n\tfont-family: %s;\n\tline-height: %s;\n\tletter-spacing: %spx;\n}",
 			$selector,
 			$last_font_size,
 			esc_html( $weight ),
 			esc_html( $text_transform ),
-			esc_html( $font_face ),
+			$font_family,
 			$last_line_height,
 			$last_letter_spacing
 		);

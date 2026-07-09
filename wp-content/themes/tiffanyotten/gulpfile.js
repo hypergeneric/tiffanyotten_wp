@@ -52,6 +52,13 @@ function getNearestParent(filePath, extensions = "scss,css") {
     return null;
 }
 
+function refreshMtime(files) {
+    const now = new Date();
+    files.forEach(function (file) {
+        try { fs.utimesSync(file, now, now); } catch (err) {}
+    });
+}
+
 function processCss(src) {
     let stream = gulp.src(src.source);
     if ( config.production ) {
@@ -87,6 +94,11 @@ function processCss(src) {
             .pipe(gulp.dest(src.destination + '-dev'))
             .pipe(browserSync.stream());
     }
+    stream.on('end', function () {
+        const dest    = src.destination + ( config.production ? '' : '-dev' );
+        const outName = config.production ? src.filename.replace(/\.css$/, '.min.css') : src.filename;
+        refreshMtime([ path.join(dest, outName) ]);
+    });
     return stream;
 }
 
@@ -121,6 +133,10 @@ function processCSSIndividual(file) {
             .pipe(gulp.dest(destDirectory))
             .pipe(browserSync.stream());
     }
+    stream.on('end', function () {
+        const outName = path.basename(file.path, '.scss') + ( config.production ? '.min.css' : '.css' );
+        refreshMtime([ path.join(destDirectory, outName) ]);
+    });
     return stream;
 }
 

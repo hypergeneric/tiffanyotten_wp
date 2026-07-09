@@ -111,7 +111,16 @@ function tiffanyotten_print_img_src( $image, $classes=[], $style="", $inline=fal
 		return;
 	}
 	if ( ! is_array( $image ) ) {
-		$image = [ 'url' => $image ];
+		$image = is_numeric( $image ) ? [ 'ID' => $image ] : [ 'url' => $image ];
+	}
+	if ( empty( $image['url'] ) ) {
+		$attachment_id = ! empty( $image['ID'] ) ? intval( $image['ID'] ) : ( ! empty( $image['id'] ) ? intval( $image['id'] ) : 0 );
+		if ( $attachment_id ) {
+			$image['url'] = wp_get_attachment_image_url( $attachment_id, 'full' );
+		}
+	}
+	if ( empty( $image['url'] ) ) {
+		return;
 	}
 	$ext = strtolower( pathinfo( $image['url'],  PATHINFO_EXTENSION ) );
 	if ( $inline && $ext === 'svg' ) {

@@ -1,0 +1,69 @@
+/*
+ * Global CTA / button base.
+ * Colors + radius come from Theme Settings ( Buttons tab ) via --theme-button-* vars.
+ * Font size / weight / line-height come from the Typography "CTA / Button" row ( .cta selector ).
+ */
+
+.cta {
+	display: inline-block;
+	padding: 0.75em 1.75em;
+	background-color: var( --theme-button-background );
+	color: var( --theme-button-text );
+	border: none;
+	border-radius: var( --theme-button-radius, 50px );
+	text-align: center;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background-color .2s, color .2s, border-color .2s, filter .2s, transform .2s;
+
+	&:hover {
+		background-color: var( --theme-button-background-hover, var( --theme-button-background ) );
+		color: var( --theme-button-text-hover, var( --theme-button-text ) );
+		filter: brightness( 0.94 );
+		transform: translateY( -1px );
+	}
+
+	&.secondary {
+		background-color: transparent;
+		border: 2px solid var( --theme-button-background );
+		color: inherit;
+
+		&:hover {
+			background-color: var( --theme-button-background );
+			color: var( --theme-button-text );
+		}
+	}
+}
+
+.cta-wrap {
+	gap: 1rem;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.cta-style-inverted {
+	.cta.primary {
+		background-color: var( --theme-button-inverted-background, #{$accent} );
+		color: var( --theme-button-inverted-text, #{$lime} );
+	}
+}
+.cta-shadow {
+	.cta {
+		box-shadow: 0 4px 4px rgba( 0, 0, 0, 0.25 );
+	}
+}
+.cta-size-small {
+	.cta {
+		font-size: 18px;
+	}
+}
+.cta-size-large {
+	.cta {
+		font-size: 49px;
+		padding: 0.6em 2em;
+
+		@media ( max-width: $mobile_wide ) {
+			font-size: 28px;
+		}
+	}
+}

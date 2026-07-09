@@ -3,102 +3,107 @@
 section.card-grid {
 	.entries {
 		flex-wrap: wrap;
-		gap: 16px;
+		gap: 1.5rem;
 	}
 	.entry {
+		display: block;
 		text-decoration: none;
-		width: calc(50% - 16px);
-		margin-bottom: 16px;
+		width: calc( 50% - 0.75rem );
+		padding: 1.5rem;
+		background-color: #fff;
+		border: 1px solid rgba( 132, 81, 163, 0.12 );
+		border-radius: 12px;
+		box-shadow: 0 2px 12px rgba( 0, 0, 0, 0.04 );
 
 		@media ( max-width: $mobile_wide ) {
 			width: 100%;
+		}
+	}
+	&.cols-3 {
+		.entry {
+			width: calc( ( 100% - 3rem ) / 3 );
+
+			@media ( max-width: $tablet_tall ) {
+				width: calc( 50% - 0.75rem );
+			}
+			@media ( max-width: $mobile_wide ) {
+				width: 100%;
+			}
 		}
 	}
 	.entry-inner {
 		height: 100%;
 		display: flex;
 		flex-direction: column;
+		gap: 1rem;
+	}
+	.image-wrap {
+		img ,
+		svg {
+			display: block;
+			width: auto;
+			height: 50px;
+		}
+	}
+	a.entry {
+		transition: box-shadow .2s;
+
+		h3 {
+			transition: color .2s;
+		}
+		svg path {
+			transition: fill .2s;
+		}
+		&:not(.light):hover {
+			h3 {
+				color: var( --theme-accent, #{$accent} );
+			}
+			.image-wrap svg path {
+				fill: var( --theme-accent, #{$accent} );
+			}
+		}
 	}
 	.entry-text {
 		display: flex;
 		flex-direction: column;
-		gap: 16px; 
+		gap: 0.75rem;
 		height: inherit;
-		padding: 1.5rem;
-		border-radius: 4px;
-		background-color: rgba(255, 255, 255, 0.50);
-		
+
+		.eyebrow-chip {
+			align-self: center;
+			padding: 0.6em 1.6em;
+			font-size: 16px;
+			box-shadow: none;
+		}
 		.cta {
 			margin-top: auto;
 			width: fit-content;
 		}
-		p {
-			color: var(--theme-fonts-body-text) !important;
-			margin-bottom: 1rem;
-		}
-		strong {
-			font-family: 'gordita-bold';
-			font-weight: 700;
-		}
-		ul {
-			padding-left: 0;
-			margin: 0;
-
-			br {
-				display: none;
-			}
-		}
-		li {
-			display: flex;
-			align-items: center;
-			margin-bottom: 0.5rem;
-			color: #114;
-			color: var(--Text-Default, #114);
-			font-family: 'gordita-medium';
-			font-size: 16px;
-			font-style: normal;
-			font-weight: 500;
-
-			&::marker {
-				display: none;
-			}
-			&::before {
-				content: "";
-				display: block;
-				min-width: 22px;
-				height: 22px;
-				margin-right: 10px;
-				margin-bottom: 4px;
-				background: url( /wp-content/themes/bmr/assets/img/check-circle.png ) no-repeat;
-				background-size: cover;
-			}
-		}
 	}
-
-	&.split-text {
-		.entries {
-			gap: 4rem;
-			@media ( max-width: $mobile_wide ) {
-				gap: 2rem;
-			}
-		}
+	.entry.light {
+		border-color: transparent;
+	}
+	&.layout-inline {
 		.entry {
-			width: calc(50% - 4rem);
-
-			@media ( max-width: $tablet_wide ) {
-				width: calc(50% - 2rem);
-			}
-			@media ( max-width: $mobile_wide ) {
-				width: 100%;
-			}
+			padding: 2.5rem 2rem;
+		}
+		.entry-inner {
+			flex-direction: row;
+			align-items: center;
+			gap: 1.5rem;
 		}
 		.entry-text {
-			border: 0;
-			padding: 0;
-			background-color: transparent;
+			justify-content: center;
+		}
+		.image-wrap {
+			img ,
+			svg {
+				height: 100px;
+			}
 		}
 		h3 {
-			color: #F26419;
+			font-size: 25px;
+			line-height: 1.02;
 		}
 	}
 }

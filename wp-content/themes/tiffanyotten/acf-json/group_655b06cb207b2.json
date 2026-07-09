@@ -37,60 +37,6 @@
             "return_format": "array"
         },
         {
-            "key": "field_6a31dc6878dd0",
-            "label": "Login CTA Title",
-            "name": "login_cta_title",
-            "aria-label": "",
-            "type": "text",
-            "instructions": "",
-            "required": 0,
-            "conditional_logic": 0,
-            "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
-            "default_value": "",
-            "maxlength": "",
-            "allow_in_bindings": 0,
-            "placeholder": "",
-            "prepend": "",
-            "append": ""
-        },
-        {
-            "key": "field_665ce07992e6b",
-            "label": "Login CTA",
-            "name": "login_cta",
-            "aria-label": "",
-            "type": "link",
-            "instructions": "",
-            "required": 0,
-            "conditional_logic": 0,
-            "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
-            "return_format": "array"
-        },
-        {
-            "key": "field_6a31c57f8be1a",
-            "label": "Login CTA 2",
-            "name": "login_cta_2",
-            "aria-label": "",
-            "type": "link",
-            "instructions": "",
-            "required": 0,
-            "conditional_logic": 0,
-            "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
-            "return_format": "array",
-            "allow_in_bindings": 0
-        },
-        {
             "key": "field_6576dab7e2354",
             "label": "Menu Items",
             "name": "",
@@ -329,5 +275,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1781652616
+    "modified": 1783209600
 }

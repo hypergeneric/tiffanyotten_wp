@@ -100,7 +100,6 @@
 	position: sticky;
 	height: max-content;
 	z-index: 2;
-	box-sizing: border-box;
 	width: 220px;
 	display: flex;
 	flex-direction: column;
@@ -248,7 +247,6 @@
 		padding: 10px 14px;
 		padding-left: 40px;
 		width: 100%;
-		box-sizing: border-box;
 		border: none;
 		color: rgba(17, 17, 68, 0.80);
 		outline: none;
@@ -379,7 +377,6 @@
 
 
 .tooltip {
-	box-sizing: border-box;
 	width: 20px;
 	height: 20px;
 	border-radius: 50%;

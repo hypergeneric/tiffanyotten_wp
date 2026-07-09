@@ -4,11 +4,7 @@ $args    = isset( $args ) ? $args : null;
 $block   = isset( $block ) ? $block : (isset($args['block']) ? $args['block'] : null);
 $context = isset( $context ) && is_array( $context ) ? $context : [];
 
-$eyebrow           = tiffanyotten_block_value( 'eyebrow', $args );
-$title             = tiffanyotten_block_value( 'title', $args );
-$title_size        = tiffanyotten_block_value( 'title_size', $args );
-$blurb             = tiffanyotten_block_value( 'blurb', $args );
-$blurb_size        = tiffanyotten_block_value( 'blurb_size', $args );
+$heading           = tiffanyotten_heading_args( $args );
 
 $form_embed        = tiffanyotten_block_value( 'form_embed', $args );
 
@@ -23,7 +19,6 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $con
 
 ?>
 <section id="<?php echo esc_attr($blockid); ?>" class="<?php echo esc_attr($blockslug); ?>">
-	<div class="bg-deco"></div>
 	<?php print_background_markup( $args ); ?>
 	<div class="container">
 		<div class="inner">
@@ -32,15 +27,9 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $con
 
 				<div class="content-inner flex flex-v">
 
-					<?php if ( $eyebrow || $title || $blurb ) : ?>
+					<?php if ( $heading['eyebrow'] || $heading['title'] || $heading['blurb'] ) : ?>
 						<div class="heading">
-							<?php get_template_part( 'templates/_partials/heading', null, [
-								'eyebrow' => $eyebrow,
-								'title' => $title,
-								'title_size' => $title_size,
-								'blurb' => $blurb,
-								'blurb_size' => $blurb_size,
-							] ); ?>
+							<?php get_template_part( 'templates/_partials/heading', null, $heading ); ?>
 						</div>
 					<?php endif; ?>
 

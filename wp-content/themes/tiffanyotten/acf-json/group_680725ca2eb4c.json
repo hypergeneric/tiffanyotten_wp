@@ -68,15 +68,7 @@
             "type": "clone",
             "instructions": "",
             "required": 0,
-            "conditional_logic": [
-                [
-                    {
-                        "field": "field_680725ca3f67c",
-                        "operator": "==",
-                        "value": "homepage"
-                    }
-                ]
-            ],
+            "conditional_logic": 0,
             "wrapper": {
                 "width": "",
                 "class": "",
@@ -98,14 +90,7 @@
             "type": "clone",
             "instructions": "",
             "required": 0,
-            "conditional_logic": [
-                [
-                    {
-                        "field": "field_680725ca3fb1a",
-                        "operator": "!=empty"
-                    }
-                ]
-            ],
+            "conditional_logic": 0,
             "wrapper": {
                 "width": "",
                 "class": "",
@@ -147,7 +132,7 @@
             {
                 "param": "block",
                 "operator": "==",
-                "value": "acf\/page-head"
+                "value": "acf/page-head"
             }
         ]
     ],
@@ -161,5 +146,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1778710493
+    "modified": 1783553722
 }

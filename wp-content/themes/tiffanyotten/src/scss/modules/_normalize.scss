@@ -11,6 +11,12 @@ html {
 	/* 2 */
 	-webkit-text-size-adjust: 100%;
 	/* 2 */
+	box-sizing: border-box;
+}
+*,
+*::before,
+*::after {
+	box-sizing: inherit;
 }
 /**
  * Remove default margin.
@@ -98,7 +104,7 @@ abbr[title] {
  */
 b,
 strong {
-	font-weight: 500;
+	font-weight: 700;
 }
 /**
  * Address styling not present in Safari and Chrome.

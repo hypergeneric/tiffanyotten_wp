@@ -14,13 +14,8 @@ $context = isset( $context ) && is_array( $context ) ? $context : [];
 
 list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $context);
 
-$eyebrow          = tiffanyotten_block_value('eyebrow', $args);
-$title            = tiffanyotten_block_value('title', $args);
-$title_size       = tiffanyotten_block_value('title_size', $args);
-$blurb            = tiffanyotten_block_value('blurb', $args);
-$blurb_size       = tiffanyotten_block_value('blurb_size', $args);
-$primary_cta      = tiffanyotten_block_value('primary_cta', $args);
-$secondary_cta    = tiffanyotten_block_value('secondary_cta', $args);
+$heading          = tiffanyotten_heading_args( $args );
+$cta              = tiffanyotten_cta_args( $args );
 
 ?>
 <section id="<?php echo esc_attr($blockid); ?>" class="<?php echo esc_attr($blockslug); ?>"> 
@@ -28,20 +23,11 @@ $secondary_cta    = tiffanyotten_block_value('secondary_cta', $args);
 	<div class="container">
 		<div class="inner">
 
-			<?php if ( $eyebrow || $title || $blurb ) : ?>
+			<?php if ( $heading['eyebrow'] || $heading['title'] || $heading['blurb'] ) : ?>
 				<div class="heading">
-					<?php get_template_part( 'templates/_partials/heading', null, [
-						'eyebrow' => $eyebrow,
-						'title' => $title,
-						'title_size' => $title_size,
-						'blurb' => $blurb,
-						'blurb_size' => $blurb_size,
-					] ); ?>
-					<?php if ( $primary_cta || $secondary_cta ) : ?>
-						<?php get_template_part( 'templates/_partials/cta-group', null, [
-							'primary_cta' => $primary_cta,
-							'secondary_cta' => $secondary_cta,
-						] ); ?>
+					<?php get_template_part( 'templates/_partials/heading', null, $heading ); ?>
+					<?php if ( $cta['primary_cta'] || $cta['secondary_cta'] ) : ?>
+						<?php get_template_part( 'templates/_partials/cta-group', null, $cta ); ?>
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
