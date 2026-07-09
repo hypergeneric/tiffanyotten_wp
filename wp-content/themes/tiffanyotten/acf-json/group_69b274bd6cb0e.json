@@ -90,6 +90,29 @@
             "palette_colors": ""
         },
         {
+            "key": "field_6a68a1001201",
+            "label": "Accent Color",
+            "name": "themeoption_accent_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "Brand accent used for title highlights, chips and hover tints.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#9F3DDB",
+            "enable_opacity": 0,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
             "key": "field_69b27550342c7",
             "label": "Content Width",
             "name": "themeoption_content_width_int",
@@ -203,7 +226,7 @@
         },
         {
             "key": "field_6a0d1b7c105ad",
-            "label": "Navigation Height, Scroll\/Mobile",
+            "label": "Navigation Height, Scroll/Mobile",
             "name": "themeoption_navigation_height_mobile_int",
             "aria-label": "",
             "type": "number",
@@ -278,7 +301,7 @@
         },
         {
             "key": "field_6a0d2f9d7e935",
-            "label": "Logo, Hover\/Scroll\/Mobile Background",
+            "label": "Logo, Hover/Scroll/Mobile Background",
             "name": "themeoption_navigation_logo_hover_image",
             "aria-label": "",
             "type": "image",
@@ -356,7 +379,7 @@
         },
         {
             "key": "field_6a0d2fbd7e936",
-            "label": "Mobile Logo, Hover\/Scroll\/Mobile Background",
+            "label": "Mobile Logo, Hover/Scroll/Mobile Background",
             "name": "themeoption_navigation_logo_hover_mobile_image",
             "aria-label": "",
             "type": "image",
@@ -612,7 +635,7 @@
         },
         {
             "key": "field_6a0d1a5c12560",
-            "label": "Background Color, Hover\/Scroll\/Mobile Background",
+            "label": "Background Color, Hover/Scroll/Mobile Background",
             "name": "themeoption_navigation_background_hover_color",
             "aria-label": "",
             "type": "color_picker",
@@ -635,7 +658,7 @@
         },
         {
             "key": "field_6a0d1a5e12561",
-            "label": "Foreground Color, Hover\/Scroll\/Mobile Background (copy)",
+            "label": "Foreground Color, Hover/Scroll/Mobile Background (copy)",
             "name": "themeoption_navigation_foreground_hover_color",
             "aria-label": "",
             "type": "color_picker",
@@ -658,7 +681,7 @@
         },
         {
             "key": "field_6a0d1a6212562",
-            "label": "Highlight Color, Hover\/Scroll\/Mobile Background (copy)",
+            "label": "Highlight Color, Hover/Scroll/Mobile Background (copy)",
             "name": "themeoption_navigation_highlight_hover_color",
             "aria-label": "",
             "type": "color_picker",
@@ -694,7 +717,7 @@
                 "id": ""
             },
             "choices": {
-                "default": "<img src=\"\/wp-content\/themes\/tiffanyotten-bmr\/admin\/theme\/navigation\/default.png\" \/>"
+                "default": "<img src=\"/wp-content/themes/tiffanyotten-bmr/admin/theme/navigation/default.png\" />"
             },
             "default_value": "default",
             "return_format": "value",
@@ -898,6 +921,98 @@
                 "id": ""
             },
             "default_value": "#C6D500",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000f01",
+            "label": "Link Color ( Dark Text )",
+            "name": "themeoption_fonts_link_text_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#9F3DDB",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000f02",
+            "label": "Link Hover Color ( Dark Text )",
+            "name": "themeoption_fonts_link_text_hover_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000f03",
+            "label": "Link Color ( Light Text )",
+            "name": "themeoption_fonts_link_text_dark_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#C6D500",
+            "enable_opacity": 1,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a68a1000f04",
+            "label": "Link Hover Color ( Light Text )",
+            "name": "themeoption_fonts_link_text_dark_hover_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
             "enable_opacity": 1,
             "return_format": "string",
             "allow_in_bindings": 0,
@@ -1127,9 +1242,10 @@
                         "p.large": "Paragraph, Large",
                         "p.xlarge": "Paragraph, XLarge",
                         "blockquote": "Blockquote",
+                        "display": "Display",
                         "eyebrow": "Eyebrow",
                         "navitem": "Navigation",
-                        "cta": "CTA \/ Button"
+                        "cta": "CTA / Button"
                     },
                     "default_value": false,
                     "return_format": "value",
@@ -1579,5 +1695,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1783123200
+    "modified": 1783559484
 }

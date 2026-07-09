@@ -58,6 +58,21 @@ function tiffanyotten_block_value( $var, $args ) {
 	return isset( $args[$var] ) ? $args[$var] : get_field($var);
 }
 
+function tiffanyotten_heading_args( $args=null, $prefix='' ) {
+	return [
+		'eyebrow'       => tiffanyotten_block_value( $prefix . 'eyebrow', $args ),
+		'eyebrow_style' => tiffanyotten_block_value( $prefix . 'eyebrow_style', $args ),
+		'title'         => tiffanyotten_block_value( $prefix . 'title', $args ),
+		'title_size'    => tiffanyotten_block_value( $prefix . 'title_size', $args ),
+		'title_style'   => tiffanyotten_block_value( $prefix . 'title_style', $args ),
+		'title_weight'  => tiffanyotten_block_value( $prefix . 'title_weight', $args ),
+		'title_color'   => tiffanyotten_block_value( $prefix . 'title_color', $args ),
+		'blurb'         => tiffanyotten_block_value( $prefix . 'blurb', $args ),
+		'blurb_size'    => tiffanyotten_block_value( $prefix . 'blurb_size', $args ),
+		'blurb_color'   => tiffanyotten_block_value( $prefix . 'blurb_color', $args ),
+	];
+}
+
 function tiffanyotten_get_block_meta( $block, $classes=[], $args=null, $context=null ) {
 	$slug    = str_contains( $block['name'], '/' ) ? explode( "/", $block['name'] )[1] : $block['name'];
 	$id      = $slug . '-' . $block['id'];

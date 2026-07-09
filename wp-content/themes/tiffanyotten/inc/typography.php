@@ -268,7 +268,7 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 		$letter_spacing_desktop = isset( $size['letter_spacing_desktop'] ) ? (float) $size['letter_spacing_desktop'] : 0;
 		$letter_spacing_mobile  = isset( $size['letter_spacing_mobile'] ) ? (float) $size['letter_spacing_mobile'] : 0;
 
-		$allowed_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'p.small', 'p.lead', 'p.large', 'p.xlarge', 'blockquote', 'eyebrow', 'navitem', 'cta' ];
+		$allowed_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'p.small', 'p.lead', 'p.large', 'p.xlarge', 'blockquote', 'eyebrow', 'navitem', 'cta', 'display' ];
 
 		if ( empty( $tag ) || empty( $font_face ) || ! in_array( $tag, $allowed_tags, true ) ) {
 			continue;
@@ -280,6 +280,8 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 			$tag = ".eyebrow";
 		} else if ( $tag == 'cta' ) {
 			$tag = ".cta";
+		} else if ( $tag == 'display' ) {
+			$tag = ".display";
 		} else if ( strpos( $tag, 'p.' ) === 0 ) {
 			$class = '.' . $tag;
 			$tag   = $tag . ", " . $class . ", " . $class . " p, " . $class . " ul, " . $class . " ol";
@@ -287,7 +289,14 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 			$tag = $tag . ", ." . $tag;
 		}
 
-		$selector = trim( $selector_prefix . ' ' . $tag );
+		$selector = $tag;
+		if ( $selector_prefix ) {
+			$parts = array_map( 'trim', explode( ',', $tag ) );
+			foreach ( $parts as $i => $part ) {
+				$parts[ $i ] = $selector_prefix . ' ' . $part;
+			}
+			$selector = implode( ', ', $parts );
+		}
 
 		$font_sizes      = cr_log_interval( count( $breakpoints ), $size_mobile, $size_desktop, 0 );
 		$line_heights    = cr_log_interval( count( $breakpoints ), $line_height_mobile, $line_height_desktop, 2 );

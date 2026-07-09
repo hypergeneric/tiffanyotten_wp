@@ -13,6 +13,7 @@ include( get_template_directory() . '/inc/shortcodes.php' );
 include( get_template_directory() . '/inc/walkers.php' );
 include( get_template_directory() . '/inc/media.php' );
 include( get_template_directory() . '/inc/typography.php' );
+include( get_template_directory() . '/inc/editor.php' );
 
 function my_custom_mime_types($mimes) {
     $mimes['otf'] = 'font/otf';

@@ -12,16 +12,9 @@ section.basic-heading {
 
 		.eyebrow {
 			margin-bottom: 0;
-			color: #F26419;
 		}
-		.body-text {
-			max-width: 768px;
-			margin: 0 auto;
-
-			strong {
-				font-family: 'gordita-bold';
-				font-weight: 700;
-			}
+		.eyebrow-chip {
+			align-self: center;
 		}
 		br {
 			@media (max-width: $tablet_wide ) {
@@ -72,6 +65,10 @@ section.basic-heading {
 		text-align: left;
 		margin: 0;
 		max-width: 50%;
+
+		.eyebrow-chip {
+			align-self: flex-start;
+		}
 
 		@media ( max-width: $tablet_wide ) {
 			max-width: 80%

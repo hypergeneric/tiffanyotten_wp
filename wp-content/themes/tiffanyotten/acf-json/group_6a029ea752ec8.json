@@ -93,14 +93,7 @@
             "type": "clone",
             "instructions": "",
             "required": 0,
-            "conditional_logic": [
-                [
-                    {
-                        "field": "field_680725ca3fb1a",
-                        "operator": "!=empty"
-                    }
-                ]
-            ],
+            "conditional_logic": 0,
             "wrapper": {
                 "width": "",
                 "class": "",
@@ -142,7 +135,7 @@
             {
                 "param": "block",
                 "operator": "==",
-                "value": "acf\/inline-cta-group"
+                "value": "acf/inline-cta-group"
             }
         ]
     ],
@@ -156,5 +149,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1778697317
+    "modified": 1783553722
 }
