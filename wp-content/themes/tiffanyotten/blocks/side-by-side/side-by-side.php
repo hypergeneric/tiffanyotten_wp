@@ -58,7 +58,7 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [ 'image-'.$ima
 					<div class="graphic media-body">
 						<?php get_template_part( 'templates/_partials/heading', null, $media_heading ); ?>
 						<?php if ( $media_link ) : ?>
-							<a class="media-link" href="<?php echo esc_url( $media_link['url'] ); ?>" target="<?php echo esc_attr( $media_link['target'] ); ?>"><?php echo $media_link['title']; ?></a>
+							<a class="media-link" href="<?php echo esc_url( $media_link['url'] ); ?>" target="<?php echo esc_attr( $media_link['target'] ); ?>"><?php echo $media_link['title']; ?><svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="13" r="12" stroke="currentColor" stroke-width="2"/><path d="M6.36401 6.36401C5.81173 6.36401 5.36401 6.81173 5.36401 7.36401C5.36401 7.9163 5.81173 8.36401 6.36401 8.36401L6.36401 7.36401L6.36401 6.36401ZM8.07112 8.07112C8.46164 7.6806 8.46164 7.04743 8.07112 6.65691L1.70716 0.292946C1.31663 -0.0975781 0.68347 -0.097578 0.292945 0.292946C-0.0975791 0.683471 -0.0975791 1.31664 0.292945 1.70716L5.9498 7.36401L0.292946 13.0209C-0.097578 13.4114 -0.0975779 14.0446 0.292946 14.4351C0.683471 14.8256 1.31664 14.8256 1.70716 14.4351L8.07112 8.07112ZM6.36401 7.36401L6.36401 8.36401L7.36401 8.36401L7.36401 7.36401L7.36401 6.36401L6.36401 6.36401L6.36401 7.36401Z" fill="currentColor" transform="translate(9 5.5)"/></svg></a>
 						<?php endif; ?>
 					</div>
 				<?php elseif ( $media_type === 'logos' ) : ?>
@@ -76,7 +76,7 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [ 'image-'.$ima
 							<?php endif; ?>
 						</div>
 						<?php if ( $media_link ) : ?>
-							<a class="media-link" href="<?php echo esc_url( $media_link['url'] ); ?>" target="<?php echo esc_attr( $media_link['target'] ); ?>"><?php echo $media_link['title']; ?></a>
+							<a class="media-link" href="<?php echo esc_url( $media_link['url'] ); ?>" target="<?php echo esc_attr( $media_link['target'] ); ?>"><?php echo $media_link['title']; ?><svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="13" r="12" stroke="currentColor" stroke-width="2"/><path d="M6.36401 6.36401C5.81173 6.36401 5.36401 6.81173 5.36401 7.36401C5.36401 7.9163 5.81173 8.36401 6.36401 8.36401L6.36401 7.36401L6.36401 6.36401ZM8.07112 8.07112C8.46164 7.6806 8.46164 7.04743 8.07112 6.65691L1.70716 0.292946C1.31663 -0.0975781 0.68347 -0.097578 0.292945 0.292946C-0.0975791 0.683471 -0.0975791 1.31664 0.292945 1.70716L5.9498 7.36401L0.292946 13.0209C-0.097578 13.4114 -0.0975779 14.0446 0.292946 14.4351C0.683471 14.8256 1.31664 14.8256 1.70716 14.4351L8.07112 8.07112ZM6.36401 7.36401L6.36401 8.36401L7.36401 8.36401L7.36401 7.36401L7.36401 6.36401L6.36401 6.36401L6.36401 7.36401Z" fill="currentColor" transform="translate(9 5.5)"/></svg></a>
 						<?php endif; ?>
 					</div>
 				<?php elseif ($hero_image || $hero_video || $hero_video_url) : ?>

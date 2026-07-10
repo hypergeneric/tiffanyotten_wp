@@ -145,6 +145,7 @@ section {
 
 	.eyebrow-chip.eyebrow-chip {
 		font-size: 35px;
+		letter-spacing: 0;
 		text-transform: uppercase;
 
 		@media ( max-width: $mobile_wide ) {

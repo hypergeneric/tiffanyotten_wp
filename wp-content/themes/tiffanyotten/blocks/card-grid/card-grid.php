@@ -4,12 +4,14 @@ $args    = isset( $args ) ? $args : null;
 $block   = isset( $block ) ? $block : (isset($args['block']) ? $args['block'] : null);
 $context = isset( $context ) && is_array( $context ) ? $context : [];
 
-$columns = tiffanyotten_block_value('columns', $args);
-$layout  = tiffanyotten_block_value('layout', $args);
+$columns     = tiffanyotten_block_value('columns', $args);
+$layout      = tiffanyotten_block_value('layout', $args);
+$card_shadow = tiffanyotten_block_value('card_shadow', $args);
 
 list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [
 	'cols-' . ( $columns ? $columns : '2' ),
 	'layout-' . ( $layout ? $layout : 'stacked' ),
+	( $card_shadow ? 'cards-shadow' : '' ),
 ], $args, $context);
 
 ?>
