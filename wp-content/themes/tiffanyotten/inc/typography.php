@@ -311,7 +311,7 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 		}
 
 		if ( $tag == 'p' ) {
-			$tag = "p, ul, ol";
+			$tag = "p, ul, ol, .p";
 		} else if ( $tag == 'eyebrow' ) {
 			$tag = ".eyebrow";
 		} else if ( $tag == 'cta' ) {

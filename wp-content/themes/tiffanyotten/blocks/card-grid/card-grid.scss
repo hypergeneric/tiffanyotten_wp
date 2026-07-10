@@ -19,6 +19,11 @@ section.card-grid {
 			width: 100%;
 		}
 	}
+	&.cards-shadow {
+		.entry {
+			box-shadow: 0 4px 4px rgba( 0, 0, 0, 0.25 );
+		}
+	}
 	&.cols-3 {
 		.entry {
 			width: calc( ( 100% - 3rem ) / 3 );
@@ -71,9 +76,14 @@ section.card-grid {
 
 		.eyebrow-chip {
 			align-self: center;
-			padding: 0.6em 1.6em;
-			font-size: 16px;
+			padding: 0.75em 2.25em;
+			font-size: 20px;
 			box-shadow: none;
+		}
+		.body-text ,
+		.body-text p {
+			font-size: 18px;
+			line-height: 1.29;
 		}
 		.cta {
 			margin-top: auto;

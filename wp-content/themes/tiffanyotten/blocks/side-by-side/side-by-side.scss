@@ -81,18 +81,11 @@ section.side-by-side {
 		text-decoration: none;
 		color: var( --theme-fonts-link-text, #{$accent} );
 
-		&::after {
-			content: "\276F";
-			display: inline-block;
-			width: 1.4em;
-			height: 1.4em;
+		svg {
+			width: 26px;
+			height: 26px;
 			margin-left: 0.5em;
-			border: 1px solid currentColor;
-			border-radius: 50%;
-			font-size: 0.75em;
-			font-style: normal;
-			line-height: 1.4em;
-			text-align: center;
+			vertical-align: middle;
 		}
 	}
 	.media-body {
