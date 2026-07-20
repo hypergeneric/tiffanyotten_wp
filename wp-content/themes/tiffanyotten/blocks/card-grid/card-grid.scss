@@ -28,7 +28,7 @@ section.card-grid {
 		.entry {
 			width: calc( ( 100% - 3rem ) / 3 );
 
-			@media ( max-width: $tablet_tall ) {
+			@media ( max-width: $tablet_wide ) {
 				width: calc( 50% - 0.75rem );
 			}
 			@media ( max-width: $mobile_wide ) {
@@ -104,11 +104,17 @@ section.card-grid {
 		}
 		.entry-text {
 			justify-content: center;
+			min-width: 0;
 		}
 		.image-wrap {
+			flex-shrink: 0;
+			width: 28%;
+			max-width: 100px;
+
 			img ,
 			svg {
-				height: 100px;
+				width: 100%;
+				height: auto;
 			}
 		}
 		h3 {
