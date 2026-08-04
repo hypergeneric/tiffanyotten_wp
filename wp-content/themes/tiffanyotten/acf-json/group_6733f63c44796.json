@@ -106,7 +106,7 @@
             "name": "gravity_form_id",
             "aria-label": "",
             "type": "select",
-            "instructions": "Select a Gravity Form to embed. Preferred over custom code.",
+            "instructions": "",
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
@@ -119,7 +119,7 @@
             "return_format": "value",
             "multiple": 0,
             "allow_null": 1,
-            "ui": 1,
+            "ui": 0,
             "ajax": 0,
             "placeholder": "— Select a form —"
         },
@@ -129,7 +129,7 @@
             "name": "form_embed",
             "aria-label": "",
             "type": "acf_code_field",
-            "instructions": "Optional fallback: paste a Gravity Forms shortcode or other embed HTML. Used only when no Gravity Form is selected above. Shortcodes are processed.",
+            "instructions": "Only if no form selected.",
             "required": 0,
             "conditional_logic": [
                 [
@@ -231,5 +231,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1785802800
+    "modified": 1785805800
 }

@@ -52,4 +52,34 @@ section.form-embed {
 		position: relative;
 		z-index: 3;
 	}
+
+	&.no-media {
+		.contentf {
+			justify-content: center;
+		}
+
+		.content-inner {
+			width: 100%;
+			max-width: 640px;
+			margin-left: auto;
+			margin-right: auto;
+			align-items: center;
+			text-align: center;
+		}
+
+		.heading ,
+		.heading-content {
+			align-items: center;
+			text-align: center;
+		}
+
+		.form-wrapper {
+			width: 100%;
+			max-width: 560px;
+		}
+
+		.gform_wrapper {
+			text-align: left;
+		}
+	}
 }

@@ -1,11 +1,6 @@
 <?php
 /**
- * Sitewide Gravity Forms popup.
- *
- * Open via CTA links pointing to the configured hash (default #form-popup)
- * or elements with class .js-form-popup.
- *
- * @package tiffanyotten
+ * Sitewide form popup. Opens via configured hash or .js-form-popup.
  */
 
 $form_id = tiffanyotten_popup_form_id();

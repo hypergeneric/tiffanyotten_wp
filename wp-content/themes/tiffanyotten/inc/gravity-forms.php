@@ -1,31 +1,12 @@
 <?php
 /**
- * Gravity Forms helpers: popup, form lists, enqueue, rendering.
- *
- * @package tiffanyotten
+ * Gravity Forms: popup, ACF choices, enqueue, render helpers.
  */
 
-/**
- * Popup form ID from Site Options (filterable).
- *
- * @return int
- */
 function tiffanyotten_popup_form_id() {
-	$form_id = absint( get_field( 'popup_form_id', 'options' ) );
-
-	/**
-	 * Filter the Gravity Forms ID used in the sitewide popup.
-	 *
-	 * @param int $form_id Form ID.
-	 */
-	return (int) apply_filters( 'tiffanyotten_popup_form_id', $form_id );
+	return (int) apply_filters( 'tiffanyotten_popup_form_id', absint( get_field( 'popup_form_id', 'options' ) ) );
 }
 
-/**
- * Hash used to open the sitewide form popup (always includes leading #).
- *
- * @return string
- */
 function tiffanyotten_popup_form_hash() {
 	$hash = get_field( 'popup_form_hash', 'options' );
 	$hash = is_string( $hash ) ? trim( $hash ) : '';
@@ -36,19 +17,9 @@ function tiffanyotten_popup_form_hash() {
 		$hash = 'form-popup';
 	}
 
-	/**
-	 * Filter the hash that opens the sitewide form popup.
-	 *
-	 * @param string $hash Hash including leading #.
-	 */
 	return (string) apply_filters( 'tiffanyotten_popup_form_hash', '#' . $hash );
 }
 
-/**
- * Choices map of Gravity Forms for ACF select fields.
- *
- * @return array<int|string, string>
- */
 function tiffanyotten_gravity_form_choices() {
 	$choices = [
 		'' => __( '— Select a form —', 'tiffanyotten' ),
@@ -75,12 +46,6 @@ function tiffanyotten_gravity_form_choices() {
 	return $choices;
 }
 
-/**
- * Populate ACF select fields with Gravity Forms.
- *
- * @param array $field ACF field.
- * @return array
- */
 function tiffanyotten_acf_load_gravity_form_choices( $field ) {
 	$field['choices'] = tiffanyotten_gravity_form_choices();
 	return $field;
@@ -88,13 +53,6 @@ function tiffanyotten_acf_load_gravity_form_choices( $field ) {
 add_filter( 'acf/load_field/name=popup_form_id', 'tiffanyotten_acf_load_gravity_form_choices' );
 add_filter( 'acf/load_field/name=gravity_form_id', 'tiffanyotten_acf_load_gravity_form_choices' );
 
-/**
- * Render a Gravity Form by ID (AJAX, no title/description).
- *
- * @param int  $form_id Form ID.
- * @param bool $echo    Whether to echo.
- * @return string|void
- */
 function tiffanyotten_render_gravity_form( $form_id, $echo = true ) {
 	$form_id = absint( $form_id );
 
@@ -102,24 +60,9 @@ function tiffanyotten_render_gravity_form( $form_id, $echo = true ) {
 		return $echo ? null : '';
 	}
 
-	return gravity_form(
-		$form_id,
-		false,
-		false,
-		false,
-		null,
-		true,
-		0,
-		$echo
-	);
+	return gravity_form( $form_id, false, false, false, null, true, 0, $echo );
 }
 
-/**
- * Recursively collect gravity_form_id values from parsed blocks.
- *
- * @param array $blocks Parsed blocks.
- * @return int[]
- */
 function tiffanyotten_find_form_ids_in_blocks( $blocks ) {
 	$ids = [];
 
@@ -145,11 +88,6 @@ function tiffanyotten_find_form_ids_in_blocks( $blocks ) {
 	return $ids;
 }
 
-/**
- * Form IDs that need assets on the current request.
- *
- * @return int[]
- */
 function tiffanyotten_form_ids_to_enqueue() {
 	$ids = [];
 
@@ -167,17 +105,9 @@ function tiffanyotten_form_ids_to_enqueue() {
 
 	$ids = array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
 
-	/**
-	 * Filter Gravity Form IDs enqueued for the current request.
-	 *
-	 * @param int[] $ids Form IDs.
-	 */
 	return apply_filters( 'tiffanyotten_form_ids_to_enqueue', $ids );
 }
 
-/**
- * Enqueue Gravity Forms assets for popup + Form Embed blocks.
- */
 function tiffanyotten_enqueue_gravity_form_assets() {
 	if ( is_admin() || ! function_exists( 'gravity_form_enqueue_scripts' ) ) {
 		return;
@@ -189,9 +119,6 @@ function tiffanyotten_enqueue_gravity_form_assets() {
 }
 add_action( 'get_header', 'tiffanyotten_enqueue_gravity_form_assets' );
 
-/**
- * Pass popup hash to footer JS.
- */
 function tiffanyotten_localize_form_popup() {
 	if ( ! wp_script_is( 'tiffanyotten-script-footer', 'enqueued' ) && ! wp_script_is( 'tiffanyotten-script-footer', 'registered' ) ) {
 		return;
@@ -207,9 +134,6 @@ function tiffanyotten_localize_form_popup() {
 }
 add_action( 'wp_enqueue_scripts', 'tiffanyotten_localize_form_popup', 30 );
 
-/**
- * Render the form popup before </body>.
- */
 function tiffanyotten_render_form_popup() {
 	get_template_part( 'templates/_partials/form-popup' );
 }
