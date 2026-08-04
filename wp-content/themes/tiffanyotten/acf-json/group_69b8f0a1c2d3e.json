@@ -1,0 +1,127 @@
+{
+    "key": "group_69b8f0a1c2d3e",
+    "title": "Global - Forms",
+    "fields": [
+        {
+            "key": "field_69b8f0a1c2d3f",
+            "label": "Popup Form",
+            "name": "",
+            "aria-label": "",
+            "type": "tab",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "placement": "top",
+            "endpoint": 0,
+            "selected": 0
+        },
+        {
+            "key": "field_69b8f0a1c2d40",
+            "label": "Popup Form",
+            "name": "popup_form_id",
+            "aria-label": "",
+            "type": "select",
+            "instructions": "Gravity Form shown in the sitewide popup. Leave empty to disable the popup.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "choices": [],
+            "default_value": false,
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 1,
+            "ui": 1,
+            "ajax": 0,
+            "placeholder": "— Select a form —"
+        },
+        {
+            "key": "field_69b8f0a1c2d43",
+            "label": "Popup Trigger Hash",
+            "name": "popup_form_hash",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "URL hash that opens the popup (e.g. form-popup or contact). Point any CTA link to this hash, or add the class js-form-popup. Default: form-popup.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "form-popup",
+            "maxlength": "",
+            "placeholder": "form-popup",
+            "prepend": "#",
+            "append": ""
+        },
+        {
+            "key": "field_69b8f0a1c2d41",
+            "label": "Popup Heading",
+            "name": "popup_form_heading",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Optional. Leave blank to hide the heading.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_69b8f0a1c2d42",
+            "label": "Popup Intro",
+            "name": "popup_form_intro",
+            "aria-label": "",
+            "type": "textarea",
+            "instructions": "Optional short supporting line under the heading.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "rows": 3,
+            "placeholder": "",
+            "new_lines": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "options_page",
+                "operator": "==",
+                "value": "global-options"
+            }
+        ]
+    ],
+    "menu_order": 20,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "display_title": "",
+    "modified": 1785802800
+}

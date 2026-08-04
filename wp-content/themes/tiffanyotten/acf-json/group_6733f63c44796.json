@@ -101,12 +101,12 @@
             "selected": 0
         },
         {
-            "key": "field_6733f6ae96c6a",
-            "label": "Form Embed",
-            "name": "form_embed",
+            "key": "field_69b8f1b2d4e50",
+            "label": "Gravity Form",
+            "name": "gravity_form_id",
             "aria-label": "",
-            "type": "acf_code_field",
-            "instructions": "",
+            "type": "select",
+            "instructions": "Select a Gravity Form to embed. Preferred over custom code.",
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
@@ -114,8 +114,38 @@
                 "class": "",
                 "id": ""
             },
+            "choices": [],
+            "default_value": false,
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 1,
+            "ui": 1,
+            "ajax": 0,
+            "placeholder": "— Select a form —"
+        },
+        {
+            "key": "field_6733f6ae96c6a",
+            "label": "Custom Embed (optional)",
+            "name": "form_embed",
+            "aria-label": "",
+            "type": "acf_code_field",
+            "instructions": "Optional fallback: paste a Gravity Forms shortcode or other embed HTML. Used only when no Gravity Form is selected above. Shortcodes are processed.",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_69b8f1b2d4e50",
+                        "operator": "==empty"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
             "default_value": "",
-            "placeholder": "",
+            "placeholder": "[gravityform id=\"1\" title=\"false\" description=\"false\" ajax=\"true\"]",
             "mode": "htmlmixed",
             "theme": "monokai"
         },
@@ -201,5 +231,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1778557507
+    "modified": 1785802800
 }
