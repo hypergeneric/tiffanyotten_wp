@@ -16,7 +16,10 @@ $hero_video_url    = tiffanyotten_block_value('hero_video_url', $args);
 
 $hero_image['mobile']  = $hero_image_mobile ? $hero_image_mobile : false;
 
-list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $context);
+$has_media = ( $hero_image || $hero_video );
+$classes   = $has_media ? [] : [ 'no-media' ];
+
+list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, $classes, $args, $context);
 
 ?>
 <section id="<?php echo esc_attr($blockid); ?>" class="<?php echo esc_attr($blockslug); ?>">
@@ -44,7 +47,7 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $con
 
 				</div>
 
-				<?php if ($hero_image || $hero_video) : ?>
+				<?php if ( $has_media ) : ?>
 					<?php get_template_part( 'templates/_partials/hero-graphic', null, [
 						'hero_image'     => $hero_image,
 						'hero_video'     => $hero_video,
