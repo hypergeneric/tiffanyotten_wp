@@ -6,6 +6,7 @@ $context = isset( $context ) && is_array( $context ) ? $context : [];
 
 $heading           = tiffanyotten_heading_args( $args );
 
+$gravity_form_id   = absint( tiffanyotten_block_value( 'gravity_form_id', $args ) );
 $form_embed        = tiffanyotten_block_value( 'form_embed', $args );
 
 $hero_image        = tiffanyotten_block_value('hero_image', $args);
@@ -34,7 +35,11 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $con
 					<?php endif; ?>
 
 					<div class="form-wrapper">
-						<?php echo $form_embed; ?>
+						<?php if ( $gravity_form_id ) : ?>
+							<?php tiffanyotten_render_gravity_form( $gravity_form_id ); ?>
+						<?php elseif ( $form_embed ) : ?>
+							<?php echo do_shortcode( $form_embed ); ?>
+						<?php endif; ?>
 					</div>
 
 				</div>
@@ -50,5 +55,6 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [], $args, $con
 			</div>
 
 		</div>
+
 	</div>
 </section>

@@ -2,6 +2,7 @@
 
 	Navigation.start();
 	ResponsiveBackground.start();
+	FormPopup.start();
 	window.lazyLoadInstance = new LazyLoad({});
 
 	var scrollPos = 0;
@@ -27,10 +28,14 @@
 	$(window).on("load", checkPageScroll);
 	checkPageScroll();
 
-	// anchor tag scroll mechanism
+	// anchor tag scroll mechanism (skip form-popup hash)
 	function fix_anchor_click (e) {
+		var href = this.getAttribute('href');
+		if ( typeof FormPopup !== 'undefined' && FormPopup.isFormHash && FormPopup.isFormHash( href ) ) {
+			return;
+		}
 		e.preventDefault();
-		var selector = document.querySelector(this.getAttribute('href'));
+		var selector = document.querySelector(href);
 		if (selector) {
 			selector.scrollIntoView({
 				behavior: 'smooth'
