@@ -292,6 +292,21 @@ function cr_get_theme_typography_sizes_css( $selector_prefix = '' ) {
 	$breakpoints = [ 1400, 1280, 1080, 900, 640, 480 ];
 	$css         = [];
 
+	if ( ! $selector_prefix ) {
+		foreach ( $sizes as $size ) {
+			if ( empty( $size['tag'] ) || 'p' !== $size['tag'] || empty( $size['font_face'] ) ) {
+				continue;
+			}
+
+			$face = sanitize_text_field( $size['font_face'] );
+			$css[] = sprintf(
+				"body {\n\tfont-family: %s;\n}",
+				isset( $families[ $face ] ) ? $families[ $face ] : '"' . $face . '"'
+			);
+			break;
+		}
+	}
+
 	foreach ( $sizes as $size ) {
 		$tag                    = ! empty( $size['tag'] ) ? ( $size['tag'] ) : '';
 		$font_face              = ! empty( $size['font_face'] ) ? sanitize_text_field( $size['font_face'] ) : '';

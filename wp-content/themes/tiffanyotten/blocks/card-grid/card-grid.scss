@@ -10,8 +10,9 @@ section.card-grid {
 		text-decoration: none;
 		width: calc( 50% - 0.75rem );
 		padding: 1.5rem;
-		background-color: #fff;
-		border: 1px solid rgba( 132, 81, 163, 0.12 );
+		background-color: var( --theme-surface-card, #fff );
+		border: 1px solid rgba( 84, 48, 200, 0.12 );
+		border-color: color-mix( in srgb, var( --theme-accent, #{$accent} ) 12%, transparent );
 		border-radius: 12px;
 		box-shadow: 0 2px 12px rgba( 0, 0, 0, 0.04 );
 

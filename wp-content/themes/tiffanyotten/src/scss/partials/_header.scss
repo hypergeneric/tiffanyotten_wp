@@ -76,12 +76,13 @@ header.header {
 			height: var( --theme-navigation-height-mobile );
 		}
 	}
-	a {
+	a:not(.cta) {
 		transition: color .2s;
 		text-decoration: none;
 		color: inherit;
 	}
 	.cta {
+		text-decoration: none;
 		font-size: 18px;
 	}
 	.logo {
