@@ -10,7 +10,7 @@
 	$title_color    = isset( $args['title_color'] ) ? $args['title_color'] : null;
 	$title_class = $title_size;
 	if ( $title_style && $title_style !== 'default' ) {
-		$title_class = $title_style === 'chip' ? 'eyebrow-chip' : $title_style;
+		$title_class = $title_style === 'chip' ? 'eyebrow eyebrow-chip' : $title_style;
 	}
 	$title_css = '';
 	if ( $title_color ) {

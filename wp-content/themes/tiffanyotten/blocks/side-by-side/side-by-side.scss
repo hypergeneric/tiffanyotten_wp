@@ -45,7 +45,7 @@ section.side-by-side {
 		gap: 2.5rem;
 		padding: 2.5rem;
 		border-radius: 16px;
-		background-color: $lavender;
+		background-color: var( --theme-surface-tint, #{$lavender} );
 	}
 	.logos-title {
 		text-align: center;
@@ -85,7 +85,16 @@ section.side-by-side {
 			width: 26px;
 			height: 26px;
 			margin-left: 0.5em;
+			// vertical-align: middle sits on the x-height centre, which leaves the icon
+			// low against cap-height text; nudge it onto the optical centre.
+			position: relative;
+			top: -0.11em;
 			vertical-align: middle;
+			transition: transform .2s;
+		}
+
+		&:hover svg {
+			transform: translate( 3px, -3px );
 		}
 	}
 	.media-body {

@@ -113,6 +113,101 @@
             "palette_colors": ""
         },
         {
+            "key": "field_6a7b10c4e1a01",
+            "label": "Surface, Tint",
+            "name": "themeoption_surface_tint_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "Pale brand tint behind eyebrow chips, form inputs and the logos card.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#DED3F4",
+            "enable_opacity": 0,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a7b10c4e1a02",
+            "label": "Surface, Card",
+            "name": "themeoption_surface_card_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "Card background. Keep it lighter than any section background.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#FFFFFF",
+            "enable_opacity": 0,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a7b10c4e1a04",
+            "label": "Chip Text",
+            "name": "themeoption_chip_text_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "Text color inside eyebrow chips. Separate from Accent Color so highlighted words can differ.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#16072E",
+            "enable_opacity": 0,
+            "return_format": "string",
+            "allow_in_bindings": 0,
+            "show_custom_palette": 0,
+            "show_color_wheel": 1,
+            "custom_palette_source": "",
+            "palette_colors": ""
+        },
+        {
+            "key": "field_6a7b10c4e1a03",
+            "label": "Checklist Bullet Icon",
+            "name": "themeoption_checklist_icon_image",
+            "aria-label": "",
+            "type": "image",
+            "instructions": "Replaces the default checklist bullet. Leave empty to use the built-in icon.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "array",
+            "library": "all",
+            "min_width": "",
+            "min_height": "",
+            "min_size": "",
+            "max_width": "",
+            "max_height": "",
+            "max_size": "",
+            "mime_types": "svg,png",
+            "allow_in_bindings": 0,
+            "preview_size": "medium"
+        },
+        {
             "key": "field_69b27550342c7",
             "label": "Content Width",
             "name": "themeoption_content_width_int",
@@ -1741,5 +1836,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1783564894
+    "modified": 1783564896
 }
