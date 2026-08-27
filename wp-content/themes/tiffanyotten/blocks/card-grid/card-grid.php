@@ -29,14 +29,22 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [
 						$image      = get_sub_field('image');
 						$title      = get_sub_field('title');
 						$blurb      = get_sub_field('blurb');
-						$linkage    = get_sub_field('linkage');
+						$back       = get_sub_field('back_content');
+						$has_flip   = get_sub_field('card_flip') && $back;
+						$linkage    = $has_flip ? false : get_sub_field('linkage');
 						$card_color = get_sub_field('card_color');
 						$tag        = $linkage ? 'a' : 'div';
+						$flip_label = trim( wp_strip_all_tags( $title ) );
 						$entry_class = 'entry';
+						if ( $has_flip ) {
+							$entry_class .= ' has-flip';
+						}
 						$entry_style = '';
 						if ( $card_color ) {
 							$entry_class .= ' ' . tiffanyotten_light_or_dark( $card_color );
-							$entry_style  = 'background-color:' . $card_color . ';';
+							$entry_style  = $has_flip
+								? '--card-bg:' . $card_color . ';'
+								: 'background-color:' . $card_color . ';';
 						}
 						$eyebrow_style = '';
 						if ( $eyebrow_bg ) {
@@ -47,6 +55,7 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [
 						}
 					?>
 						<<?php echo $tag; ?> <?php if ( $linkage ) : ?>href="<?php echo $linkage['url']; ?>" target="<?php echo $linkage['target']; ?>" title="<?php echo $linkage['title']; ?>"<?php endif; ?> class="<?php echo esc_attr($entry_class); ?>"<?php if ( $entry_style ) : ?> style="<?php echo esc_attr($entry_style); ?>"<?php endif; ?>>
+							<?php if ( $has_flip ) : ?><div class="entry-flipper"><div class="entry-face entry-face--front"><?php endif; ?>
 							<span class="entry-inner">
 								<?php if ($image) { ?>
 								<span class="image-wrap">
@@ -68,6 +77,17 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [
 									<?php endif; ?>
 								</div>
 							</span>
+							<?php if ( $has_flip ) : ?>
+								<button type="button" class="entry-flip-btn" data-flip="open" aria-label="<?php echo esc_attr( $flip_label ? 'Show details about ' . $flip_label : 'Show details' ); ?>"><span aria-hidden="true"></span></button>
+							</div>
+							<div class="entry-face entry-face--back">
+								<span class="entry-inner">
+									<div class="p small body-text"><?php echo $back; ?></div>
+								</span>
+								<button type="button" class="entry-flip-btn entry-flip-btn--close" data-flip="close" aria-label="<?php echo esc_attr( $flip_label ? 'Hide details about ' . $flip_label : 'Hide details' ); ?>"><span aria-hidden="true"></span></button>
+							</div>
+							</div>
+							<?php endif; ?>
 						</<?php echo $tag; ?>>
 					<?php endwhile; ?>
 				</div>

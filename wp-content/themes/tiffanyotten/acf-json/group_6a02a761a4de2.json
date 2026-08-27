@@ -340,14 +340,72 @@
                     "parent_repeater": "field_6a02a761a925c"
                 },
                 {
+                    "key": "field_6a7c20d1f3a01",
+                    "label": "Enable Flip",
+                    "name": "card_flip",
+                    "aria-label": "",
+                    "type": "true_false",
+                    "instructions": "Card flips on click to reveal the back. Cannot be combined with Linkage.",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "50",
+                        "class": "",
+                        "id": ""
+                    },
+                    "message": "",
+                    "default_value": 0,
+                    "allow_in_bindings": 0,
+                    "ui": 1,
+                    "ui_on_text": "",
+                    "ui_off_text": ""
+                },
+                {
+                    "key": "field_6a7c20d1f3a02",
+                    "label": "Back Content",
+                    "name": "back_content",
+                    "aria-label": "",
+                    "type": "wysiwyg",
+                    "instructions": "Shown on the reverse of the card.",
+                    "required": 0,
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_6a7c20d1f3a01",
+                                "operator": "==",
+                                "value": "1"
+                            }
+                        ]
+                    ],
+                    "wrapper": {
+                        "width": "",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "tabs": "all",
+                    "toolbar": "Theme Minimal",
+                    "media_upload": 0,
+                    "delay": 0,
+                    "allow_in_bindings": 0
+                },
+                {
                     "key": "field_6a02a77763b3b",
                     "label": "Linkage",
                     "name": "linkage",
                     "aria-label": "",
                     "type": "link",
-                    "instructions": "",
+                    "instructions": "Turns the whole card into a link. Unavailable when Enable Flip is on.",
                     "required": 0,
-                    "conditional_logic": 0,
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_6a7c20d1f3a01",
+                                "operator": "!=",
+                                "value": "1"
+                            }
+                        ]
+                    ],
                     "wrapper": {
                         "width": "50",
                         "class": "",
@@ -401,5 +459,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1783651615
+    "modified": 1783651616
 }

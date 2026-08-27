@@ -123,4 +123,109 @@ section.card-grid {
 			line-height: 1.02;
 		}
 	}
+
+	.entry.has-flip {
+		position: relative;
+		padding: 0;
+		border: none;
+		background-color: transparent;
+		box-shadow: none;
+		cursor: pointer;
+		perspective: 900px;
+
+		.entry-flipper {
+			display: grid;
+			height: 100%;
+			transition: transform .55s;
+			transform-style: preserve-3d;
+			-webkit-transform-style: preserve-3d;
+		}
+		.entry-face {
+			grid-area: 1 / 1;
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			padding: 1.5rem;
+			border: 1px solid rgba( 84, 48, 200, 0.12 );
+			border-color: color-mix( in srgb, var( --theme-accent, #{$accent} ) 12%, transparent );
+			border-radius: 12px;
+			background-color: var( --card-bg, var( --theme-surface-card, #fff ) );
+			box-shadow: 0 2px 12px rgba( 0, 0, 0, 0.04 );
+			backface-visibility: hidden;
+			-webkit-backface-visibility: hidden;
+			// visibility, not backface-visibility, is what takes the hidden face out of the tab order
+			transition: visibility 0s .275s;
+		}
+		// the back is taken out of flow so the row height is set by the front alone
+		.entry-face--back {
+			position: absolute;
+			inset: 0;
+			visibility: hidden;
+			overflow: hidden;
+			transform: rotateY( 180deg );
+
+			// scroll inside the padding, not the face, so long copy never touches the card edge
+			.entry-inner {
+				flex: 1;
+				min-height: 0;
+				overflow-y: auto;
+				overscroll-behavior: contain;
+				scrollbar-width: thin;
+				scrollbar-color: color-mix( in srgb, currentColor 35%, transparent ) transparent;
+			}
+		}
+		&.light .entry-face {
+			border-color: transparent;
+		}
+		&:focus-within {
+			outline: 2px solid var( --theme-accent, #{$accent} );
+			outline-offset: 3px;
+			border-radius: 12px;
+		}
+		&.is-flipped {
+			.entry-flipper {
+				transform: rotateY( 180deg );
+			}
+			.entry-face--front {
+				visibility: hidden;
+			}
+			.entry-face--back {
+				visibility: visible;
+			}
+		}
+	}
+	// the whole card is the control, so the button is for keyboard and screen readers only
+	.entry-flip-btn {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: inherit;
+		white-space: nowrap;
+		clip-path: inset( 50% );
+		overflow: hidden;
+		cursor: pointer;
+	}
+	.entry-face--back .body-text ,
+	.entry-face--back .body-text p {
+		font-weight: 600;
+		font-size: 18px;
+		line-height: 1.08;
+		letter-spacing: 0;
+	}
+	&.cards-shadow .entry.has-flip .entry-face {
+		box-shadow: 0 4px 4px rgba( 0, 0, 0, 0.25 );
+	}
+	&.layout-inline .entry.has-flip .entry-face {
+		padding: 2.5rem 2rem;
+	}
+	@media ( prefers-reduced-motion: reduce ) {
+		.entry.has-flip .entry-flipper ,
+		.entry.has-flip .entry-face {
+			transition: none;
+		}
+	}
 }

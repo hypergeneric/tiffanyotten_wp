@@ -3,6 +3,7 @@
 	Navigation.start();
 	ResponsiveBackground.start();
 	FormPopup.start();
+	CardFlip.start();
 	window.lazyLoadInstance = new LazyLoad({});
 
 	var scrollPos = 0;
