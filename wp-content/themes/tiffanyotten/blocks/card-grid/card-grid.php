@@ -31,7 +31,6 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [
 						$blurb      = get_sub_field('blurb');
 						$back       = get_sub_field('back_content');
 						$has_flip   = get_sub_field('card_flip') && $back;
-						// A flipping card owns its own click, so it can never also be a link.
 						$linkage    = $has_flip ? false : get_sub_field('linkage');
 						$card_color = get_sub_field('card_color');
 						$tag        = $linkage ? 'a' : 'div';
@@ -43,8 +42,6 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [
 						$entry_style = '';
 						if ( $card_color ) {
 							$entry_class .= ' ' . tiffanyotten_light_or_dark( $card_color );
-							// A flip card colours its faces, never the container: an inline background on the
-							// container stays put while the faces turn, so the card reads as static mid-flip.
 							$entry_style  = $has_flip
 								? '--card-bg:' . $card_color . ';'
 								: 'background-color:' . $card_color . ';';
