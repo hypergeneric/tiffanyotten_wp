@@ -64,7 +64,7 @@ list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [
 								<?php } ?>
 								<div class="entry-text">
 									<?php if ($eyebrow) { ?>
-										<span class="eyebrow eyebrow-chip"<?php if ( $eyebrow_style ) : ?> style="<?php echo esc_attr($eyebrow_style); ?>"<?php endif; ?>><?php echo $eyebrow; ?></span>
+										<span class="eyebrow entry-banner"<?php if ( $eyebrow_style ) : ?> style="<?php echo esc_attr($eyebrow_style); ?>"<?php endif; ?>><?php echo $eyebrow; ?></span>
 									<?php } ?>
 									<?php if ($title) { ?>
 										<h3 class="h4"><?php echo $title; ?></h3>
