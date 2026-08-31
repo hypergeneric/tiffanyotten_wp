@@ -6,10 +6,12 @@ section.card-grid {
 		gap: 1.5rem;
 	}
 	.entry {
+		--card-pad-y: 1.5rem;
+		--card-pad-x: 1.5rem;
 		display: block;
 		text-decoration: none;
 		width: calc( 50% - 0.75rem );
-		padding: 1.5rem;
+		padding: var( --card-pad-y ) var( --card-pad-x );
 		background-color: var( --theme-surface-card, #fff );
 		border: 1px solid rgba( 84, 48, 200, 0.12 );
 		border-color: color-mix( in srgb, var( --theme-accent, #{$accent} ) 12%, transparent );
@@ -75,11 +77,17 @@ section.card-grid {
 		gap: 0.75rem;
 		height: inherit;
 
-		.eyebrow-chip {
-			align-self: center;
-			padding: 0.75em 2.25em;
+		.entry-banner {
+			align-self: stretch;
+			margin: calc( var( --card-pad-y ) * -1 ) calc( var( --card-pad-x ) * -1 ) 0.25rem;
+			padding: 0.75em var( --card-pad-x );
+			border-radius: 11px 11px 0 0;
+			background-color: var( --theme-surface-tint, #{$lavender} );
+			color: var( --theme-chip-text, var( --theme-accent, #{$accent} ) );
 			font-size: 20px;
-			box-shadow: none;
+			letter-spacing: 0;
+			text-align: center;
+			text-transform: uppercase;
 		}
 		.body-text ,
 		.body-text p {
@@ -96,7 +104,8 @@ section.card-grid {
 	}
 	&.layout-inline {
 		.entry {
-			padding: 2.5rem 2rem;
+			--card-pad-y: 2.5rem;
+			--card-pad-x: 2rem;
 		}
 		.entry-inner {
 			flex-direction: row;
@@ -145,7 +154,7 @@ section.card-grid {
 			position: relative;
 			display: flex;
 			flex-direction: column;
-			padding: 1.5rem;
+			padding: var( --card-pad-y ) var( --card-pad-x );
 			border: 1px solid rgba( 84, 48, 200, 0.12 );
 			border-color: color-mix( in srgb, var( --theme-accent, #{$accent} ) 12%, transparent );
 			border-radius: 12px;
@@ -169,7 +178,6 @@ section.card-grid {
 				flex: 1;
 				min-height: 0;
 				overflow-y: auto;
-				overscroll-behavior: contain;
 				scrollbar-width: thin;
 				scrollbar-color: color-mix( in srgb, currentColor 35%, transparent ) transparent;
 			}
@@ -218,9 +226,6 @@ section.card-grid {
 	}
 	&.cards-shadow .entry.has-flip .entry-face {
 		box-shadow: 0 4px 4px rgba( 0, 0, 0, 0.25 );
-	}
-	&.layout-inline .entry.has-flip .entry-face {
-		padding: 2.5rem 2rem;
 	}
 	@media ( prefers-reduced-motion: reduce ) {
 		.entry.has-flip .entry-flipper ,
