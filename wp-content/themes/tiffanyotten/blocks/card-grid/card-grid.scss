@@ -162,25 +162,11 @@ section.card-grid {
 			box-shadow: 0 2px 12px rgba( 0, 0, 0, 0.04 );
 			backface-visibility: hidden;
 			-webkit-backface-visibility: hidden;
-			// visibility, not backface-visibility, is what takes the hidden face out of the tab order
 			transition: visibility 0s .275s;
 		}
-		// the back is taken out of flow so the row height is set by the front alone
 		.entry-face--back {
-			position: absolute;
-			inset: 0;
 			visibility: hidden;
-			overflow: hidden;
 			transform: rotateY( 180deg );
-
-			// scroll inside the padding, not the face, so long copy never touches the card edge
-			.entry-inner {
-				flex: 1;
-				min-height: 0;
-				overflow-y: auto;
-				scrollbar-width: thin;
-				scrollbar-color: color-mix( in srgb, currentColor 35%, transparent ) transparent;
-			}
 		}
 		&.light .entry-face {
 			border-color: transparent;
@@ -202,7 +188,6 @@ section.card-grid {
 			}
 		}
 	}
-	// the whole card is the control, so the button is for keyboard and screen readers only
 	.entry-flip-btn {
 		position: absolute;
 		width: 1px;
