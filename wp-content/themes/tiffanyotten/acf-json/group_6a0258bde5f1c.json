@@ -195,6 +195,26 @@
             "palette_colors": ""
         },
         {
+            "key": "field_6a68a1001402",
+            "label": "Title Note",
+            "name": "title_note",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Optional. Appears beside the title.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
             "key": "field_6a0258bdea8f6",
             "label": "Blurb",
             "name": "blurb",
@@ -290,5 +310,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1783559956
+    "modified": 1788300000
 }

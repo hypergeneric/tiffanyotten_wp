@@ -8,6 +8,7 @@
 	$title_style    = isset( $args['title_style'] ) ? $args['title_style'] : null;
 	$title_weight    = isset( $args['title_weight'] ) ? $args['title_weight'] : null;
 	$title_color    = isset( $args['title_color'] ) ? $args['title_color'] : null;
+	$title_note    = isset( $args['title_note'] ) ? $args['title_note'] : null;
 	$title_class = $title_size;
 	if ( $title_style && $title_style !== 'default' ) {
 		$title_class = $title_style === 'chip' ? 'eyebrow eyebrow-chip' : $title_style;
@@ -31,7 +32,7 @@
 <?php if( $title || $blurb ): ?>
 	<div class="heading-content">
 		<?php if ( $title ) : ?>
-			<<?php echo $title_size; ?> class="<?php echo esc_attr( $title_class ); ?>"<?php if ( $title_css ) : ?> style="<?php echo esc_attr( $title_css ); ?>"<?php endif; ?>><?php echo $title; ?></<?php echo $title_size; ?>>
+			<<?php echo $title_size; ?> class="<?php echo esc_attr( $title_class ); ?>"<?php if ( $title_css ) : ?> style="<?php echo esc_attr( $title_css ); ?>"<?php endif; ?>><?php echo $title; ?><?php if ( $title_note ) : ?> <span class="title-note"><?php echo esc_html( $title_note ); ?></span><?php endif; ?></<?php echo $title_size; ?>>
 		<?php endif; ?>
 		<?php if ( $blurb ) : ?>
 			<div class="<?php echo esc_attr( $blurb_class ); ?>"<?php if ( $blurb_color ) : ?> style="color:<?php echo esc_attr( $blurb_color ); ?>;"<?php endif; ?>><?php echo $blurb; ?></div>

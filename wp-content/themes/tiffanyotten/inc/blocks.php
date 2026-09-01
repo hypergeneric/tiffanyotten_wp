@@ -67,6 +67,7 @@ function tiffanyotten_heading_args( $args=null, $prefix='' ) {
 		'title_style'   => tiffanyotten_block_value( $prefix . 'title_style', $args ),
 		'title_weight'  => tiffanyotten_block_value( $prefix . 'title_weight', $args ),
 		'title_color'   => tiffanyotten_block_value( $prefix . 'title_color', $args ),
+		'title_note'    => tiffanyotten_block_value( $prefix . 'title_note', $args ),
 		'blurb'         => tiffanyotten_block_value( $prefix . 'blurb', $args ),
 		'blurb_size'    => tiffanyotten_block_value( $prefix . 'blurb_size', $args ),
 		'blurb_color'   => tiffanyotten_block_value( $prefix . 'blurb_color', $args ),

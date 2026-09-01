@@ -12,6 +12,11 @@ section.testimonials-slider {
 			align-self: center;
 		}
 	}
+	.heading-content {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
 	.entries {
 		position: relative;
 		overflow: hidden;
