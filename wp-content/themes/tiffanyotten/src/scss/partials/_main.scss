@@ -170,7 +170,7 @@ section {
 		color: var( --theme-accent, #{$accent} );
 	}
 
-	.flip-hint {
+	.title-note {
 		margin-left: 0.75rem;
 		color: var( --theme-accent, #{$accent} );
 		font-size: 18px;
@@ -247,7 +247,7 @@ section {
 		.highlight {
 			color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
 		}
-		.flip-hint {
+		.title-note {
 			color: var( --theme-fonts-eyebrow-text-dark, #{$lime} );
 		}
 		h1, h2, h3, h4, h5, h6 {
