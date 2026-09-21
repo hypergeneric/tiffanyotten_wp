@@ -52,6 +52,7 @@ class MyTheme_Theme_Options_CSS {
 		add_action( 'acf/save_post', [ $this, 'maybe_regenerate_css' ], 20 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_theme_css' ], 0 );
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_theme_css' ], 0 );
+		add_action( 'enqueue_block_assets', [ $this, 'enqueue_theme_css' ], 0 );
 	}
 
 	public function maybe_regenerate_css( $post_id ) {

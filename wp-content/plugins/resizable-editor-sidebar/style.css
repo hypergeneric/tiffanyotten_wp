@@ -120,6 +120,3 @@
 	right: -5px;
 	top: -5px;
 }
-
-.interface-interface-skeleton__sidebar.ui-resizable-resizing{position: relative !important;}
-.interface-interface-skeleton__sidebar.ui-resizable-resizing:after{content:'';width:100%;height:100%;position:absolute;top:0;left:0;background:url('/wp-content/plugins/resizable-editor-sidebar/advert.svg') #ffffff;background-size:300px auto;background-position:center;background-repeat:no-repeat;}

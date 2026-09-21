@@ -18,6 +18,31 @@ function tiffanyotten_alt_load_scripts() {
 }
 add_action( 'wp_enqueue_scripts', 'tiffanyotten_alt_load_scripts' );
 
+/**
+ * The block editor iframe has its own document. Load the front-end stylesheet
+ * into that document through enqueue_block_assets so block previews use the
+ * same layout and theme styles as the front end.
+ */
+function tiffanyotten_enqueue_block_editor_content_assets() {
+	$stylesheet = '/assets/css/style.min.css';
+	if ( file_exists( get_stylesheet_directory() . '/assets/css-dev/style.css' ) ) {
+		$stylesheet = '/assets/css-dev/style.css';
+	}
+
+	$stylesheet_path = get_stylesheet_directory() . $stylesheet;
+	if ( ! file_exists( $stylesheet_path ) ) {
+		return;
+	}
+
+	wp_enqueue_style(
+		'tiffanyotten-style',
+		get_stylesheet_directory_uri() . $stylesheet,
+		array(),
+		filemtime( $stylesheet_path )
+	);
+}
+add_action( 'enqueue_block_assets', 'tiffanyotten_enqueue_block_editor_content_assets' );
+
 // kill old styles
 function tiffanyotten_dequeue_unnecessary_styles() {
 	$remove = [];
