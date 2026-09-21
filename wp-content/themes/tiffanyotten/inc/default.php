@@ -8,6 +8,13 @@ function tiffanyotten_setup() {
 	add_theme_support( 'automatic-feed-links' );
 	add_theme_support( 'post-thumbnails' );
 	add_theme_support( 'html5', array( 'search-form' ) );
+	add_theme_support( 'editor-styles' );
+
+	$editor_stylesheet = 'admin/css/style.css';
+	if ( file_exists( get_template_directory() . '/admin/css-dev/style.css' ) ) {
+		$editor_stylesheet = 'admin/css-dev/style.css';
+	}
+	add_editor_style( $editor_stylesheet );
 	global $content_width;
 	if ( ! isset( $content_width ) ) { $content_width = 1920; }
 	remove_theme_support( 'widgets-block-editor' );

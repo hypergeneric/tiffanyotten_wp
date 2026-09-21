@@ -1,7 +1,7 @@
 <?php /*
-   * Plugin Name: Resizable Editor Sidebar
+   * Plugin Name: Resizable Sidebar for the Gutenberg Block Editor
    * Description: Enables functionality to make the Gutenberg sidebar width resizable
-   * Version: 1.0.5
+   * Version: 1.3.0
    * Author: Toast Plugins
    * Author URI: https://www.toastplugins.co.uk/
    * Licence: GPLv2 or later

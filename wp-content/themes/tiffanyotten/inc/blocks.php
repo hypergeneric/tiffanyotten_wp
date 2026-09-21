@@ -326,4 +326,6 @@ function tiffanyotten_enqueue_all_acf_block_editor_assets() {
 	}
 }
 
-add_action( 'enqueue_block_editor_assets', 'tiffanyotten_enqueue_all_acf_block_editor_assets' );
+// Block styles must be enqueued through enqueue_block_assets so WordPress
+// loads them inside the iframe used by the block editor.
+add_action( 'enqueue_block_assets', 'tiffanyotten_enqueue_all_acf_block_editor_assets' );

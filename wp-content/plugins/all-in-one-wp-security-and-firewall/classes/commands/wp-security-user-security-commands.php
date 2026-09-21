@@ -55,6 +55,7 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 			if (validate_username($new_username)) {
 				if (AIOWPSecurity_Utility::check_user_exists($new_username)) {
 					$response['status'] = 'error';
+					/* translators: %s: Username */
 					$error = sprintf(__('Username: %s already exists, please enter another value.', 'all-in-one-wp-security-and-firewall'), $new_username);
 				} else {
 					// let's check if currently logged in username is 'admin'
@@ -66,8 +67,7 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 						$username_is_admin = false;
 					}
 					// Now let's change the username
-					$sql = $wpdb->prepare("UPDATE `" . $wpdb->users . "` SET user_login = '" . esc_sql($new_username) . "' WHERE user_login=%s", "admin");
-					$result = $wpdb->query($sql);
+					$result = $wpdb->query($wpdb->prepare("UPDATE `" . $wpdb->users . "` SET user_login = '" . esc_sql($new_username) . "' WHERE user_login=%s", "admin")); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- pcp check ignore this
 					if (false === $result) {
 						// There was an error updating the users table
 						$user_update_error = __('The database update operation of the user account failed.', 'all-in-one-wp-security-and-firewall');
@@ -79,9 +79,9 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 
 					// multisite considerations
 					if (is_multisite()) { // process sitemeta if we're in a multi-site situation
-						$oldAdmins = $wpdb->get_var("SELECT meta_value FROM `" . $wpdb->sitemeta . "` WHERE meta_key = 'site_admins'");
+						$oldAdmins = $wpdb->get_var("SELECT meta_value FROM `" . $wpdb->sitemeta . "` WHERE meta_key = 'site_admins'"); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- pcp check ignore this
 						$newAdmins = str_replace('5:"admin"', strlen($new_username) . ':"' . esc_sql($new_username) . '"', $oldAdmins);
-						$wpdb->query("UPDATE `" . $wpdb->sitemeta . "` SET meta_value = '" . esc_sql($newAdmins) . "' WHERE meta_key = 'site_admins'");
+						$wpdb->query("UPDATE `" . $wpdb->sitemeta . "` SET meta_value = '" . esc_sql($newAdmins) . "' WHERE meta_key = 'site_admins'"); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- pcp check ignore this
 					}
 
 					// If user is logged in with username "admin" then log user out and send to login page so they can login again
@@ -124,12 +124,11 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 	 *
 	 * @param array $data An array containing the data to be saved.
 	 *
-	 * @return array Returns an array containing the status of the operation ('success' or 'error'),
+	 * @return array|WP_Error Returns an array containing the status of the operation ('success' or 'error'),
 	 *               a message indicating the result of the operation,
 	 *               and a badge representing the updated feature details.
 	 */
 	public function perform_save_login_lockout_settings($data) {
-
 		$response = array(
 			'status' => 'success',
 			'values' => array(),
@@ -208,6 +207,7 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 		if (!empty($invalid_fields)) {
 			$invalid_fields = array_unique($invalid_fields);
 			$invalid_fields = implode(", ", $invalid_fields);
+			/* translators: %s: Options having invalid values */
 			$response['info'][] = sprintf(__('The following options had invalid values and have been set to the defaults: %s', 'all-in-one-wp-security-and-firewall'), $invalid_fields);
 		}
 
@@ -297,13 +297,20 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 	 *                    The array may contain the following keys:
 	 *                    - 'aiowps_logout_time_period': The time period (in minutes) for logout.
 	 *                    - 'aiowps_enable_forced_logout': A boolean indicating whether forced logout is enabled.
-	 * @return array Returns an array containing the status of the operation ('success' or 'error'),
+	 * @return array|WP_Error Returns an array containing the status of the operation ('success' or 'error'),
 	 *               an array of messages indicating the result of the operation,
 	 *               the content representing the logout time period,
 	 *               and a badge representing the updated feature details.
 	 */
 	public function perform_force_logout($data) {
 		global $aio_wp_security;
+
+		if (AIOS_Helper::is_updraft_central_request()) {
+			if (!AIOWPSecurity_Utility_Permissions::has_manage_cap()) {
+				return new WP_Error(esc_html__('Sorry, you do not have enough privilege to execute the requested action.', 'all-in-one-wp-security-and-firewall'));
+			}
+		}
+
 		$response = array(
 			'status' => 'success',
 			'info' => array(),
@@ -432,6 +439,12 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 	 */
 	public function perform_logged_in_user_action($data) {
 		global $aio_wp_security;
+
+		/* UDC will error out without this */
+		if (AIOS_Helper::is_updraft_central_request()) {
+			$this->init_wp_list();
+		}
+
 		include_once AIO_WP_SECURITY_PATH.'/admin/wp-security-list-logged-in-users.php'; // For rendering the AIOWPSecurity_List_Table
 		$user_list = new AIOWPSecurity_List_Logged_In_Users();
 		$response = array(
@@ -452,7 +465,7 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 					'message' => __('No user ID was provided', 'all-in-one-wp-security-and-firewall')
 				);
 			}
-			$user_id = strip_tags($data['logged_in_id']);
+			$user_id = wp_strip_all_tags($data['logged_in_id']);
 			$error = '';
 
 			if (!is_numeric($user_id)) {
@@ -471,11 +484,11 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 				);
 			}
 
-			$users = esc_sql($user_id);
-			$result = $aio_wp_security->user_login_obj->delete_logged_in_user($users);
+			$user_id = esc_sql($user_id);
+			$result = $aio_wp_security->user_login_obj->delete_logged_in_user($user_id);
 
 			if ($result) {
-				$user_list->logout_user($users);
+				$user_list->logout_user($user_id);
 				$response['message'] = __('The selected user has been logged out successfully.', 'all-in-one-wp-security-and-firewall');
 			} else {
 				$response['message']  = __('Failed to log out the selected user.', 'all-in-one-wp-security-and-firewall');
@@ -544,7 +557,7 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 						'message' => __('No valid user ID was provided', 'all-in-one-wp-security-and-firewall')
 					);
 				}
-				$user_id = esc_sql(strip_tags($data['user_id']));
+				$user_id = esc_sql(wp_strip_all_tags($data['user_id']));
 				$meta_key = 'aiowps_account_status';
 				$meta_value = 'approved'; // set account status
 
@@ -568,7 +581,7 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 					);
 				}
 
-				$user_id = esc_sql(strip_tags($data['user_id']));
+				$user_id = esc_sql(wp_strip_all_tags($data['user_id']));
 				// Delete single account
 				$result = wp_delete_user($user_id);
 				if (true === $result) {
@@ -587,7 +600,7 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 					);
 				}
 
-				$ip = esc_sql(strip_tags($data['ip_address']));
+				$ip = esc_sql(wp_strip_all_tags($data['ip_address']));
 
 				if (AIOWPSecurity_Utility_IP::get_user_ip_address() == $ip) {
 					$message = __('You cannot block your own IP address:', 'all-in-one-wp-security-and-firewall') . ' ' . $ip;
@@ -663,6 +676,124 @@ trait AIOWPSecurity_User_Security_Commands_Trait {
 
 		// Return true if the time difference exceeds the logout time interval, indicating the user should be logged out
 		return $diff > $logout_time_interval_val_seconds;
+	}
+
+	/**
+	 * Saves all the login lockout settings from UDC.
+	 *
+	 * @param array $data An array containing the data to be saved.
+	 *                    The array may contain the following keys:
+	 *                    - 'aiowps_enable_login_lockdown': A boolean indicating whether login lockdown is enabled.
+	 *                    - 'aiowps_allow_unlock_requests': A boolean indicating whether unlock requests are allowed.
+	 *                    - 'aiowps_max_login_attempts': The maximum number of login attempts allowed before lockout.
+	 *                    - 'aiowps_retry_time_period': The time period (in minutes) after which the user is allowed to retry login.
+	 *                    - 'aiowps_lockout_time_length': The time period (in minutes) during which the user is locked out after the maximum number of login attempts is reached.
+	 *                    - 'aiowps_lockout_message': The message to be displayed to the user when they are locked out.
+	 *                    - 'aiowps_lockout_redirect_url': The URL to redirect the user to after lockout.
+	 *                    - 'aiowps_lockout_redirect_url_text': The text to be displayed on the redirect URL textbox.
+	 *
+	 * @return array|WP_Error
+	 */
+	public function perform_login_lockout_save_settings($data) {
+		if (AIOS_Helper::is_updraft_central_request()) {
+			if (!AIOWPSecurity_Utility_Permissions::has_manage_cap()) {
+				return new WP_Error(esc_html__('Sorry, you do not have enough privilege to execute the requested action.', 'all-in-one-wp-security-and-firewall'));
+			}
+		}
+
+		/* Required or UDC will error out. */
+		include_once(AIO_WP_SECURITY_PATH . '/admin/wp-security-admin-menu.php');
+
+		$response = $this->perform_save_login_lockout_whitelist_settings($data);
+
+		if ('error' === $response['status']) {
+			return $response;
+		}
+
+		return $this->perform_save_login_lockout_settings($data);
+	}
+
+	/**
+	 * Return user security data.
+	 *
+	 * @return array Array of option values,
+	 */
+	public function get_user_security_data() {
+		global $aio_wp_security;
+
+		/* Login lockout */
+		$aiowps_enable_login_lockdown = $aio_wp_security->configs->get_value('aiowps_enable_login_lockdown');
+		$aiowps_allow_unlock_requests = $aio_wp_security->configs->get_value('aiowps_allow_unlock_requests');
+		$aiowps_max_login_attempts = $aio_wp_security->configs->get_value('aiowps_max_login_attempts');
+		$aiowps_retry_time_period = $aio_wp_security->configs->get_value('aiowps_retry_time_period');
+		$aiowps_lockout_time_length = $aio_wp_security->configs->get_value('aiowps_lockout_time_length');
+		$aiowps_max_lockout_time_length = $aio_wp_security->configs->get_value('aiowps_max_lockout_time_length');
+		$aiowps_set_generic_login_msg = $aio_wp_security->configs->get_value('aiowps_set_generic_login_msg');
+		$aiowps_enable_invalid_username_lockdown = $aio_wp_security->configs->get_value('aiowps_enable_invalid_username_lockdown');
+		$aiowps_instantly_lockout_specific_usernames = $aio_wp_security->configs->get_value('aiowps_instantly_lockout_specific_usernames');
+		$aiowps_enable_email_notify = $aio_wp_security->configs->get_value('aiowps_enable_email_notify');
+		$aiowps_email_address = $aio_wp_security->configs->get_value('aiowps_email_address');
+		$aiowps_enable_php_backtrace_in_email = $aio_wp_security->configs->get_value('aiowps_enable_php_backtrace_in_email');
+		$aiowps_lockdown_enable_whitelisting = $aio_wp_security->configs->get_value('aiowps_lockdown_enable_whitelisting');
+		$aiowps_lockdown_allowed_ip_addresses = $aio_wp_security->configs->get_value('aiowps_lockdown_allowed_ip_addresses');
+
+		/* Force logout */
+		$aiowps_enable_forced_logout = $aio_wp_security->configs->get_value('aiowps_enable_forced_logout');
+		$aiowps_logout_time_period = $aio_wp_security->configs->get_value('aiowps_logout_time_period');
+
+		return array(
+			'aiowps_enable_login_lockdown' => $aiowps_enable_login_lockdown,
+			'aiowps_allow_unlock_requests'=> $aiowps_allow_unlock_requests,
+			'aiowps_max_login_attempts' => $aiowps_max_login_attempts,
+			'aiowps_retry_time_period' => $aiowps_retry_time_period,
+			'aiowps_lockout_time_length' => $aiowps_lockout_time_length,
+			'aiowps_max_lockout_time_length' => $aiowps_max_lockout_time_length,
+			'aiowps_set_generic_login_msg' => $aiowps_set_generic_login_msg,
+			'aiowps_enable_invalid_username_lockdown' => $aiowps_enable_invalid_username_lockdown,
+			'aiowps_instantly_lockout_specific_usernames' => $aiowps_instantly_lockout_specific_usernames,
+			'aiowps_enable_email_notify' => $aiowps_enable_email_notify,
+			'aiowps_email_address' => AIOWPSecurity_Utility::get_textarea_str_val($aiowps_email_address),
+			'aiowps_enable_php_backtrace_in_email' => $aiowps_enable_php_backtrace_in_email,
+			'aiowps_lockdown_enable_whitelisting' => $aiowps_lockdown_enable_whitelisting,
+			'aiowps_lockdown_allowed_ip_addresses' => $aiowps_lockdown_allowed_ip_addresses,
+			'aiowps_enable_forced_logout' => $aiowps_enable_forced_logout,
+			'aiowps_logout_time_period' => $aiowps_logout_time_period,
+		);
+	}
+
+	/**
+	 * Return logged-in user data.
+	 *
+	 * @return array Array of option values,
+	 */
+	public function get_logged_in_users_data() {
+		/* UDC will error out without this */
+		if (AIOS_Helper::is_updraft_central_request()) {
+			$this->init_wp_list();
+		}
+
+		include_once AIO_WP_SECURITY_PATH . '/admin/wp-security-list-logged-in-users.php';
+
+		$user_list = new AIOWPSecurity_List_Logged_In_Users();
+		$user_list->prepare_items();
+
+		$column_list = array();
+
+		foreach ($user_list->get_columns() as $column => $value) {
+			if (!empty($column)) {
+				if ('cb' !== $column) {
+					$column_list[$column] = array('label' => $value);
+				}
+			}
+		}
+
+		return array(
+			'logged_in_user_data' => array(
+				'users' => $user_list->items,
+				'columns' => $column_list,
+				'bulk_actions' => $user_list->get_bulk_actions(),
+			)
+		);
 	}
 
 	/**

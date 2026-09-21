@@ -4,6 +4,7 @@
  */
 add_action( 'wp_enqueue_scripts', 'cr_enqueue_theme_typography', 20 );
 add_action( 'enqueue_block_editor_assets', 'cr_enqueue_theme_typography', 20 );
+add_action( 'enqueue_block_assets', 'cr_enqueue_theme_typography', 20 );
 
 function cr_enqueue_theme_typography() {
 	$fontfaces = get_field( 'theme_typography_fontfaces', 'option' );

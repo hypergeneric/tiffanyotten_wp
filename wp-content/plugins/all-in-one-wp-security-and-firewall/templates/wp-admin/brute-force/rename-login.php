@@ -1,7 +1,8 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <div class="aio_blue_box">
 	<?php
-		echo '<p>' . esc_html__('An effective Brute Force prevention technique is to change the default WordPress login page URL.', 'all-in-one-wp-security-and-firewall') . '</p>' . '<p>' . esc_html__('Normally if you wanted to login to WordPress you would type your site\'s home URL followed by wp-login.php.', 'all-in-one-wp-security-and-firewall') . '</p>' . '<p>' . esc_html__('This feature allows you to change the login URL by setting your own slug and renaming the last portion of the login URL which contains the <strong>wp-login.php</strong> to any string that you like.', 'all-in-one-wp-security-and-firewall') . '</p>' . '<p>' . esc_html__('By doing this, malicious bots and hackers will not be able to access your login page because they will not know the correct login page URL.', 'all-in-one-wp-security-and-firewall') . '</p>';
+		/* translators: %s wp-login.php in bold */
+		echo '<p>' . esc_html__('An effective Brute Force prevention technique is to change the default WordPress login page URL.', 'all-in-one-wp-security-and-firewall') . '</p>' . '<p>' . esc_html__('Normally if you wanted to login to WordPress you would type your site\'s home URL followed by wp-login.php.', 'all-in-one-wp-security-and-firewall') . '</p>' . '<p>' . sprintf(esc_html__('This feature allows you to change the login URL by setting your own slug and renaming the last portion of the login URL which contains the %s to any string that you like.', 'all-in-one-wp-security-and-firewall'), '<strong>wp-login.php</strong>') . '</p>' . '<p>' . esc_html__('By doing this, malicious bots and hackers will not be able to access your login page because they will not know the correct login page URL.', 'all-in-one-wp-security-and-firewall') . '</p>';
 		if (!is_multisite() || 1 == get_current_blog_id()) {
 			$cookie_based_feature_url = '<a href="admin.php?page=' . AIOWPSEC_BRUTE_FORCE_MENU_SLUG . '&tab=cookie-based-brute-force-prevention" target="_blank">' . esc_html__('Cookie based brute force prevention', 'all-in-one-wp-security-and-firewall').'</a>';
 			$white_list_feature_url = '<a href="admin.php?page=' . AIOWPSEC_BRUTE_FORCE_MENU_SLUG . '&tab=login-whitelist" target="_blank">' . esc_html__('Login page white list', 'all-in-one-wp-security-and-firewall').'</a>';
@@ -38,13 +39,13 @@ $aio_wp_security->include_template('wp-admin/brute-force/partials/rename-login-n
 					<th scope="row"><?php esc_html_e('Enable rename login page feature', 'all-in-one-wp-security-and-firewall'); ?>:</th>
 					<td>
 						<div class="aiowps_switch_container">
-							<?php AIOWPSecurity_Utility_UI::setting_checkbox(esc_html__('Enable this if you want the rename login page feature', 'all-in-one-wp-security-and-firewall'), 'aiowps_enable_rename_login_page', '1' == $aio_wp_security->configs->get_value('aiowps_enable_rename_login_page')); ?>
+							<?php AIOWPSecurity_Utility_UI::setting_checkbox(esc_html__('Enable this if you want the rename login page feature', 'all-in-one-wp-security-and-firewall'), 'aiowps_enable_rename_login_page', '1' == $aiowps_enable_rename_login_page); ?>
 						</div>
 					</td>
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="aiowps_login_page_slug"><?php esc_html_e('Login page URL', 'all-in-one-wp-security-and-firewall'); ?>:</label></th>
-					<td><code><?php echo esc_url($home_url); ?></code><input id="aiowps_login_page_slug" type="text" size="15" name="aiowps_login_page_slug" value="<?php echo esc_attr($aio_wp_security->configs->get_value('aiowps_login_page_slug')); ?>">
+					<td><code><?php echo esc_url($home_url); ?></code><input id="aiowps_login_page_slug" type="text" size="15" name="aiowps_login_page_slug" value="<?php echo esc_attr($aiowps_login_page_slug); ?>">
 					<span class="description"><?php echo esc_html__('Enter a string which will represent your secure login page slug.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('You are encouraged to choose something which is hard to guess and only you will remember.', 'all-in-one-wp-security-and-firewall'); ?></span>
 					</td>
 				</tr>
