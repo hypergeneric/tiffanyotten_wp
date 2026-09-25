@@ -86,6 +86,7 @@ class GF_Field_List extends GF_Field {
 			'visibility_setting',
 			'description_setting',
 			'css_class_setting',
+			'no_urls_setting',
 		);
 	}
 
@@ -660,7 +661,7 @@ class GF_Field_List extends GF_Field {
 			return '';
 		}
 
-		$value = maybe_unserialize( $value );
+		$value = GFCommon::maybe_unserialize( $value );
 
 		if( ! is_array( $value ) || ! isset( $value[0] ) ) {
 			return '';
@@ -937,10 +938,7 @@ class GF_Field_List extends GF_Field {
 
 			return $value;
 		} elseif ( is_serialized( $value ) ) {
-			$value = @unserialize(
-				trim( $value ),
-				array( 'allowed_classes' => false )
-			);
+			$value = GFCommon::maybe_unserialize( $value );
 			return is_array( $value ) ? $value : $default;
 		}
 
@@ -989,7 +987,7 @@ class GF_Field_List extends GF_Field {
 		}
 
 		$value = rgar( $entry, $input_id );
-		$value = maybe_unserialize( $value );
+		$value = GFCommon::maybe_unserialize( $value );
 
 		if ( empty( $value ) || $is_csv ) {
 			return $value;
@@ -1009,6 +1007,23 @@ class GF_Field_List extends GF_Field {
 		}
 
 		return GFCommon::implode_non_blank( ', ', $column_values );
+	}
+
+	/**
+	 * Returns the string value to be used for URL detection.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string|array $value The value to be prepared for validation.
+	 *
+	 * @return string
+	 */
+	public function prepare_value_for_url_detection( $value ) {
+		if ( $this->enableColumns && is_array( $value ) ) {
+			$value = array_merge( ...array_map( 'array_values', $value ) );
+		}
+
+		return parent::prepare_value_for_url_detection( $value );
 	}
 
 	// # FIELD FILTER UI HELPERS ---------------------------------------------------------------------------------------
