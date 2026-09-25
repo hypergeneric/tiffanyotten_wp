@@ -84,6 +84,15 @@ class GF_Field extends stdClass implements ArrayAccess {
 	public $duplicatable = true;
 
 	/**
+	 * Whether this field allows links/URLs in the value.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @var bool
+	 */
+	public $noURLs = false;
+
+	/**
 	 * Whether the field can be used in a repeater.
 	 *
 	 * @since 3.0
@@ -1065,6 +1074,63 @@ class GF_Field extends stdClass implements ArrayAccess {
 	}
 
 	/**
+	 * Uses regex to determine if the value contains a link or URL.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string|array $value The field value to be checked.
+	 *
+	 * @return bool
+	 */
+	public function value_contains_url( $value ) {
+		$value = $this->prepare_value_for_url_detection( $value );
+		if ( empty( $value ) || ! is_string( $value ) || is_numeric( $value ) ) {
+			return false;
+		}
+
+		$pattern = '/' .
+						// plain URLs: http://, https:// or www.
+						'(?:https?:\/\/|www\.)[^\s<>\)\]]+' .
+						'|' .
+						// HTML anchor tags with href="..." or href='...'
+						'<a\b[^>]*\bhref\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)[^>]*>' .
+						'|' .
+						// Markdown links: [text](url)
+						'\[[^\]]+\]\([^)]+\)' .
+					'/iu';
+
+		return preg_match( $pattern, $value ) === 1;
+	}
+
+	/**
+	 * Returns the string value to be used for URL detection.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string|array $value The value to be prepared for validation.
+	 *
+	 * @return string
+	 */
+	public function prepare_value_for_url_detection( $value ) {
+		if ( empty( $value ) || ! is_array( $value ) ) {
+			return $value;
+		}
+
+		return implode( ', ', array_filter( $value ) );
+	}
+
+	/**
+	 * Determines if Links/URLs should be detected.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return bool
+	 */
+	public function should_detect_urls() {
+		return $this->noURLs;
+	}
+
+	/**
 	 * Sets the failed_validation and validation_message properties for a required field error.
 	 *
 	 * @since 2.6.5
@@ -1240,6 +1306,9 @@ class GF_Field extends stdClass implements ArrayAccess {
 	/**
 	 * Sanitize and format the value before it is saved to the Entry Object.
 	 *
+	 * @deprecated 3.0
+	 * @remove-in 4.0
+	 *
 	 * @param string $value          The value to be saved.
 	 * @param array  $form           The Form Object currently being processed.
 	 * @param string $input_name     The input name used when accessing the $_POST.
@@ -1300,6 +1369,50 @@ class GF_Field extends stdClass implements ArrayAccess {
 	}
 
 	/**
+	 * Sanitize and formats the post category field value before it is saved to the database.
+	 *
+	 * @since 3.0.3
+	 *
+	 * @param array|string $value The selected post categories.
+	 *
+	 * @return array|string
+	 */
+	public function prepare_post_category_value_save_input( $value ) {
+		if ( empty( $value ) ) {
+			return $value;
+		}
+
+		$clean_value  = array();
+		$return_array = is_array( $value );
+
+		if ( ! $return_array ) {
+			$value = array( $value );
+		}
+
+		foreach ( $value as $cat_id ) {
+			if ( rgblank( $cat_id ) ) {
+				continue;
+			}
+
+			$cat_id = (int) $cat_id;
+			$cat    = get_term( $cat_id, 'category' );
+
+			if ( ! $cat || is_wp_error( $cat ) || empty( $cat->name ) ) {
+				continue;
+			}
+
+			$clean_name = $this->sanitize_entry_value( $cat->name, $this->formId );
+			if ( empty( $clean_name ) ) {
+				continue;
+			}
+
+			$clean_value[] = $clean_name . ':' . $cat_id;
+		}
+
+		return $return_array ? $clean_value : rgar( $clean_value, 0, '' );
+	}
+
+	/**
 	 * Format the entry value for when the field/input merge tag is processed. Not called for the {all_fields} merge tag.
 	 *
 	 * Return a value that is safe for the context specified by $format.
@@ -1337,12 +1450,13 @@ class GF_Field extends stdClass implements ArrayAccess {
 					$return = esc_html( $value );
 				}
 			} else {
-				// The value contains HTML but the value was sanitized before saving.
 				if ( is_array( $raw_value ) ) {
 					$return = rgar( $raw_value, $input_id );
 				} else {
 					$return = $raw_value;
 				}
+
+				$return = wp_kses( $return, $this->get_entry_allowed_html( $allowable_tags ) );
 			}
 
 			if ( $nl2br ) {
@@ -1378,14 +1492,60 @@ class GF_Field extends stdClass implements ArrayAccess {
 		$allowable_tags = $this->get_allowable_tags( $form['id'] );
 
 		if ( $allowable_tags === false ) {
-			// The value is unsafe so encode the value.
+			// No html accepted and should be escaped completely.
 			$return = esc_html( $value );
 		} else {
-			// The value contains HTML but the value was sanitized before saving.
-			$return = $value;
+			$return = wp_kses( $value, $this->get_entry_allowed_html( $allowable_tags ) );
 		}
 
 		return $return;
+	}
+
+	/**
+	 * Returns the allowed HTML for entry values displayed as HTML.
+	 *
+	 * @since 3.1.2
+	 *
+	 * @param bool|string|array $allowable_tags The tags permitted by the field and form policy.
+	 *
+	 * @return array
+	 */
+	public function get_entry_allowed_html( $allowable_tags = true ) {
+		$allowed = wp_kses_allowed_html( 'post' );
+
+		foreach ( $allowed as $tag => $attributes ) {
+			// wp_kses normally allows data-* attributes, so we explicitly remove them preventing stored entry values from activating admin behaviors such as data-dialog-confirm.
+			unset( $attributes['data-*'] );
+			$allowed[ $tag ] = $attributes;
+		}
+
+		if ( $allowable_tags === true ) {
+			return $allowed;
+		}
+
+		if ( is_string( $allowable_tags ) ) {
+			preg_match_all( '/<\s*([a-z][a-z0-9-]*)\b/i', $allowable_tags, $matches );
+			$allowable_tags = $matches[1];
+		}
+
+		if ( ! is_array( $allowable_tags ) ) {
+			$allowable_tags = array();
+		}
+
+		$allowed_tags = array();
+		foreach ( $allowable_tags as $tag ) {
+			$tag = strtolower( trim( $tag ) );
+			if ( ! preg_match( '/^[a-z][a-z0-9-]*$/', $tag ) ) {
+				continue;
+			}
+
+			// Explicitly listed custom tags are allowed without attributes.
+			$allowed_tags[ $tag ] = isset( $allowed[ $tag ] ) ? $allowed[ $tag ] : array();
+		}
+
+		$allowed = $allowed_tags;
+
+		return $allowed;
 	}
 
 	/**
@@ -1456,8 +1616,7 @@ class GF_Field extends stdClass implements ArrayAccess {
 				// The value is unsafe so encode the value.
 				$return = esc_html( $value );
 			} else {
-				// The value contains HTML but the value was sanitized before saving.
-				$return = $value;
+				$return = wp_kses( $value, $this->get_entry_allowed_html( $allowable_tags ) );
 			}
 		} else {
 			$return = $value;
@@ -2853,7 +3012,7 @@ class GF_Field extends stdClass implements ArrayAccess {
 	 */
 	public function sanitize_entry_value( $value, $form_id ) {
 
-		if ( is_array( $value ) ) {
+		if ( is_array( $value ) || rgblank( $value ) ) {
 			return '';
 		}
 
@@ -2924,6 +3083,10 @@ class GF_Field extends stdClass implements ArrayAccess {
 
 		if ( isset( $this->validateState ) ) {
 			$this->validateState = (bool) $this->validateState;
+		}
+
+		if ( isset( $this->noURLs ) ) {
+			$this->noURLs = (bool) $this->noURLs;
 		}
 
 		$this->allowsPrepopulate = (bool) $this->allowsPrepopulate;

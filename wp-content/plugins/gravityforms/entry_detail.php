@@ -288,6 +288,7 @@ class GFEntryDetail {
 		if ( empty( $form_id ) ) {
 			GFCommon::add_error_message( esc_html__( "Oops! We couldn't find your form. Please try again.", 'gravityforms' ) );
 			GFForms::admin_header();
+			GFForms::admin_footer();
 
 			return;
 		}
@@ -296,6 +297,7 @@ class GFEntryDetail {
 		if ( is_wp_error( $lead ) || ! $lead ) {
 			GFCommon::add_error_message( esc_html__( "Oops! We couldn't find your entry. Please try again.", 'gravityforms' ) );
 			GFForms::admin_header();
+			GFForms::admin_footer();
 
 			return;
 		}
@@ -347,6 +349,13 @@ class GFEntryDetail {
 		switch ( GFForms::post( 'action' ) ) {
 			case 'update' :
 				check_admin_referer( 'gforms_save_entry', 'gforms_save_entry' );
+				if ( ! GFCommon::current_user_can_any( 'gravityforms_edit_entries' ) ) {
+					wp_die(
+						esc_html__( "You don't have adequate permission to edit entries.", 'gravityforms' ),
+						'',
+						array( 'response' => 403 )
+					);
+				}
 
 				$original_entry = $lead;
 
@@ -402,6 +411,13 @@ class GFEntryDetail {
 
 			case 'add_note' :
 				check_admin_referer( 'gforms_update_note', 'gforms_update_note' );
+				if ( ! GFCommon::current_user_can_any( 'gravityforms_edit_entry_notes' ) ) {
+					wp_die(
+						esc_html__( "You don't have adequate permission to add notes.", 'gravityforms' ),
+						'',
+						array( 'response' => 403 )
+					);
+				}
 				$user_data = get_userdata( $current_user->ID );
 				GFFormsModel::add_note( $lead['id'], $current_user->ID, $user_data->display_name, isset( $_POST['new_note'] ) ? wp_unslash( $_POST['new_note'] ) : '' ); //  phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
@@ -445,6 +461,13 @@ class GFEntryDetail {
 
 			case 'add_quick_note' :
 				check_admin_referer( 'gforms_save_entry', 'gforms_save_entry' );
+				if ( ! GFCommon::current_user_can_any( 'gravityforms_edit_entry_notes' ) ) {
+					wp_die(
+						esc_html__( "You don't have adequate permission to add notes.", 'gravityforms' ),
+						'',
+						array( 'response' => 403 )
+					);
+				}
 				$user_data = get_userdata( $current_user->ID );
 				GFFormsModel::add_note( $lead['id'], $current_user->ID, $user_data->display_name, isset( $_POST['quick_note'] ) ? wp_unslash( $_POST['quick_note'] ) : '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 				break;
@@ -485,6 +508,13 @@ class GFEntryDetail {
 
 			case 'unspam' :
 				check_admin_referer( 'gforms_save_entry', 'gforms_save_entry' );
+				if ( ! GFCommon::current_user_can_any( 'gravityforms_edit_entries' ) ) {
+					wp_die(
+						esc_html__( "You don't have adequate permission to edit entries.", 'gravityforms' ),
+						'',
+						array( 'response' => 403 )
+					);
+				}
 				GFFormsModel::update_entry_property( $lead['id'], 'status', 'active' );
 				$lead = GFFormsModel::get_entry( $lead['id'] );
 				self::set_current_entry( $lead );
@@ -492,6 +522,13 @@ class GFEntryDetail {
 
 			case 'spam' :
 				check_admin_referer( 'gforms_save_entry', 'gforms_save_entry' );
+				if ( ! GFCommon::current_user_can_any( 'gravityforms_edit_entries' ) ) {
+					wp_die(
+						esc_html__( "You don't have adequate permission to edit entries.", 'gravityforms' ),
+						'',
+						array( 'response' => 403 )
+					);
+				}
 				GFFormsModel::update_entry_property( $lead['id'], 'status', 'spam' );
 				$lead = GFFormsModel::get_entry( $lead['id'] );
 				self::set_current_entry( $lead );
@@ -516,6 +553,7 @@ class GFEntryDetail {
 
 		?>
 		<script type="text/javascript">
+			<?php GFCommon::gf_global(); ?>
 			var formId = <?php echo absint( $form_id ); ?>;
 
 			jQuery(document).ready(function () {
@@ -787,6 +825,7 @@ class GFEntryDetail {
 			</div>
 		</form>
 		<?php
+		GFForms::admin_footer();
 	}
 
 	public static function lead_detail_edit( $form, $lead ) {
@@ -1545,7 +1584,7 @@ class GFEntryDetail {
 		$form    = $args['form'];
 		$form_id = $form['id'];
 
-		if ( ! GFCommon::current_user_can_any( 'gravityforms_edit_entry_notes' ) ) {
+		if ( ! GFCommon::current_user_can_any( 'gravityforms_edit_entries' ) ) {
 			return;
 		}
 		?>

@@ -451,6 +451,24 @@ class GFCommon {
 	}
 
 	/**
+	 * Unserialize data when it is serialized, without instantiating PHP objects by default.
+	 *
+	 * @since 3.1.1
+	 *
+	 * @param mixed      $data            Data that may be serialized.
+	 * @param bool|array $allowed_classes Class names allowed during unserialization. False prevents object instantiation.
+	 *
+	 * @return mixed
+	 */
+	public static function maybe_unserialize( $data, $allowed_classes = false ) {
+		if ( is_serialized( $data ) ) {
+			return @unserialize( trim( $data ), array( 'allowed_classes' => $allowed_classes ) ); // @phpcs:ignore
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Determines if provided string is a JSON object.
 	 *
 	 * @since 2.5
@@ -2128,6 +2146,9 @@ class GFCommon {
 
 			$upload_fields = GFCommon::get_fields_by_type( $form, array( 'fileupload' ) );
 			$entry_id      = (int) rgar( $lead, 'id' );
+			$tmp_location  = GFFormsModel::get_tmp_upload_location( rgar( $form, 'id' ) );
+			$tmp_root_url  = rgar( $tmp_location, 'url' );
+			$tmp_root_path = rgar( $tmp_location, 'path' );
 
 			foreach ( $upload_fields as $upload_field ) {
 
@@ -2149,9 +2170,16 @@ class GFCommon {
 
 				// Loop through attachment URLs; replace URL with path and add to attachments.
 				foreach ( $files as $file ) {
+					$is_tmp_file = false;
+
+					if ( is_array( $file ) ) {
+						$file        = rgar( $file, 'tmp_url' ) ?: rgar( $file, 'url' );
+						$is_tmp_file = is_string( $file ) && ! empty( $tmp_root_url ) && ! empty( $tmp_root_path ) && str_starts_with( $file, $tmp_root_url );
+					}
+
 					if ( is_string( $file ) ) {
-						$root_url = rgar( GF_Field_FileUpload::get_file_upload_path_info( $file, $entry_id ), 'url' );
-						if ( ! str_starts_with( $file, $root_url ) ) {
+						$root_url = $is_tmp_file ? $tmp_root_url : rgar( GF_Field_FileUpload::get_file_upload_path_info( $file, $entry_id ), 'url' );
+						if ( empty( $root_url ) || ! str_starts_with( $file, $root_url ) ) {
 							self::log_debug( __METHOD__ . sprintf( '(): Not attaching file from URL: %s', $file ) );
 							continue;
 						}
@@ -2167,15 +2195,13 @@ class GFCommon {
 							continue;
 						}
 
-						$file_path = GFFormsModel::get_physical_file_path( $file, rgar( $lead, 'id' ) );
+						$file_path = $is_tmp_file ? str_replace( trailingslashit( $tmp_root_url ), trailingslashit( $tmp_root_path ), $file ) : GFFormsModel::get_physical_file_path( $file, rgar( $lead, 'id' ) );
 						if ( ! file_exists( $file_path ) ) {
 							self::log_error( __METHOD__ . sprintf( '(): Not attaching file; %s does not exist.', $file_path ) );
 							continue;
 						}
 
 						$attachments[] = $file_path;
-					} elseif ( ! empty( $file['tmp_path'] ) && file_exists( $file['tmp_path'] ) ) {
-						$attachments[] = $file['tmp_path'];
 					}
  				}
 
@@ -2825,6 +2851,17 @@ Content-Type: text/html;
 		return $has_full_access;
 	}
 
+	/**
+	 * Determines if the current user can access the entry list column selector.
+	 *
+	 * @since 3.0.3
+	 *
+	 * @return bool
+	 */
+	public static function current_user_can_select_columns() {
+		return self::current_user_can_any( array( 'gravityforms_view_entries', 'gravityforms_edit_forms' ) );
+	}
+
 	public static function current_user_can_which( $caps ) {
 
 		foreach ( $caps as $cap ) {
@@ -2955,10 +2992,16 @@ Content-Type: text/html;
 	 *
 	 * @since unknown
 	 * @since 2.8.17 Added the network option fallback.
+	 * @since 3.1.1  Check the `GF_LICENSE_KEY` constant before checking the database for the license key.
 	 *
 	 * @return string|false
 	 */
 	public static function get_key() {
+		// GoDaddy hasn't removed their old starter license code, so the GD_GF_LICENSE_KEY check allows impacted customers to edit the key on the settings page.
+		if ( defined( 'GF_LICENSE_KEY' ) && ! ( defined( 'GD_GF_LICENSE_KEY' ) && GF_LICENSE_KEY === GD_GF_LICENSE_KEY ) ) {
+			return md5( GF_LICENSE_KEY );
+		}
+
 		$key = get_option( GFForms::LICENSE_KEY_OPT );
 
 		if ( ! $key && ! is_main_site() ) {
@@ -4304,7 +4347,7 @@ Content-Type: text/html;
 		}
 
 		if ( ! is_array( $entry ) ) {
-			trigger_error( 'Since version 2.9.29 GFCommon::get_lead_field_display() expects the entry array as the third parameter. Trace: ' . esc_html( wp_debug_backtrace_summary( null, 1 ) ), E_USER_WARNING );
+			trigger_error( 'Since version 2.9.29 GFCommon::get_lead_field_display() expects the entry array as the third parameter. Trace: ' . esc_html( wp_debug_backtrace_summary( null, 1 ) ), E_USER_WARNING ); // phpcs:ignore QITStandard.PHP.DebugCode.DebugFunctionFound
 			$entry = array( 'currency' => $entry );
 		}
 
@@ -5205,6 +5248,11 @@ Content-Type: text/html;
 			} else {
 				$source_field = GFFormsModel::get_field( $form, $rule_field_id );
 				$source_value = empty( $entry ) ? GFFormsModel::get_field_value( $source_field, array() ) : GFFormsModel::get_lead_field_value( $entry, $source_field );
+
+				// Back-compat for rules based on the address field country input that are still using the country name instead of the code.
+				if ( ! empty( $rule['value'] ) && $source_field instanceof GF_Field_Address && str_ends_with( $rule_field_id, '.6' ) && ! $source_field->is_country_code( $rule['value'] ) ) {
+					$rule['value'] = $source_field->get_country_code( $rule['value'], true );
+				}
 			}
 
 			/**
@@ -5821,8 +5869,9 @@ Content-Type: text/html;
 	 * Outputs the gf_global and returns either the gf_global var declaration or the array containing the gf_global values.
 	 *
 	 *
-	 * @since 2.4.7		Added the $return_array parameter
 	 * @since unknown
+	 * @since 2.4.7 Added the $return_array parameter
+	 * @since 3.0.3 Included the default countries list.
 	 *
 	 * @param bool $echo         If true, outputs the inline gf_global var declaration.
 	 * @param bool $return_array If true, returns the array containing the gf_global values.
@@ -5835,6 +5884,7 @@ Content-Type: text/html;
 		$gf_global['base_url']           = GFCommon::get_base_url();
 		$gf_global['number_formats']     = array();
 		$gf_global['version_hash']       = wp_hash( GFForms::$version );
+		$gf_global['countries']          = GF_Fields::get( 'address' )->get_default_countries();
 
 		$gf_global['strings'] = array(
 			'newRowAdded' => __( 'New row added.', 'gravityforms' ),
@@ -6453,6 +6503,52 @@ Content-Type: text/html;
 		$min = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG || isset( $_GET['gform_debug'] ) ? '' : '.min'; // phpcs:ignoreWordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Recommended
 
 		return file_get_contents( GFCommon::get_base_path() . '/js/gforms_hooks' . $min . '.js' );
+	}
+
+	/**
+	 * Display the Gravity Forms admin root opening wrapper.
+	 *
+	 * @since 3.1.1
+	 *
+	 * @return void
+	 */
+	public static function gf_root_wrapper_open() {
+		?>
+		<div class="gform-admin" data-js="gform-admin-root">
+		<?php
+
+		/**
+		 * Fires inside the Gravity Forms admin root wrapper, immediately after the opening tag.
+		 *
+		 * Allows extensions and React app providers to inject markup inside the `.gform-admin`
+		 * wrapper, ensuring scoped styles and JS targeting `[data-js="gform-admin-root"]` work as expected.
+		 *
+		 * @since 3.1.1
+		 */
+		do_action( 'gform_admin_root_open' );
+	}
+
+	/**
+	 * Display the Gravity Forms admin root closing wrapper.
+	 *
+	 * @since 3.1.1
+	 *
+	 * @return void
+	 */
+	public static function gf_root_wrapper_close() {
+		/**
+		 * Fires inside the Gravity Forms admin root wrapper, immediately before the closing tag.
+		 *
+		 * Allows extensions and React app providers to inject markup inside the `.gform-admin`
+		 * wrapper, ensuring scoped styles and JS targeting `[data-js="gform-admin-root"]` work as expected.
+		 *
+		 * @since 3.1.1
+		 */
+		do_action( 'gform_admin_root_close' );
+		?>
+		</div>
+		<!-- / .gform-admin -->
+		<?php
 	}
 
 	/**
@@ -7397,7 +7493,6 @@ Content-Type: text/html;
 	 * @return string
 	 */
 	public static function maybe_sanitize_confirmation_message( $confirmation_message ) {
-		// Default during deprecation period = false
 		$sanitize_confirmation_nessage = false;
 
 		/**
@@ -7405,7 +7500,7 @@ Content-Type: text/html;
 		 *
 		 * @since 2.0.0
 		 *
-		 * @param bool $sanitize_confirmation_nessage Whether to sanitize the confirmation message. default: true
+		 * @param bool $sanitize_confirmation_nessage Whether to sanitize the confirmation message. default: false
 		 */
 		$sanitize_confirmation_nessage = apply_filters( 'gform_sanitize_confirmation_message', $sanitize_confirmation_nessage );
 		if ( $sanitize_confirmation_nessage ) {
@@ -7506,7 +7601,7 @@ Content-Type: text/html;
 			$markup[] = sprintf( '<b>%s</b><br>%s', $option['label'], $option['description'] );
 		}
 
-		$markup = sprintf( '<ul><li>%s</li></ul>', implode( '</li><li>', $markup ) );
+		$markup = implode( '<br><br>', $markup );
 
 		return sprintf( '<strong>%s</strong> %s<br><br>%s', __( 'Visibility', 'gravityforms' ), __( 'Select the visibility for this field.', 'gravityforms' ), $markup );
 	}
