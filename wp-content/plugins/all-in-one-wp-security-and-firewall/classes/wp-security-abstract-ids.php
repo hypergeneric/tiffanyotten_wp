@@ -44,6 +44,7 @@ class AIOS_Abstracted_Ids {
 	 */
 	public static function custom_admin_notice_ids() {
 		return array(
+			'convert-to-innodb',
 			'automated-database-backup',
 			'ip-retrieval-settings',
 			'load-firewall-resources-failed',

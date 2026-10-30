@@ -12,7 +12,7 @@ class AIOWPSecurity_WP_Loaded_Tasks {
 		//Add tasks that need to be executed at wp-loaded time
 
 		global $aio_wp_security;
-		do_action('aiowps_wp_loaded_tasks_start', $this);
+		do_action('aios_wp_loaded_tasks_start', $this);
 
 		//Handle the rename login page feature
 		if ($aio_wp_security->configs->get_value('aiowps_enable_rename_login_page') == '1') {
@@ -25,7 +25,7 @@ class AIOWPSecurity_WP_Loaded_Tasks {
 
 		$this->do_lockout_tasks();
 
-		do_action('aiowps_wp_loaded_tasks_end', $this);
+		do_action('aios_wp_loaded_tasks_end', $this);
 
 	}
 
@@ -79,12 +79,12 @@ class AIOWPSecurity_WP_Loaded_Tasks {
 	 * @return void
 	 */
 	public static function site_lockout_tasks() {
-		$lockout_output = apply_filters('aiowps_site_lockout_output', '');
+		$lockout_output = apply_filters('aios_site_lockout_output', '');
 		if (empty($lockout_output)) {
 			nocache_headers();
 			header("HTTP/1.0 503 Service Unavailable");
 			remove_action('wp_head', 'head_addons', 7);
-			$template = apply_filters('aiowps_site_lockout_template_include', AIO_WP_SECURITY_PATH . '/other-includes/wp-security-visitor-lockout-page.php');
+			$template = apply_filters('aios_site_lockout_template_include', AIO_WP_SECURITY_PATH . '/other-includes/wp-security-visitor-lockout-page.php');
 			include_once($template);
 		} else {
 			echo wp_kses_post($lockout_output);

@@ -31,14 +31,14 @@ class AIOWPSecurity_Reporting {
 			$data .= "\n===================================\n";
 		} elseif ('table' === $output_format) {
 			$data .= '<div class="postbox">';
-			$data .= '<h3 class="hndle"><label for="title">' . $section_title . '</label></h3>';
+			$data .= '<h3 class="hndle">' . $section_title . '</h3>';
 			$data .= '<div class="inside" id="' . strtolower(str_replace(' ', '-', $section_title)) . '-info">';
-			$data .= apply_filters('aiowp_security_report_section_content', AIOWPSecurity_Utility_UI::format_data_as_table($sanitized_section_content));
+			$data .= apply_filters('aios_report_section_content', AIOWPSecurity_Utility_UI::format_data_as_table($sanitized_section_content));
 			$data .= '</div>';
 			$data .= '</div>';
 		}
 
-		$data = apply_filters('aiowp_security_generate_report_section_below', $data);
+		$data = apply_filters('aios_generate_report_section_below', $data);
 	
 		return $data;
 	}
@@ -71,7 +71,7 @@ class AIOWPSecurity_Reporting {
 			case 'email':
 				return self::send_email($data);
 			case 'webhook':
-				return apply_filters('aiowps_webhook_notification', false, $data);
+				return apply_filters('aios_webhook_notification', false, $data);
 			default:
 				return false;
 		}

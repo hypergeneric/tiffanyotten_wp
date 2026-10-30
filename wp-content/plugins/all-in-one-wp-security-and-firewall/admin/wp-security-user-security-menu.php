@@ -45,6 +45,7 @@ class AIOWPSecurity_User_Security_Menu extends AIOWPSecurity_Admin_Menu {
 			'manual-approval' => array(
 				'title' => __('Manual approval', 'all-in-one-wp-security-and-firewall'),
 				'render_callback' => array($this, 'render_manual_approval'),
+				'display_condition_callback' => 'is_super_admin',
 			),
 			'salt' => array(
 				'title' => __('Salt', 'all-in-one-wp-security-and-firewall'),
@@ -54,11 +55,6 @@ class AIOWPSecurity_User_Security_Menu extends AIOWPSecurity_Admin_Menu {
 			'http-authentication' => array(
 				'title' => __('HTTP authentication', 'all-in-one-wp-security-and-firewall'),
 				'render_callback' => array($this, 'render_http_authentication'),
-			),
-			'hibp' => array(
-				'title' => __('HIBP', 'all-in-one-wp-security-and-firewall'),
-				'render_callback' => array($this, 'render_hibp'),
-				'display_condition_callback' => array('AIOWPSecurity_Utility_Permissions', 'is_main_site_and_super_admin'),
 			),
 			'additional' => array(
 				'title' => __('Additional settings', 'all-in-one-wp-security-and-firewall'),
@@ -83,7 +79,7 @@ class AIOWPSecurity_User_Security_Menu extends AIOWPSecurity_Admin_Menu {
 		} else {
 			$user_accounts = $this->get_all_admin_accounts();
 		}
-		
+
 		$aio_wp_security->include_template('wp-admin/user-security/user-accounts.php', false, array('aiowps_feature_mgr' => $aiowps_feature_mgr, 'user_accounts' => $user_accounts, 'AIOWPSecurity_User_Security_Menu' => $this));
 	}
 
@@ -209,81 +205,11 @@ class AIOWPSecurity_User_Security_Menu extends AIOWPSecurity_Admin_Menu {
 	 * @return void
 	 */
 	protected function render_http_authentication() {
-		global $aio_wp_security, $aiowps_feature_mgr;
-
-		if (isset($_POST['aiowps_save_http_authentication_settings'])) {
-			$nonce_user_cap_result = AIOWPSecurity_Utility_Permissions::check_nonce_and_user_cap($_POST['_wpnonce'], 'aiowpsec-http-authentication-settings-nonce');
-
-			if (is_wp_error($nonce_user_cap_result)) {
-				$aio_wp_security->debug_logger->log_debug($nonce_user_cap_result->get_error_message(), 4);
-				die($nonce_user_cap_result->get_error_message());
-			}
-
-			$error = false;
-
-			$aio_wp_security->configs->set_value('aiowps_http_authentication_admin', '');
-
-			if (isset($_POST['aiowps_http_authentication_admin'])) {
-				if (!is_ssl()) {
-					$this->show_msg_error(__('Failed to save \'Enable for WordPress dashboard\'.', 'all-in-one-wp-security-and-firewall') . ' ' . __('Your site is currently not using https.', 'all-in-one-wp-security-and-firewall'));
-					$error = true;
-				} else {
-					$aio_wp_security->configs->set_value('aiowps_http_authentication_admin', '1');
-				}
-			}
-
-			$aio_wp_security->configs->set_value('aiowps_http_authentication_frontend', '');
-
-			if (isset($_POST['aiowps_http_authentication_frontend'])) {
-				if (!is_ssl()) {
-					$this->show_msg_error(__('Failed to save \'Enable for frontend\'.', 'all-in-one-wp-security-and-firewall') . ' ' . __('Your site is currently not using https.', 'all-in-one-wp-security-and-firewall'));
-					$error = true;
-				} else {
-					$aio_wp_security->configs->set_value('aiowps_http_authentication_frontend', '1');
-				}
-			}
-
-			if (empty($_POST['aiowps_http_authentication_username'])) {
-				$this->show_msg_error(__('Failed to save \'Username\'.', 'all-in-one-wp-security-and-firewall') . ' ' . __('Please enter a value for the HTTP authentication username.', 'all-in-one-wp-security-and-firewall'));
-				$error = true;
-			} else {
-				$aio_wp_security->configs->set_value('aiowps_http_authentication_username', sanitize_text_field($_POST['aiowps_http_authentication_username']));
-			}
-
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce checked above.
-			if (!empty($_POST['aiowps_http_authentication_password'])) {
-				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput, WordPress.Security.NonceVerification -- wp_hash_password() handles sanitizing.
-				$aio_wp_security->configs->set_value('aiowps_http_authentication_password', wp_hash_password(wp_unslash($_POST['aiowps_http_authentication_password'])));
-			}
-
-			$aio_wp_security->configs->set_value('aiowps_http_authentication_failure_message', htmlentities(stripslashes($_POST['aiowps_http_authentication_failure_message']), ENT_COMPAT, 'UTF-8'));
-
-			$aio_wp_security->configs->save_config();
-
-			// Recalculate points after the feature status/options have been altered.
-			$aiowps_feature_mgr->check_feature_status_and_recalculate_points();
-
-			if (!$error) {
-				$this->show_msg_settings_updated();
-			}
-		}
+		global $aio_wp_security;
 
 		wp_enqueue_script('aiowpsec-pw-tool-js');
 
 		$aio_wp_security->include_template('wp-admin/user-security/http-authentication.php');
-	}
-
-	/**
-	 * Renders the submenu's hibp tab.
-	 *
-	 * @global AIO_WP_Security $aio_wp_security
-	 *
-	 * @return void
-	 */
-	protected function render_hibp() {
-		global $aio_wp_security;
-
-		$aio_wp_security->include_template('wp-admin/user-security/hibp.php');
 	}
 
 	/**

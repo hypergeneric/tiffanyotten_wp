@@ -1,453 +1,5 @@
-/**
- * Send an action over AJAX. A wrapper around jQuery.ajax. In future, all consumers can be reviewed to simplify some of the options, where there is historical cruft.
- *
- * @param {string}   action   - the action to send
- * @param {*}        data     - data to send
- * @param {Function} callback - will be called with the results
- * @param {object}   options  -further options. Relevant properties include:
- * - [json_parse=true] - whether to JSON parse the results
- * - [alert_on_error=true] - whether to show an alert box if there was a problem (otherwise, suppress it)
- * - [action='aios_ajax'] - what to send as the action parameter on the AJAX request (N.B. action parameter to this function goes as the 'subaction' parameter on the AJAX request)
- * - [nonce=aios_ajax_nonce] - the nonce value to send.
- * - [nonce_key='nonce'] - the key value for the nonce field
- * - [timeout=null] - set a timeout after this number of seconds (or if null, none is set)
- * - [async=true] - control whether the request is asynchronous (almost always wanted) or blocking (would need to have a specific reason)
- * - [type='POST'] - GET or POST
- */
-function aios_send_command(action, data, callback, options) {
-
-	var default_options = {
-		json_parse: true,
-		alert_on_error: true,
-		action: 'aios_ajax',
-		nonce: aios_data.ajax_nonce,
-		nonce_key: 'nonce',
-		timeout: null,
-		async: true,
-		type: 'POST'
-	};
-
-	if ('undefined' === typeof options) options = {};
-
-	for (var opt in default_options) {
-		if (!options.hasOwnProperty(opt)) { options[opt] = default_options[opt]; }
-	}
-
-	var ajax_data = {
-		action: options.action,
-		subaction: action
-	};
-
-	ajax_data[options.nonce_key] = options.nonce;
-	ajax_data.data = data;
-
-	var ajax_opts = {
-		type: options.type,
-		url: ajaxurl,
-		data: ajax_data,
-		success: function(response, status) {
-			if (options.json_parse) {
-				try {
-					var resp = aios_parse_json(response);
-				} catch (e) {
-					if ('function' == typeof options.error_callback) {
-						return options.error_callback(response, e, 502, resp);
-					} else {
-						console.log(e);
-						console.log(response);
-						if (options.alert_on_error) { alert(aios_trans.unexpected_response+' '+response); }
-						return;
-					}
-				}
-				if (resp.hasOwnProperty('fatal_error')) {
-					if ('function' == typeof options.error_callback) {
-						// 500 is internal server error code
-						return options.error_callback(response, status, 500, resp);
-					} else {
-						console.error(resp.fatal_error_message);
-						if (options.alert_on_error) { alert(resp.fatal_error_message); }
-						return false;
-					}
-				}
-				if ('function' == typeof callback) callback(resp, status, response);
-			} else {
-				if ('function' == typeof callback) callback(response, status);
-			}
-		},
-		error: function(response, status, error_code) {
-			if ('function' == typeof options.error_callback) {
-				options.error_callback(response, status, error_code);
-			} else {
-				console.log("aios_send_command: error: "+status+" ("+error_code+")");
-				console.log(response);
-			}
-		},
-		dataType: 'text',
-		async: options.async
-	};
-
-	if (null != options.timeout) { ajax_opts.timeout = options.timeout; }
-
-	jQuery.ajax(ajax_opts);
-
-}
-
-/**
- * Parse JSON string, including automatically detecting unwanted extra input and skipping it
- *
- * @param {string}  json_mix_str - JSON string which need to parse and convert to object
- * @param {boolean} analyse		 - if true, then the return format will contain information on the parsing, and parsing will skip attempting to JSON.parse() the entire string (will begin with trying to locate the actual JSON)
- *
- * @throws SyntaxError|String (including passing on what JSON.parse may throw) if a parsing error occurs.
- *
- * @returns Mixed parsed JSON object. Will only return if parsing is successful (otherwise, will throw). If analyse is true, then will rather return an object with properties (mixed)parsed, (integer)json_start_pos and (integer)json_end_pos
- */
-function aios_parse_json(json_mix_str, analyse) {
-
-	analyse = ('undefined' === typeof analyse) ? false : true;
-
-	// Just try it - i.e. the 'default' case where things work (which can include extra whitespace/line-feeds, and simple strings, etc.).
-	if (!analyse) {
-		try {
-			var result = JSON.parse(json_mix_str);
-			return result;
-		} catch (e) {
-			console.log('AIOS: Exception when trying to parse JSON (1) - will attempt to fix/re-parse based upon first/last curly brackets');
-			console.log(json_mix_str);
-		}
-	}
-
-	var json_start_pos = json_mix_str.indexOf('{');
-	var json_last_pos = json_mix_str.lastIndexOf('}');
-
-	// Case where some php notice may be added after or before json string
-	if (json_start_pos > -1 && json_last_pos > -1) {
-		var json_str = json_mix_str.slice(json_start_pos, json_last_pos + 1);
-		try {
-			var parsed = JSON.parse(json_str);
-			if (!analyse) { console.log('AIOS: JSON re-parse successful'); }
-			return analyse ? { parsed: parsed, json_start_pos: json_start_pos, json_last_pos: json_last_pos + 1 } : parsed;
-		} catch (e) {
-			console.log('AIOS: Exception when trying to parse JSON (2) - will attempt to fix/re-parse based upon bracket counting');
-
-			var cursor = json_start_pos;
-			var open_count = 0;
-			var last_character = '';
-			var inside_string = false;
-
-			// Don't mistake this for a real JSON parser. Its aim is to improve the odds in real-world cases seen, not to arrive at universal perfection.
-			while ((open_count > 0 || cursor == json_start_pos) && cursor <= json_last_pos) {
-
-				var current_character = json_mix_str.charAt(cursor);
-
-				if (!inside_string && '{' == current_character) {
-					open_count++;
-				} else if (!inside_string && '}' == current_character) {
-					open_count--;
-				} else if ('"' == current_character && '\\' != last_character) {
-					inside_string = inside_string ? false : true;
-				}
-
-				last_character = current_character;
-				cursor++;
-			}
-			console.log("Started at cursor="+json_start_pos+", ended at cursor="+cursor+" with result following:");
-			console.log(json_mix_str.substring(json_start_pos, cursor));
-
-			try {
-				var parsed = JSON.parse(json_mix_str.substring(json_start_pos, cursor));
-				console.log('AIOS: JSON re-parse successful');
-				return analyse ? { parsed: parsed, json_start_pos: json_start_pos, json_last_pos: cursor } : parsed;
-			} catch (e) {
-				// Throw it again, so that our function works just like JSON.parse() in its behaviour.
-				throw e;
-			}
-		}
-	}
-
-	throw "AIOS: could not parse the JSON";
-
-}
-
-/**
- * Updates the content of an HTML element identified by its ID with the provided badge text.
- *
- * @param {Array} badges - An array of objects representing badges to update.
- * @param {string} badges.id - The ID of the HTML element to update.
- * @param {string} badges.html - The HTML content to set for the element.
- * @returns {void}
- */
-function aios_update_badge(badges) {
-	badges.forEach(function(badge) {
-		aios_update_content(badge.id, badge.html);
-	});
-}
-
-/**
- * Update the content of an element with the specified HTML.
- *
- * @param {string} id - The ID of the element to update.
- * @param {string} html - The HTML content to set for the element.
- * @returns {void}
- */
-function aios_update_content(id, html) {
-	jQuery(id).html(html);
-}
-
-/**
- * Escapes a string for safe HTML output.
- *
- * @param {string} str - The string to escape.
- *
- * @returns {string} The escaped HTML string.
- */
-function aios_escape_html(str) {
-	const div = document.createElement('div');
-	div.textContent = str;
-	return div.innerHTML;
-}
-
-/**
- * Function to block the UI and display a loading message.
- * Uses jQuery blockUI plugin.
- *
- * @param {string} message - A string to be shown when function is called
- *
- * @returns {void}
- */
-function aios_block_ui(message = aios_trans.saving) {
-	jQuery.blockUI({
-		css: {
-			width: '500px',
-			border: 'none',
-			'border-radius': '10px',
-			left: 'calc(50% - 250px)',
-			top: 'calc(50% - 150px)',
-			padding: '20px'
-		},
-		message: '<div style="margin: 8px; font-size:150%;" class="aios_saving_popup"><img src="' + aios_trans.logo + '" height="80" width="80" style="padding-bottom:10px;"><br>' + message + '</div>'
-	});
-}
-
-/**
- * Display a success modal with optional message and icon.
- *
- * @param {Object|string} args - Configuration object or message string.
- * @param {boolean} close_popup - Optional. If true, the popup will close automatically after 2 seconds. Default is true.
- *
- * @returns {void}
- */
-function aios_show_success_modal(args, close_popup = true) {
-	if ('string' == typeof args) {
-		args = {
-			message: args
-		};
-	}
-	var data = jQuery.extend(
-		{
-			icon: 'yes',
-			close: aios_trans.close,
-			message: '',
-			classes: 'success'
-		},
-		args
-	);
-
-	var closeButtonHTML = '';
-	if (!close_popup) {
-		closeButtonHTML = '<button class="button aios-close-overlay"><span class="dashicons dashicons-no-alt"></span>' + data.close + '</button>';
-	}
-
-	jQuery.blockUI({
-		css: {
-			width: '500px',
-			border: 'none',
-			'border-radius': '10px',
-			left: 'calc(50% - 250px)',
-			top: 'calc(50% - 150px)',
-			cursor: 'default'
-		},
-		onOverlayClick: jQuery.unblockUI,
-		message: '<div class="aios_success_popup ' + data.classes + '"><span class="dashicons dashicons-' + data.icon + '"></span><div class="aios_success_popup--message">' + data.message + '</div>' + closeButtonHTML + '</div>'
-	});
-
-	// click the show more for AJAX info
-	jQuery('.aios_success_popup').on('click', '#aios_ajax_showmoreoptions', function(e) {
-		e.preventDefault();
-		let more_options = jQuery('#aios_ajax_moreoptions');
-		more_options.toggle();
-		// Toggle text between "Show more" and "Hide"
-		let new_text = more_options.is(':visible') ? aios_trans.hide_info : aios_trans.show_info;
-		jQuery(this).text(new_text);
-	});
-
-	// close success popup
-	jQuery('.blockUI .aios-close-overlay').on('click', function() {
-		jQuery.unblockUI();
-	});
-
-	if (close_popup) {
-		setTimeout(function() {
-			jQuery.unblockUI();
-		}, 2000);
-	}
-}
-
-/**
- * Submits a form using AJAX and handles the response.
- *
- * @param {jQuery} form - The jQuery object representing the form element.
- * @param {string} action - The action to perform when submitting the form.
- * @param {boolean|Object} [use_data=true] - Indicates whether to include form data in the AJAX request.
- * @param {string} [block_ui_message="Saving..."] - The message to display while blocking UI during AJAX request.
- * @param {Function} [pre_ajax_callback] - Optional callback function to execute before the AJAX request.
- * @param {Function} [post_ajax_callback] - Optional callback function to execute after the AJAX request.
- * @param {Function} [error_callback] - Optional callback function to execute if an error occurs during the AJAX request.
- */
-function aios_submit_form(form, action, use_data = true, block_ui_message = aios_trans.saving, pre_ajax_callback, post_ajax_callback, error_callback) {
-	aios_block_ui(block_ui_message);
-	var submitButton = form.find(':submit');
-	submitButton.prop('disabled', true);
-	var data = {};
-
-	if ('function' === typeof pre_ajax_callback) {
-		pre_ajax_callback();
-	}
-
-	if ('object' === typeof use_data) {
-		data = use_data; // Use custom data object
-	} else if (use_data) {
-		var dataArray = form.serializeArray();
-		var dataLength = dataArray.length;
-		for (var i = 0; i < dataLength; i++) {
-			data[dataArray[i].name] = dataArray[i].value;
-		}
-	}
-
-	if (typeof error_callback !== 'function') {
-		error_callback = function() {
-			jQuery.unblockUI();
-		};
-	} else {
-		// Save reference to the original callback
-		var original_error_callback = error_callback;
-
-		error_callback = function() {
-			original_error_callback();
-			jQuery.unblockUI();
-		};
-	}
-
-	let options = {
-		error_callback: error_callback
-	}
-
-	aios_send_command(action, data, function(response) {
-		aios_handle_ajax_update(response, post_ajax_callback);
-		submitButton.prop('disabled', false)
-	}, options);
-}
-
-/**
- * Handle AJAX response and update UI elements accordingly.
- * If a callback function is provided, it will be executed.
- *
- * @param {Object} response - The AJAX response object.
- * @param {Function} [callback] - Optional callback function to execute.
- *
- * @returns {void}
- */
-function aios_handle_ajax_update(response, callback) {
-
-	// update contents on the page
-	if (response.hasOwnProperty('content')) {
-		jQuery.each(response.content, function(key, value) {
-			aios_update_content('#' + key, value);
-		});
-	}
-
-	// update fields with new values if changed
-	if (response.hasOwnProperty('values')) {
-		jQuery.each(response.values, function(key, value) {
-			jQuery('#' + key).val(value);
-		});
-	}
-
-	// update badges
-	if (response.hasOwnProperty('badges')) {
-		aios_update_badge(response.badges);
-	}
-
-	if ('function' === typeof callback) {
-		callback(response);
-	}
-
-	aios_show_ajax_response_message(response);
-}
-
-/**
- * Displays an AJAX response message in a modal or unblocks the UI.
- *
- * This function processes the response from an AJAX request and displays
- * the message or info in a modal. If there is an error in the response,
- * it shows a warning modal. If there are additional informational messages,
- * it provides a toggle to display them. If no messages are present, it unblocks the UI.
- *
- * @param {Object} response - The response object returned from the AJAX call.
- * @param {string} [response.message] - The main message to be displayed in the modal.
- * @param {string} [response.status] - The status of the response ('error' indicates a warning).
- * @param {Array<string>} [response.info] - Additional information messages to display.
- */
-function aios_show_ajax_response_message(response) {
-	var update_message = (response.hasOwnProperty('message') && response.message.length > 0) || (response.hasOwnProperty('info') && response.info.length > 0);
-
-	if (update_message) {
-		var messageContainer = jQuery('<div></div>');
-		var close_popup = true;
-
-		// display single message
-		if (response.hasOwnProperty('message')) {
-			messageContainer.append(response.message);
-			messageContainer.append('<br>');
-		}
-
-		if (response.hasOwnProperty('info') && response.info.length > 0) {
-			close_popup = false;
-			// info toggle
-			let toggle = jQuery('<span>' + aios_trans.show_notices + ' (<a href="#" id="aios_ajax_showmoreoptions">' + aios_trans.show_info + '</a>)</span>');
-			toggle.appendTo(messageContainer);
-
-
-			let infoContainer = jQuery('<div id="aios_ajax_moreoptions" class="aiowps_more_info_body" style="display:none;"></div>');
-			response.info.forEach(function(info) {
-				infoContainer.append(`<span class="aios-modal-info">${info}</span>`, '<br>');
-			});
-
-			infoContainer.appendTo(messageContainer);
-		}
-
-
-		if ('error' === response.status) {
-			aios_show_success_modal({
-				message: messageContainer.html(),
-				icon: 'no-alt',
-				classes: 'warning'
-			}, false);
-		} else {
-			aios_show_success_modal(messageContainer.html(), close_popup);
-		}
-	} else {
-		setTimeout(function() {
-			jQuery.unblockUI();
-		}, 1500);
-	}
-}
-
 jQuery(function($) {
 	//Add Generic Admin Dashboard JS Code in this file
-
-	var heartbeat = WP_Security_Heartbeat();
-	var heartbeat_agents = [];
 
 	//Media Uploader - start
 	jQuery("#aiowps_restore_htaccess_form").on('submit', function(e) {
@@ -474,18 +26,91 @@ jQuery(function($) {
 
 	jQuery("#aiowps_restore_settings_form").on('submit', function(e) {
 		e.preventDefault();
-		var form = jQuery(this);
 
 		aios_read_restore_file(this, 'import_settings', function() {
-
-			aios_submit_form(form, 'perform_restore_aiowps_settings', true, aios_trans.processing, null, function(response) {
-				form[0].reset();
-				if (response.hasOwnProperty('redirect_url')) {
-					// Redirect to the URL
-					window.location.href = response.extra_args.redirect_url;
+			var import_contents = JSON.parse(jQuery('#aiowps_import_settings_file_contents').val());
+			if ("1" != jQuery("#aios_import_settings_confirm").val() && "undefined" != typeof import_contents.sitedetails && "undefined" != typeof import_contents.sitedetails.site_url && new URL(import_contents.sitedetails.site_url).host !== window.location.host) {
+				// Admin email
+				jQuery("#import_settings_details").removeClass("aio_hidden");
+				
+				if ("undefined" != typeof import_contents.sitedetails.admin_email) {
+					jQuery("#aios_import_settings_email").val(import_contents.sitedetails.admin_email.toString());
 				}
-			})
+				
+				// Cookie based brute force on then secret word otherwise renamed login page to confirm
+				if ("undefined" != typeof import_contents.firewall && "undefined" != typeof import_contents.firewall.aios_enable_brute_force_attack_prevention && "1" == import_contents.firewall.aios_enable_brute_force_attack_prevention.toString()) {
+					jQuery("#site_details_cookie_based_brute_force").removeClass("aio_hidden");
+					if ("undefined" != typeof import_contents.firewall.aios_brute_force_secret_word) {
+						jQuery("#aios_import_settings_brute_force_secret_word").val(import_contents.firewall.aios_brute_force_secret_word.toString());
+					}
+				}
+				
+				if ("undefined" != typeof import_contents.general && "undefined" != typeof import_contents.general.aiowps_enable_rename_login_page && "1" == import_contents.general.aiowps_enable_rename_login_page.toString()) {
+					jQuery("#site_details_renamed_login_page").removeClass("aio_hidden");
+					if ("undefined" != typeof import_contents.general.aiowps_login_page_slug) {
+						jQuery("#aios_import_settings_renamed_login_page").val(import_contents.general.aiowps_login_page_slug.toString());
+					}
+				}
+				
+				// Captcha type based reCaptcha or turnstile site key and secret key.
+				if ("undefined" != typeof import_contents.general && "undefined" != typeof import_contents.general.aiowps_default_captcha) {
+					if ("google-recaptcha-v2" == import_contents.general.aiowps_default_captcha) {
+						jQuery("#site_details_captcha_keys").removeClass("aio_hidden");
+						jQuery("#captcha_type").html(jQuery("#captcha_type").attr("attr_recaptcha"));
+						if ("undefined" != typeof import_contents.general.aiowps_recaptcha_site_key) {
+							jQuery("#aios_import_settings_site_key").val(import_contents.general.aiowps_recaptcha_site_key.toString());
+						}
+						if ("undefined" != typeof import_contents.general.aiowps_recaptcha_secret_key) {
+							jQuery("#aios_import_settings_secret_key").val(import_contents.general.aiowps_recaptcha_secret_key.toString());
+						}
+					} else if ("cloudflare-turnstile" == import_contents.general.aiowps_default_captcha) {
+						jQuery("#site_details_captcha_keys").removeClass("aio_hidden");
+						jQuery("#captcha_type").html(jQuery("#captcha_type").attr("attr_turnstile"));
+						if ("undefined" != typeof import_contents.general.aiowps_turnstile_site_key) {
+							jQuery("#aios_import_settings_site_key").val(import_contents.general.aiowps_turnstile_site_key.toString());
+						}
+						if ("undefined" != typeof import_contents.general.aiowps_turnstile_secret_key) {
+							jQuery("#aios_import_settings_secret_key").val(import_contents.general.aiowps_turnstile_secret_key.toString());
+						}
+					}
+				}
+				return false;
+			}
+			perform_restore_settings();
 		})
+	});
+	
+	/**
+	 * Performs restore settings for import file contents
+	 */
+	function perform_restore_settings() {
+		var form = jQuery("#aiowps_restore_settings_form");
+		aios_submit_form(form, 'perform_restore_aiowps_settings', true, aios_trans.processing, null, function(response) {
+			form[0].reset();
+			jQuery("#aios_import_settings_confirm").val("0");
+			jQuery("#import_settings_details").addClass("aio_hidden");
+			jQuery("#site_details_cookie_based_brute_force").addClass("aio_hidden");
+			jQuery("#site_details_renamed_login_page").addClass("aio_hidden");
+			jQuery("#site_details_captcha_keys").addClass("aio_hidden");
+			if (response.hasOwnProperty('redirect_url')) {
+				// Redirect to the URL
+				window.location.href = response.extra_args.redirect_url;
+			}
+		})
+	}
+
+	jQuery("#aios_import_settings_confirm_button").on('click', function(e) {
+		jQuery("#aios_import_settings_confirm").val("1");
+		perform_restore_settings();
+	});
+
+	jQuery('.aios-tooltip').tooltip({
+		show: 200,
+		hide: 150,
+		position: {
+			my: 'center bottom-10',
+			at: 'center top'
+		}
 	});
 
 	/**
@@ -516,23 +141,6 @@ jQuery(function($) {
 		aios_import_file_reader.readAsText(aios_import_file_file);
 	}
 	//End of Media Uploader
-
-	// Triggers the more info toggle link
-	jQuery(".aiowps_more_info_body").hide();//hide the more info on page load
-	function toggleMoreInfo(target = '.aiowps_more_info_anchor') {
-		jQuery(target).on('click', function() {
-			jQuery(this).next(".aiowps_more_info_body").animate({"height": "toggle"});
-			var toggle_char_ref = jQuery(this).find(".aiowps_more_info_toggle_char");
-			var toggle_char_value = toggle_char_ref.text();
-			if ("+" === toggle_char_value) {
-				toggle_char_ref.text("-");
-			} else {
-				toggle_char_ref.text("+");
-			}
-		});
-	}
-	toggleMoreInfo();
-	//End of more info toggle
 
 	/**
 	 * This function uses javascript to retrieve a query arg from the current page URL
@@ -643,14 +251,22 @@ jQuery(function($) {
 
 	// Start audit log list table handling
 	var audit_log_table_id = '#audit-log-list-table #tables-filter',
-		audit_log_elements = '.tablenav-pages a, .manage-column.sortable a, .manage-column.sorted a, #search-submit, .action',
+		audit_log_elements = '.tablenav-pages a, .manage-column.sortable a, .manage-column.sorted a, #search-submit, .action, .aios-per-page',
 		audit_log_bulk_action_selector = '#bulk-action-selector-top, #bulk-action-selector-bottom',
 		audit_log_table_tab = 'render_audit_log_tab',
 		audit_log_filter_event = '.audit-filter-event',
 		audit_log_search = '#search_audit_events-search-input',
 		audit_log_level = '.audit-filter-level';
-	detect_table_action(audit_log_table_id, audit_log_elements, audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level);
+	aios_detect_table_action(audit_log_table_id, audit_log_elements, audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level);
 	// End of audit log list table handling
+
+	// Start locked ip list table handling
+	var locked_ip_table_id = '#locked-ip-list-table #tables-filter',
+		locked_ip_elements = '.tablenav-pages a, .manage-column.sortable a, .manage-column.sorted a, #search-submit, .action',
+		locked_ip_bulk_action_selector = '#bulk-action-selector-top, #bulk-action-selector-bottom',
+		locked_ip_table_tab = 'render_locked_ip_tab';
+	aios_detect_table_action(locked_ip_table_id, locked_ip_elements, locked_ip_bulk_action_selector, locked_ip_table_tab, '', '', '');
+	// End of locked ip list table handling
 
 	// Start permanent block ip list table handling
 	var permanent_blocked_ip_table_id = '#permanent-ip-list-table #tables-filter',
@@ -658,7 +274,8 @@ jQuery(function($) {
 		permanent_blocked_ip_bulk_action_selector = '#bulk-action-selector-top, #bulk-action-selector-bottom',
 		permanent_blocked_ip_table_tab = 'render_permanent_block_list_tab',
 		permanent_blocked_ip_search = '#search_permanent_block-search-input';
-	detect_table_action(permanent_blocked_ip_table_id, permanent_blocked_ip_elements, permanent_blocked_ip_bulk_action_selector, permanent_blocked_ip_table_tab, '', permanent_blocked_ip_search, '');
+		permanent_blocked_ip_reason = '.permanent-block-filter-reason';
+	aios_detect_table_action(permanent_blocked_ip_table_id, permanent_blocked_ip_elements, permanent_blocked_ip_bulk_action_selector, permanent_blocked_ip_table_tab, '', permanent_blocked_ip_search, '', permanent_blocked_ip_reason);
 	// End of  permanent block ip list table handling
 
 	// Start 404 log list table handling
@@ -667,219 +284,40 @@ jQuery(function($) {
 		log_404_bulk_action_selector = '#bulk-action-selector-top, #bulk-action-selector-bottom',
 		log_404_table_tab = 'render_404_log_tab',
 		log_404_search = '#search_404_events-search-input';
-	detect_table_action(log_404_table_id, log_404_elements, log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '');
+	aios_detect_table_action(log_404_table_id, log_404_elements, log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '');
 	// End of 404 log list table handling
 
-	// Start of list table handling
+	// Start of debug log list table handling
+	var debug_log_table_id = '#debug-list-table',
+		debug_log_elements = '.tablenav-pages a, .manage-column.sortable a, .manage-column.sorted a',
+		debug_log_table_tab = 'render_debug_log_tab';
+	aios_detect_table_action(debug_log_table_id, debug_log_elements, '', debug_log_table_tab);
+	// End of debug log list table handling
 
-	/**
-	 * Attaches event handlers to specified table elements for detecting and performing actions,
-	 * then updates the table based on the current state or the clicked element.
-	 *
-	 * @param {string} id - The ID selector of the table element (e.g., '#my-table').
-	 * @param {string} elements - The elements inside the table to attach event handlers to (e.g., 'input, select').
-	 * @param {string} action_selector - The selector for the bulk action dropdown element (e.g., '#bulk-action-selector-top').
-	 * @param {string} tab - The tab or section to update after performing an action (e.g., 'posts', 'comments').
-	 * @param {string} [filter_event_selector=''] - The selector for filtering by event type (optional).
-	 * @param {string} [search_selector=''] - The selector for the search input element (optional).
-	 * @param {string} [filter_level_selector=''] - The selector for filtering by level (optional).
-	 * @param {boolean} [detect=true] - Whether to detect actions based on the clicked element or to perform an action immediately.
-	 *
-	 * @returns {void}
-	 */
-	function detect_table_action(id, elements, action_selector, tab, filter_event_selector = '', search_selector = '', filter_level_selector = '', detect = true) {
+	// Start of logged in user table handling
+	var logged_in_users_table_id = '#aios-logged-in-users-table #tables-filter',
+		logged_in_users_elements = '.tablenav-pages a, .manage-column.sortable a, .manage-column.sorted a, .action',
+		logged_in_users_bulk_action_selector = '#bulk-action-selector-top, #bulk-action-selector-bottom',
+		logged_in_users_table_tab = 'render_logged_in_users_tab';
+	aios_detect_table_action(logged_in_users_table_id, logged_in_users_elements, logged_in_users_bulk_action_selector, logged_in_users_table_tab, '', '', '');
+	// End of logged in user table handling
 
-		if (true === detect) {
-			jQuery(id).on('click change', elements, function(e) {
-				// Check if the event's default action is prevented by the confirm message cancel
-				if (!e.isDefaultPrevented()) {
-					e.preventDefault();
-					perform_action.call(this); // Ensure the context (this) is correct
-				}
-			});
-		} else {
-			perform_action.call(jQuery(id).get(0)); // Use the first element from the selector to maintain context
-		}
+	// Start of manual approval (registered users) table handling
+	var manual_approval_table_id = '#aios-manual-approval-table #tables-filter',
+		manual_approval_elements = '.tablenav-pages a, .manage-column.sortable a, .manage-column.sorted a, #search-submit, .action',
+		manual_approval_bulk_action_selector = '#bulk-action-selector-top, #bulk-action-selector-bottom',
+		manual_approval_table_tab = 'render_manual_approval_tab',
+		manual_approval_search = '#search_user_registration-search-input';
+	aios_detect_table_action(manual_approval_table_id, manual_approval_elements, manual_approval_bulk_action_selector, manual_approval_table_tab, '', manual_approval_search, '');
+	// End of manual approval table handling
 
-		/**
-		 * Perform the action based on the clicked element or the current sorting state.
-		 *
-		 * @returns {void}
-		 */
-		function perform_action() {
-			aios_block_ui(aios_trans.processing);
-			var checked_values = jQuery('th.check-column input[type="checkbox"]:checked').map(function() {
-				return jQuery(this).val();
-			}).get();
-
-			var event_filter = jQuery(filter_event_selector).val();
-
-			var top_selector = jQuery('#bulk-action-selector-top').val(),
-			bottom_selector = jQuery('#bulk-action-selector-bottom').val(),
-			search = jQuery(search_selector).val(),
-			action;
-
-			if ('-1' !== top_selector) {
-				action = top_selector;
-			} else if ('-1' !== bottom_selector) {
-				action = bottom_selector;
-			} else {
-				action = '-1';
-			}
-
-			var data = {
-				'paged': get_page_number(jQuery(this)),
-				'order': get_order(jQuery(this)),
-				'orderby': get_order_by(jQuery(this)),
-				's': search || '',
-				'level-filter': jQuery(filter_level_selector).val() || '-1',
-				'event-filter': event_filter || '-1',
-				'items': checked_values,
-				'bulk_apply': jQuery(this).is('.bulkactions .action'),
-				'action': action
-			};
-
-			update_list_table(tab, data);
-
-			jQuery(action_selector).val('-1');
-		}
-	}
-
-	/**
-	 * Get the column ID based on the clicked element or the current sorting state.
-	 *
-	 * @param {jQuery} element - The jQuery object representing the clicked element.
-	 *
-	 * @returns {string} The ID of the column.
-	 */
-	function get_order_by(element) {
-		if (element.is('.manage-column.sortable a')) return element.closest('th').attr('id');
-		else if (0 < jQuery('.sorted').length) return jQuery('.sorted').attr('id');
-		else return element.closest('th').attr('id');
-	}
-
-	/**
-	 * Get the order (ascending or descending) based on the clicked element or the current sorting state.
-	 *
-	 * @param {jQuery} element - The jQuery object representing the clicked element.
-	 *
-	 * @returns {string} The order ('asc' for ascending, 'desc' for descending).
-	 */
-	function get_order(element) {
-		if (element.is('.manage-column.sortable a') || element.is('.manage-column.sorted a')) {
-			var url = element.attr('href'),
-			orderMatch = url.match(/[?&]order=([^&]+)/);
-			return orderMatch[1];
-		} else if (0 < jQuery('.sorted').length) {
-			return  jQuery('.sorted').hasClass('asc') ? 'asc' : 'desc';
-		} else {
-			return element.closest('th').hasClass('asc') ? 'asc' : 'desc';
-		}
-	}
-
-	/**
-	 * Get the page number based on the clicked element.
-	 *
-	 * @param {jQuery} element - The jQuery object representing the clicked element.
-	 *
-	 * @returns {number|string} The page number. If the clicked element represents a specific page, returns that page number. If not, returns the current page number.
-	 */
-	function get_page_number(element) {
-		if (element.hasClass('first-page'))
-			return '1';
-		else if (element.hasClass('last-page'))
-			return find_page_number(jQuery('.last-page'));
-		else if (element.hasClass('prev-page'))
-			return find_page_number(jQuery('.prev-page'));
-		else if (element.hasClass('next-page'))
-			return find_page_number(jQuery('.next-page'));
-		else return jQuery('.current-page').val();
-	}
-	
-	/**
-	 * Finds and returns the page number from the href attribute of the provided element.
-	 *
-	 * @param {jQuery} element - The jQuery object representing the element containing the href attribute.
-	 *
-	 * @returns {number} The page number extracted from the href attribute.
-	 */
-	function find_page_number(element) {
-		return parseInt(element.attr('href').split('paged=')[1]);
-	}
-
-	/**
-	 * Update the list table with data from an AJAX call.
-	 * If the current page number exceeds the total pages available,
-	 * make a new request for the last available page.
-	 *
-	 * @param {string} table - The table tab.
-	 * @param {object} data - The data object containing table parameters.
-	 */
-	function update_list_table(table, data) {
-		aios_send_command(table, data, function(response) {
-			// Check if the requested page number exceeds the total pages available
-			if (data.paged > response.total_pages && 0 < response.total_pages) {
-				// Update data to request the last available page
-				data.paged = response.total_pages;
-				// Make another AJAX call to get the data for the last page
-				aios_send_command(table, data, function(response) {
-					render_table(response);
-					}, {
-					error_callback: handle_ajax_error
-				});
-			} else {
-				// Proceed to render the table with the current response
-				render_table(response);
-			}
-			}, {
-			error_callback: handle_ajax_error
-		});
-	}
-	// End of list table handling
-
-	/**
-	 * Render the table elements based on the AJAX response.
-	 *
-	 * @param {object} response - The response object from the AJAX call.
-	 */
-	function render_table(response) {
-		// Add the requested rows
-		if (response.rows.length) jQuery('#the-list').html(response.rows);
-		// Update column headers for sorting
-		if (response.column_headers.length) jQuery('thead tr, tfoot tr').html(response.column_headers);
-		// Update pagination for navigation
-		if (response.pagination.top.length) jQuery('.tablenav.top .tablenav-pages').html(jQuery(response.pagination.top).html());
-		if (response.pagination.bottom.length) jQuery('.tablenav.bottom .tablenav-pages').html(jQuery(response.pagination.bottom).html());
-
-		// Add/Remove the message
-		if (response.message && response.message.length) {
-			aios_show_ajax_response_message(response);
-		} else {
-			setTimeout(function() {
-				jQuery.unblockUI();
-			}, 3000);
-		}
-	}
-
-	/**
-	 * Handle errors from the AJAX call.
-	 *
-	 * @param {object} response - The response object from the AJAX call.
-	 * @param {string} status - The status of the AJAX call.
-	 * @param {string} error_code - The error code from the AJAX call.
-	 * @param {object} resp - The response object containing detailed error information.
-	 */
-	function handle_ajax_error(response, status, error_code, resp) {
-		if (typeof resp !== 'undefined' && resp.hasOwnProperty('fatal_error')) {
-			console.error(resp.fatal_error_message);
-			alert(resp.fatal_error_message);
-		} else {
-			var error_message = "aios_send_command: error: " + status + " (" + error_code + ")";
-			console.log(error_message);
-			alert(error_message);
-		}
-		jQuery.unblockUI();
-	}
+	// Start of spammer ip list table handling
+	var spammer_ip_table_id = '#aios-spammer-list-table #tables-filter',
+		spammer_ip_elements = '.tablenav-pages a, .manage-column.sortable a, .manage-column.sorted a, #search-submit, .action',
+		spammer_ip_bulk_action_selector = '#bulk-action-selector-top, #bulk-action-selector-bottom',
+		spammer_ip_table_tab = 'render_comment_spammer_ip_table';
+	aios_detect_table_action(spammer_ip_table_id, spammer_ip_elements, spammer_ip_bulk_action_selector, spammer_ip_table_tab, '', '', '');
+	// End of spammer ip list table handling
 
 	// Start of database table prefix handling
 	jQuery('#aiowps_enable_random_prefix').on('click', function() {
@@ -900,20 +338,20 @@ jQuery(function($) {
 		e.preventDefault();
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
-			aios_submit_form(element, 'unlock_ip', {ip: element.data('ip')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) jQuery('#locked-ip-list-table').load(' #locked-ip-list-table > *');
-			})
+			aios_submit_form(element, 'unlock_ip', {ip: element.data('ip')}, aios_trans.unlocking, null, function(response) {
+				if ('success' === response.status) aios_detect_table_action(locked_ip_table_id, '', locked_ip_bulk_action_selector, locked_ip_table_tab, '', '', '', '', false);
+			});
 		}
 	});
 
 	jQuery("#locked-ip-list-table").on('click', '.aios-delete-locked-ip-record', function(e) {
 		e.preventDefault();
 		var element = jQuery(this);
-		confirm(element.data('message')) ? aios_send_command('delete_locked_ip_record', {id: element.data('id')}, function(response) {
-			jQuery('#aios_message').remove();
-			jQuery('#wpbody-content .wrap h2:first').after(response.message);
-			if ('success' === response.status) jQuery('#locked-ip-list-table').load(' #locked-ip-list-table > *');
-		}) : false;
+		if (confirm(element.data('message'))) {
+			aios_submit_form(element,'delete_locked_ip_record', {id: element.data('id')}, aios_trans.deleting, null, function (response) {
+				if ('success' === response.status) aios_detect_table_action(locked_ip_table_id, '', locked_ip_bulk_action_selector, locked_ip_table_tab, '', '', '', '', false);
+			});
+		}
 	});
 
 	jQuery("#permanent-ip-list-table").on('click', '.aios-unblock-permanent-ip', function(e) {
@@ -921,7 +359,17 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'blocked_ip_list_unblock_ip', {id: element.data('id')}, aios_trans.unlocking, null, function(response) {
-				if ('success' === response.status) detect_table_action(permanent_blocked_ip_table_id, '', permanent_blocked_ip_bulk_action_selector, permanent_blocked_ip_table_tab, '', permanent_blocked_ip_search, '', false);
+				if ('success' === response.status) aios_detect_table_action(permanent_blocked_ip_table_id, '', permanent_blocked_ip_bulk_action_selector, permanent_blocked_ip_table_tab, '', permanent_blocked_ip_search, '', permanent_blocked_ip_reason, false);
+			});
+		}
+	});
+
+	jQuery("#permanent-ip-list-table").on('click', '.aios-unblock-filtered-permanent-ip', function(e) {
+		e.preventDefault();
+		var element = jQuery(this);
+		if (confirm(element.data('message'))) {
+			aios_submit_form(element, 'blocked_ip_list_unblock_ip', {id: element.data('id')}, aios_trans.unlocking, null, function(response) {
+				if ('success' === response.status) aios_detect_table_action(permanent_blocked_ip_table_id, '', permanent_blocked_ip_bulk_action_selector, permanent_blocked_ip_table_tab, '', permanent_blocked_ip_search, '', permanent_blocked_ip_reason, false);
 			});
 		}
 	});
@@ -932,7 +380,7 @@ jQuery(function($) {
 
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'delete_audit_log', {id: element.data('id')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, false);
+				if ('success' === response.status) aios_detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, '', false);
 			})
 		}
 	});
@@ -942,7 +390,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'unlock_ip', {ip: element.data('ip')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, false);
+				if ('success' === response.status) aios_detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, '', false);
 			})
 		}
 	});
@@ -952,7 +400,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'unblacklist_ip', {ip: element.data('ip')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, false);
+				if ('success' === response.status) aios_detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, '', false);
 			})
 		}
 	});
@@ -962,7 +410,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element,'lock_ip', {ip: element.data('ip'), lock_reason: 'audit-log'}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, false);
+				if ('success' === response.status) aios_detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, '', false);
 			})
 		}
 	});
@@ -972,7 +420,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element,'blacklist_ip', {ip: element.data('ip')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, false);
+				if ('success' === response.status) aios_detect_table_action(audit_log_table_id, '', audit_log_bulk_action_selector, audit_log_table_tab, audit_log_filter_event, audit_log_search, audit_log_level, '', false);
 			})
 		}
 	});
@@ -986,13 +434,20 @@ jQuery(function($) {
 		});
 	});
 
+	jQuery('#aios-export-404-csv-form').on('submit', function(e) {
+		e.preventDefault();
+
+		aios_submit_form(jQuery(this), 'export_404_detection_logs', true, aios_trans.processing, null, function (response) {
+			if (false === response.success) return;
+			aios_download_csv_file(response.data, response.title);
+		});
+	});
+
 	jQuery('#aios-clear-debug-logs').on('click', '.aios-clear-debug-logs', function(e) {
 		e.preventDefault();
 		if (confirm(jQuery(this).data('message'))) {
-			aios_send_command('clear_debug_logs', {}, function(response) {
-				jQuery('#aios_message').remove();
-				jQuery('#wpbody-content .wrap h2:first').after(response.message);
-				if ("success" === response.status) jQuery('#debug-list-table').load(' #debug-list-table > *');
+			aios_submit_form(jQuery(this), 'clear_debug_logs', {}, aios_trans.deleting, null, function(response) {
+				if ("success" === response.status) aios_update_list_table(debug_log_table_tab, {});
 			});
 		}
 	});
@@ -1015,7 +470,7 @@ jQuery(function($) {
 			var targetOffset = jQuery('#aios-spammer-list-table').offset().top;
 			jQuery('html, body').animate({ scrollTop: targetOffset }, 'slow');
 			if ("success" === response.status) {
-				jQuery('#aios-spammer-list-table').load(' #aios-spammer-list-table > *');
+				aios_detect_table_action(spammer_ip_table_id, '', spammer_ip_bulk_action_selector, spammer_ip_table_tab, '', '', '', '', false);
 			}
 		})
 	})
@@ -1030,7 +485,7 @@ jQuery(function($) {
 		if (confirm(jQuery(this).data('message'))) {
 			aios_submit_form(jQuery(this), 'perform_block_spam_ip', data, aios_trans.processing, null, function(response) {
 				if ("success" === response.status) {
-					jQuery('#aios-spammer-list-table').load(' #aios-spammer-list-table > *');
+					aios_detect_table_action(spammer_ip_table_id, '', spammer_ip_bulk_action_selector, spammer_ip_table_tab, '', '', '', '', false);
 					jQuery('html, body').animate({ scrollTop: 0 }, 'slow');
 				}
 			});
@@ -1102,6 +557,75 @@ jQuery(function($) {
 		});
 	});
 	// End of settings menu ajaxify
+	
+	// Updraft login form handling
+
+	// Handles the response shared by the login and registration requests: reveals the
+	// two-factor field when required, or recovers from an incorrect password.
+	function handle_updraft_post(response) {
+		let ea = response.extra_args || {};
+
+		if ('incorrect_password' === ea.code) {
+			// Return to the credential step: show the credential fields, hide and clear the
+			// two-factor field (a stale code would otherwise be re-sent on the next attempt
+			// and rejected before the server can re-prompt), and restore the button label.
+			jQuery('.aiowps_updraft_credential_row').show();
+			jQuery('#aiowps_updraft_two_factor_row').hide();
+			jQuery('#aiowps_updraft_two_factor_code').val('');
+			jQuery('#aios_updraft_login_submit').val(aios_trans.connect);
+			jQuery('#aiowps_updraft_password').val('').focus();
+		}
+
+		if (ea.tfa_enabled) {
+			// The account has two-factor authentication enabled; hide the credential
+			// fields and reveal the code field so the user can resubmit the form.
+			jQuery('.aiowps_updraft_credential_row').hide();
+			jQuery('#aiowps_updraft_two_factor_row').show();
+			jQuery('#aiowps_updraft_two_factor_code').focus();
+			jQuery('#aios_updraft_login_submit').val(aios_trans.verify);
+
+			// Suppress the error modal — the 2FA field reveal is the only feedback needed.
+			delete response.message;
+			delete response.status;
+		}
+
+		// On 'authenticated'/'registered' success the server has already swapped the
+		// form container via response.content, so there is nothing to do here.
+	}
+
+	jQuery(document).on('submit', '#aios-team-updraft-login-form', function(e) {
+		e.preventDefault();
+
+		let $form = jQuery(this),
+			awaiting_2fa = jQuery('#aiowps_updraft_two_factor_row').is(':visible'),
+			terms = jQuery('#aiowps_updraft_terms').is(':checked');
+
+		// The terms checkbox is hidden during the two-factor step, so only enforce it
+		// on the initial credentials submission.
+		if (!awaiting_2fa && !terms) {
+			alert(aios_trans.accept_terms);
+			return;
+		}
+
+		let	data = {
+			'email': jQuery('#aiowps_updraft_email').val(),
+			'password': jQuery('#aiowps_updraft_password').val(),
+			'terms': terms
+		};
+
+		// Only send the two-factor code when we are actually on the 2FA step; otherwise a
+		// stale code could short-circuit the server into 2FA verification on a fresh login.
+		if (awaiting_2fa) {
+			data.two_factor_code = jQuery('#aiowps_updraft_two_factor_code').val();
+		}
+
+		aios_submit_form($form, 'perform_updraft_login', data, aios_trans.processing, null, handle_updraft_post);
+	});
+
+	jQuery(document).on('submit', '#aios-team-updraft-logout-form', function(e) {
+		e.preventDefault();
+		aios_submit_form(jQuery(this), 'perform_updraft_disconnect', true, aios_trans.processing);
+	});
 
 	// Start of filesystem menu ajaxify
 	jQuery('#aios-file-permissions-form').on('submit', function(e) {
@@ -1153,13 +677,16 @@ jQuery(function($) {
 	// Start of firewall menu ajaxify
 	jQuery('#aios-php-firewall-settings-form').on('submit', function(e) {
 		e.preventDefault();
+		if ('perform_save_rest_api_settings' === jQuery(this).data('command')) {
+			aios_submit_form(jQuery(this), 'perform_save_rest_api_settings');
+			return;
+		}
 		aios_submit_form(jQuery(this), 'perform_php_firewall_settings', true, aios_trans.saving, null, function(response) {
 			if ("success" === response.status) {
 				jQuery('.aio_orange_box').remove();
 				if (jQuery('#aiowps_enable_6g_firewall').prop('checked')) {
-					jQuery('.aios-toggle-advanced-options').removeClass('advanced-options-disabled');
+					jQuery('.aios-toggle-advanced-options').removeClass('advanced-options-disabled').trigger('click');
 					jQuery('.aios-advanced-options-panel .aiowps_more_info_body').hide();
-					toggleMoreInfo('.aios-advanced-options-panel .aiowps_more_info_anchor');
 				} else {
 					jQuery('.aios-toggle-advanced-options').addClass('advanced-options-disabled');
 					jQuery('.button.button-link.aios-toggle-advanced-options').removeClass('opened');
@@ -1222,15 +749,15 @@ jQuery(function($) {
 		aios_submit_form(jQuery(this), 'perform_save_user_account_settings');
 	});
 
-	jQuery('#aios-change-admin-username-form').on('submit', function(e) {
+	jQuery('#aios-change-admin-username-button').on('click', function(e) {
 		e.preventDefault();
-		aios_submit_form(jQuery(this), 'perform_change_admin_username', true, aios_trans.saving, null, function(response) {
-			if (response.hasOwnProperty('logout_user') && true === response.logout_user) {
+		aios_submit_form(jQuery(this).closest('form'), 'perform_change_admin_username', true, aios_trans.saving, null, function(response) {
+			if (response.extra_args && true === response.extra_args.logout_user) {
 				setTimeout(function() {
 					// Check if a logout URL is present in the response
-					if (response.hasOwnProperty('logout_url')) {
+					if (response.extra_args.logout_url) {
 						// Redirect to the logout URL
-						window.location.href = response.logout_url;
+						window.location.href = response.extra_args.logout_url;
 					} else {
 						// If no logout URL is provided, reload the current page
 						location.reload();
@@ -1252,13 +779,13 @@ jQuery(function($) {
 
 	jQuery('#aios-force-user-logout-form').on('submit', function(e) {
 		e.preventDefault();
-		aios_submit_form(jQuery(this), 'perform_force_logout', true, aios_trans.saving, null, function(response) {
-			if (response.hasOwnProperty('logout_user') && true === response.logout_user) {
+		aios_submit_form(jQuery(this), 'perform_save_force_logout_settings', true, aios_trans.saving, null, function(response) {
+			if (response.extra_args && true === response.extra_args.logout_user) {
 				setTimeout(function() {
 					// Check if a logout URL is present in the response
-					if (response.hasOwnProperty('logout_url')) {
+					if (response.extra_args.logout_url) {
 						// Redirect to the logout URL
-						window.location.href = response.logout_url;
+						window.location.href = response.extra_args.logout_url;
 					} else {
 						// If no logout URL is provided, reload the current page
 						location.reload();
@@ -1268,9 +795,12 @@ jQuery(function($) {
 		});
 	});
 
-	jQuery('#aios-hibp-password-settings-form').on('submit', function(e) {
+	jQuery('#aios-http-authentication-settings-form').on('submit', function(e) {
 		e.preventDefault();
-		aios_submit_form(jQuery(this), 'perform_save_hibp_settings');
+		if (typeof tinyMCE !== 'undefined') {
+			tinyMCE.triggerSave();
+		}
+		aios_submit_form(jQuery(this), 'perform_save_http_authentication_settings');
 	});
 
 	jQuery('#aios-disable-application-password-form').on('submit', function(e) {
@@ -1290,13 +820,12 @@ jQuery(function($) {
 	jQuery('#aios-logged-in-users-table').on('click', '.aios-force-logout-user', function(e) {
 		e.preventDefault();
 		let user_id = jQuery(this).data('user-id'), data = {
-			logged_in_id: user_id,
-			action: 'force_user_logout'
+			logged_in_id: user_id
 		};
 		if (confirm(jQuery(this).data('message'))) {
-			aios_submit_form(jQuery(this), 'perform_logged_in_user_action', data, aios_trans.processing, null, function(response) {
+			aios_submit_form(jQuery(this), 'perform_force_user_logout', data, aios_trans.processing, null, function(response) {
 				if ('success' === response.status) {
-					jQuery('#aios-logged-in-users-table').load(' #aios-logged-in-users-table > *');
+					aios_detect_table_action(logged_in_users_table_id, '', logged_in_users_bulk_action_selector, logged_in_users_table_tab, '', '', '', '', false);
 				}
 			});
 		}
@@ -1307,7 +836,7 @@ jQuery(function($) {
 		aios_block_ui(aios_trans.refreshing);
 		var submitButton = jQuery(this).find(':submit');
 		submitButton.prop('disabled', true);
-		jQuery('#aios-logged-in-users-table').load(' #aios-logged-in-users-table > *', function() {
+		aios_update_list_table(logged_in_users_table_tab, {}, function() {
 			jQuery.unblockUI();
 			submitButton.prop('disabled', false);
 		});
@@ -1325,8 +854,10 @@ jQuery(function($) {
 			action: 'approve_acct'
 		};
 		if (confirm(jQuery(this).data('message'))) {
-			aios_submit_form(jQuery(this), 'perform_manual_approval_item_action', data, aios_trans.processing, null, function() {
-				jQuery('#aios-manual-approval-table').load(' #aios-manual-approval-table > *');
+			aios_submit_form(jQuery(this), 'perform_manual_approval_item_action', data, aios_trans.processing, null, function(response) {
+				if ('success' === response.status) {
+					aios_detect_table_action(manual_approval_table_id, '', manual_approval_bulk_action_selector, manual_approval_table_tab, '', manual_approval_search, '', '', false);
+				}
 			});
 		}
 	});
@@ -1338,8 +869,10 @@ jQuery(function($) {
 			action: 'delete_acct'
 		};
 		if (confirm(jQuery(this).data('message'))) {
-			aios_submit_form(jQuery(this), 'perform_manual_approval_item_action', data, aios_trans.processing, null, function() {
-				jQuery('#aios-manual-approval-table').load(' #aios-manual-approval-table > *');
+			aios_submit_form(jQuery(this), 'perform_manual_approval_item_action', data, aios_trans.processing, null, function(response) {
+				if ('success' === response.status) {
+					aios_detect_table_action(manual_approval_table_id, '', manual_approval_bulk_action_selector, manual_approval_table_tab, '', manual_approval_search, '', '', false);
+				}
 			});
 		}
 	});
@@ -1351,8 +884,10 @@ jQuery(function($) {
 			action: 'block_ip'
 		};
 		if (confirm(jQuery(this).data('message'))) {
-			aios_submit_form(jQuery(this),'perform_manual_approval_item_action', data, aios_trans.blocking, null, function() {
-				jQuery('#aios-manual-approval-table').load(' #aios-manual-approval-table > *');
+			aios_submit_form(jQuery(this),'perform_manual_approval_item_action', data, aios_trans.blocking, null, function(response) {
+				if ('success' === response.status) {
+					aios_detect_table_action(manual_approval_table_id, '', manual_approval_bulk_action_selector, manual_approval_table_tab, '', manual_approval_search, '', '', false);
+				}
 			})
 		}
 	});
@@ -1362,16 +897,12 @@ jQuery(function($) {
 		aios_block_ui(aios_trans.refreshing);
 		var submitButton = jQuery(this).find(':submit');
 		submitButton.prop('disabled', true);
-		jQuery('#aios-manual-approval-table').load(' #aios-manual-approval-table > *', function() {
+		aios_update_list_table(manual_approval_table_tab, {}, function(response) {
+			// Add the search box after the list refresh when it is not already displayed.
+			if (response.search_box && !jQuery('#tables-filter .search-box').length) jQuery('#tables-filter').prepend(response.search_box);
 			jQuery.unblockUI();
 			submitButton.prop('disabled', false);
 		});
-	});
-
-	jQuery("#aios-enforce-strong-password-form").on('submit', function(e) {
-		e.preventDefault();
-
-		aios_submit_form(jQuery(this), 'enforce_strong_password');
 	});
 
 	// end of user security menu ajax
@@ -1431,7 +962,6 @@ jQuery(function($) {
 	});
 
 	// Start of file scan handling
-	var file_scan_active = false;
 	jQuery('.aiowps_next_scheduled_scan_wrapper').on('click', '.aiowps_view_last_fcd_results', view_scan_results_handler);
 	jQuery('#aiowps_fcds_change_detected').on('click', '.aiowps_view_last_fcd_results', view_scan_results_handler);
 
@@ -1456,92 +986,38 @@ jQuery(function($) {
 
 	jQuery('#aiowps_manual_fcd_scan').on('click', function(e) {
 		e.preventDefault();
-		initiate_file_scan();
+
+		jQuery('#aiowps_manual_fcd_scan').prop('disabled', true);
+		// Insert spinner loader
+		aiowps_show_spinner('#aiowps_activejobs');
+		jQuery('#aiowps_previous_scan_wrapper').html('')
+
+		aios_send_command('initiate_file_scan', {}, function(response) {
+			if ('success' === response.status) {
+				jQuery('#aiowps_cancel_fcd_scan').show().data('task-id', response.extra_args.task_id);
+			}
+			handle_file_scan_response(response);
+		});
 	});
 
 	jQuery('#aiowps_cancel_fcd_scan').on('click', function(e) {
 		e.preventDefault();
 
-		let task_id = jQuery(this).data('task-id');
-		let agent_id = jQuery(this).data('agent-id');
-
 		if (confirm(jQuery(this).data('message'))) {
-			reset_scan_page_ui();
-			heartbeat.cancel_agent(agent_id);
-			aios_submit_form(jQuery(this), 'cancel_file_scan', {task_id: task_id}, aios_trans.processing, null, function (response) {});
+			aios_submit_form(jQuery(this), 'cancel_file_scan', {task_id: jQuery(this).data('task-id')}, aios_trans.processing);
 		}
 	});
 
 	/**
-	 * This function performs a file scan when the user clicks the manual scan button.
+	 * Handles a response from the file scan task.
+	 *
+	 * @param {Object} response
 	 *
 	 * @returns {void}
 	 */
-	function initiate_file_scan() {
-		file_scan_active = true;
-		jQuery('#aiowps_manual_fcd_scan').prop('disabled', true);
-		// Insert spinner loader
-		aiowps_show_spinner('#aiowps_activejobs_table');
-		jQuery('#aiowps_previous_scan_wrapper').html('')
-		jQuery('#aiowps_cancel_fcd_scan').show();
-
-		aios_send_command('initiate_file_scan', {}, handle_file_scan_heartbeat);
-	}
-
-	/**
-	 * This function sets up a heartbeat agent to monitor the file scan progress.
-	 *
-	 * @param {Object} data - The data to be sent with the heartbeat command.
-	 *
-	 * @returns {void}
-	 */
-	function set_file_scan_heartbeat(data) {
-		let agent_id = heartbeat.add_agent({
-			_wait: false,
-			_keep: false,
-			command: 'aios_file_scan_task',
-			command_data: {data: data, subaction: 'get_file_scan_update'},
-			callback: function(resp) {
-				handle_file_scan_heartbeat(resp)
-			}
-		});
-		heartbeat_agents.push(agent_id);
-
-		// update agent_id data for the cancel button
-		jQuery('#aiowps_cancel_fcd_scan').data('agent-id', agent_id);
-	}
-
-	/**
-	 * This function handles the result of the file scan.
-	 *
-	 * @param {Object} response - The response object containing the scan result.
-	 *
-	 * @returns {void}
-	 */
-	function handle_file_scan_heartbeat(response) {
-		if (response.hasOwnProperty('extra_args') && response.extra_args.hasOwnProperty('error_code')) {
-			let error_code = response.extra_args.error_code;
-
-			if ('cancelled' === error_code) {
-				reset_scan_page_ui();
-				return;
-			}
-
-			aios_show_success_modal({
-				message: response.extra_args.result,
-				icon: 'no-alt',
-				classes: 'warning'
-			}, false);
-
-			reset_scan_page_ui();
-
-			return;
-		}
-
+	function handle_file_scan_response(response) {
 		if ('success' === response.status) {
 			aiowps_show_spinner('#aiowps_manual_fcd_scan')
-			jQuery('#aiowps_cancel_fcd_scan').show();
-			jQuery('#aiowps_cancel_fcd_scan').data('task-id', response.extra_args.task_id);
 
 			let stage = response.extra_args.current_stage,
 				text = response.message,
@@ -1555,28 +1031,43 @@ jQuery(function($) {
 				case 'fetching':
 					percent = 30;
 					break;
+				case 'downloading_checksums':
+					percent = 40;
+					break;
 				case 'scanning':
 					let number_of_scanned_files = response.extra_args.number_of_scanned_files,
-						total_file_count = response.extra_args.total_files,
-						file_scan_percentage = number_of_scanned_files/total_file_count * 100;
+						total_file_count = response.extra_args.total_files;
 
 					if (total_file_count > 0) {
 						let file_scan_percentage = (number_of_scanned_files / total_file_count) * 100;
 						percent = 50 + (file_scan_percentage * 0.3);
 						if (percent > 80) percent = 80; // cap at 80
+						text = text + ': ' + number_of_scanned_files + '/' + total_file_count + ' (' + file_scan_percentage.toFixed(2) + '%)';
 					} else {
 						percent = 50;
 					}
-
-					text = text + ': ' + file_scan_percentage.toFixed(2) + '%';
 					break;
 				case 'comparing':
-					percent = 80;
+					let number_of_compared_files = response.extra_args.number_of_compared_files,
+						total_kept_files = response.extra_args.total_kept_files;
+
+					if (total_kept_files > 0) {
+						let compare_percentage = (number_of_compared_files / total_kept_files) * 100;
+						percent = 80 + (compare_percentage * 0.1);
+						if (percent > 90) percent = 90; // cap at 90
+						text = text + ': ' + number_of_compared_files + '/' + total_kept_files + ' (' + compare_percentage.toFixed(2) + '%)';
+					} else {
+						percent = 80;
+					}
 					break;
 				case 'saving':
 					percent = 90;
 					break;
 				case 'completed':
+					percent = 100;
+					stop_task = true;
+					break;
+				case 'cancelled':
 					percent = 100;
 					stop_task = true;
 					break;
@@ -1609,18 +1100,25 @@ jQuery(function($) {
 				}, 3000)
 			} else {
 				setTimeout(function () {
-					if (file_scan_active) set_file_scan_heartbeat({task_id: response.extra_args.task_id});
+					aios_send_command('get_file_scan_update', {task_id: response.extra_args.task_id}, handle_file_scan_response);
 				}, 10000)
 			}
 		} else {
 			reset_scan_page_ui();
+
+			if ('error' === response.status) {
+				aios_show_success_modal({
+					message: response.extra_args?.error_message ? response.message + ': ' + response.extra_args.error_message : response.message,
+					icon: 'no-alt',
+					classes: 'warning'
+				}, false);
+			}
 		}
 	}
 
 	function reset_scan_page_ui() {
-		file_scan_active = false;
 		jQuery('#aiowps_manual_fcd_scan').prop('disabled', false);
-		aiowps_hide_spinner('#aiowps_activejobs_table');
+		aiowps_hide_spinner('#aiowps_activejobs');
 		aiowps_hide_spinner('#aiowps_manual_fcd_scan');
 		jQuery('#aiowps_activejobs_table').find('.aios-loading-bar').remove();
 		jQuery('#aiowps_manual_fcd_scan').text(aios_trans.scan_now);
@@ -1628,47 +1126,31 @@ jQuery(function($) {
 	}
 
 	/**
-	 * This function checks if there are any running tasks and updates the UI accordingly.
+	 * Resumes the periodic update-handle loop if a file scan task is currently running.
 	 *
 	 * @returns {void}
 	 */
-	function check_running_tasks() {
-		var current_url = window.location.href;
-
-		// Check if the current page is a file scan page
-		var is_file_scan_page = current_url.includes('/wp-admin/admin.php?page=aiowpsec_filescan') ||
-			current_url.includes('tab=file-change-detect');
-
-		// Also check for multisite network admin pages
-		var is_network_file_scan_page = current_url.includes('/wp-admin/network/admin.php?page=aiowpsec_filescan') ||
-			current_url.includes('/wp-admin/network/admin.php?page=aiowpsec_filescan&tab=file-change-detect');
-
-		let task_type = '';
-
-		if (is_file_scan_page || is_network_file_scan_page) task_type = 'file_scan';
-
-		if (!task_type) return;
-
-		if ('file_scan' === task_type) {
-			jQuery('#aiowps_manual_fcd_scan').prop('disabled', true);
-			aiowps_show_spinner('#aiowps_activejobs_table');
+	function check_if_running_file_scan() {
+		if (!window.location.href.includes('admin.php?page=aiowpsec_filescan')) {
+			return;
 		}
 
-		aios_send_command('check_running_task', {type: task_type}, function (response) {
+		jQuery('#aiowps_manual_fcd_scan').prop('disabled', true);
+		aiowps_show_spinner('#aiowps_activejobs');
+
+		aios_send_command('check_running_task', {type: 'file_scan'}, function (response) {
 			if ('success' === response.status) {
-				if ('file_scan' === task_type) {
-					file_scan_active = true;
-					aios_send_command('get_file_scan_update', {task_id: response.extra_args.task_id}, handle_file_scan_heartbeat);
-					aiowps_show_spinner('#aiowps_manual_fcd_scan')
-				}
+				jQuery('#aiowps_cancel_fcd_scan').show().data('task-id', response.extra_args.task_id);
+				aios_send_command('get_file_scan_update', {task_id: response.extra_args.task_id}, handle_file_scan_response);
+				aiowps_show_spinner('#aiowps_manual_fcd_scan');
 			} else {
 				jQuery('#aiowps_manual_fcd_scan').prop('disabled', false);
-				aiowps_hide_spinner('#aiowps_activejobs_table');
+				aiowps_hide_spinner('#aiowps_activejobs');
 			}
-		})
+		});
 	}
 
-	check_running_tasks();
+	check_if_running_file_scan();
 	// End of file scan handling
 
 	// Start of brute force ajax
@@ -1688,12 +1170,7 @@ jQuery(function($) {
 
 	jQuery("#aios-cookie-based-settings-form").on('submit', function(e) {
 		e.preventDefault();
-		aios_submit_form(jQuery(this), 'perform_cookie_based_brute_force_prevention', true, aios_trans.saving, null, function(response) {
-			if ("success" === response.status) {
-				jQuery('#aios_message').remove();
-				jQuery('#post-body .postbox').before(response.info_box);
-			}
-		})
+		aios_submit_form(jQuery(this), 'perform_cookie_based_brute_force_prevention');
 	});
 
 	jQuery("#aios-perform-cookie-test").on('click', function(e) {
@@ -1748,7 +1225,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'unlock_ip', {ip: element.data('ip')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', false);
+				if ('success' === response.status) aios_detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', '', false);
 			})
 		}
 	});
@@ -1758,7 +1235,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'unblacklist_ip', {ip: element.data('ip')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', false);
+				if ('success' === response.status) aios_detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', '', false);
 			})
 		}
 	});
@@ -1768,7 +1245,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'lock_ip', {ip: element.data('ip'), lock_reason: '404', username: element.data('username')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', false);
+				if ('success' === response.status) aios_detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', '', false);
 			})
 		}
 	});
@@ -1778,7 +1255,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'blacklist_ip', {ip: element.data('ip')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', false);
+				if ('success' === response.status) aios_detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', '', false);
 			})
 		}
 	});
@@ -1788,7 +1265,7 @@ jQuery(function($) {
 		var element = jQuery(this);
 		if (confirm(element.data('message'))) {
 			aios_submit_form(element, 'delete_404_log', {id: element.data('id')}, aios_trans.processing, null, function(response) {
-				if ('success' === response.status) detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', false);
+				if ('success' === response.status) aios_detect_table_action(log_404_table_id, '', log_404_bulk_action_selector, log_404_table_tab, '', log_404_search, '', '', false);
 			})
 		}
 	});
@@ -1851,14 +1328,12 @@ jQuery(function($) {
 		if (subtab) {
 			jQuery('.aiowps-rules li').removeClass('aiowps-active');
 			jQuery(`.aiowps-rules li[data-template="${subtab}"]`).addClass('aiowps-active');
-			jQuery('.aiowps-settings .postbox').hide();
+			jQuery('.aiowps-settings .postbox[data-template]').hide();
 			jQuery(`.aiowps-settings .postbox[data-template="${subtab}"]`).show();
 		} else {
-			jQuery('.aiowps-settings .postbox:first').show();
+			jQuery('.aiowps-settings .postbox[data-template]:first').show();
 		}
 	}
-
-	var initial_values = {};
 
 	/**
 	 * Store initial values of the settings
@@ -1867,6 +1342,9 @@ jQuery(function($) {
 	 */
 	function store_values() {
 		jQuery('.aiowps-settings :input').each(function() {
+			if (jQuery(this).hasClass('aiowps-actions-ignore')) {
+				return;
+			}
 			if (jQuery(this).is(':checkbox')) {
 				initial_values[jQuery(this).attr('name')] = jQuery(this).is(':checked');
 			} else {
@@ -1884,6 +1362,9 @@ jQuery(function($) {
 			var all_inputs_back_to_original = true;
 			jQuery('.aiowps-settings :input').each(function() {
 				var input_name = jQuery(this).attr('name');
+				if (jQuery(this).hasClass('aiowps-actions-ignore')) {
+					return true;
+				}
 				if (jQuery(this).is(':checkbox')) {
 					if (jQuery(this).is(':checked') !== initial_values[input_name]) {
 						all_inputs_back_to_original = false;
@@ -1973,8 +1454,8 @@ jQuery(function($) {
 		jQuery('.aiowps-rules li').removeClass('aiowps-active');
 		jQuery(this).addClass('aiowps-active');
 		var template = jQuery(this).data('template');
-		jQuery('.aiowps-settings .postbox').hide();
-		jQuery('.aiowps-settings .postbox').each(function() {
+		jQuery('.aiowps-settings .postbox[data-template]').hide();
+		jQuery('.aiowps-settings .postbox[data-template]').each(function() {
 			if (jQuery(this).data('template') === template) {
 				jQuery(this).show();
 				return false;
@@ -2065,9 +1546,6 @@ jQuery(function($) {
 		}
 	});
 
-	// Attach heartbeat API events
-	heartbeat.setup();
-	
 	// Start of WP REST API toggle whitelist setting handling
 	jQuery('input[name=aiowps_disallow_unauthorized_rest_requests]').on('click', function() {
 		jQuery('.aios-rest-white-list-options-panel').toggleClass('hidden');
@@ -2104,5 +1582,50 @@ jQuery(function($) {
 		});
 	});
 	// End of the send report button handling
-});
 
+	// Start of custom selector handling
+	jQuery('.aios-selector').each(function () {
+		const $selector = jQuery(this);
+		const selector = {
+			$selected: $selector.find('.aios-selector-selected'),
+			$items_container: $selector.find('.aios-selector-items')
+		};
+
+		selector.$selected.val(selector.$selected.attr('value'));
+
+		selector.$selected.on('click', function (e) {
+			e.stopPropagation();
+			selector.$items_container.toggle();
+		});
+
+		selector.$items_container.each(function () {
+			jQuery(this).on('click', function (e) {
+				e.stopPropagation(); // This is to prevent the dropdown from disappearing when clicking locked premium items.
+			});
+		}).find('div:not(.aios-selector-premium-item)').each(function () {
+			const $selector_item = jQuery(this);
+
+			$selector_item.val($selector_item.attr('value'));
+
+			$selector_item.on('click', function (e) {
+				e.stopPropagation();
+				selector.$selected.find('.aios-selector-selected-title').text($selector_item.text());
+				selector.$selected.val($selector_item.val());
+				selector.$items_container.hide();
+
+				if (selector.$selected.is('#bulk-action-selector-top')) {
+					jQuery('#bulk-action-selector-bottom').find('.aios-selector-selected-title').text($selector_item.text());
+					jQuery('#bulk-action-selector-bottom').val($selector_item.val());
+				} else if (selector.$selected.is('#bulk-action-selector-bottom')) {
+					jQuery('#bulk-action-selector-top').find('.aios-selector-selected-title').text($selector_item.text());
+					jQuery('#bulk-action-selector-top').val($selector_item.val());
+				}
+			});
+		});
+	});
+
+	jQuery(document).on('click', function () {
+		jQuery('.aios-selector-items').hide();
+	});
+	// End of custom selector handling
+});

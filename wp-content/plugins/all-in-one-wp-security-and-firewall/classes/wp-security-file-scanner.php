@@ -30,6 +30,25 @@ class AIOWPSecurity_File_Scanner {
 	);
 
 	/**
+	 * Filename patterns to skip during a file change detection scan.
+	 *
+	 * These match this plugin's own ephemeral working files in wp-content/aiowps_backups,
+	 * whose names include a dynamic suffix (a task ID or random string) so an exact-match
+	 * list (self::$ignored_files) cannot catch them. Each pattern is anchored to the exact
+	 * expected shape of the suffix (digits only for a task ID, exactly 10 lowercase
+	 * alphanumeric characters for the random string - see generate_alpha_numeric_random_string())
+	 * with no file extension allowed, so a file such as aiowps_fcd_data_malware.php does not
+	 * match. The rest of that directory (including anything unexpected placed there) is still
+	 * scanned, so this cannot be used to hide an arbitrary file from detection.
+	 *
+	 * @var string[]
+	 */
+	private static $ignored_file_patterns = array(
+		'/^aiowps_checksums_cache_[0-9]+$/', // see cache_checksums_for_task()
+		'/^aiowps_fcd_data_[a-z0-9]{10}$/', // see get_fcd_filename()
+	);
+
+	/**
 	 * Constructor.
 	 *
 	 * @param AIOWPSecurity_File_Scan_Task|null $task Optional task for progress/stage reporting.
@@ -46,11 +65,14 @@ class AIOWPSecurity_File_Scanner {
 	 * Set the current task stage.
 	 *
 	 * @param string $stage
+	 *
+	 * @return bool
 	 */
 	private function set_stage($stage) {
 		if ($this->task) {
-			$this->task->set_current_stage($stage);
+			return $this->task->set_current_stage($stage);
 		}
+		return false;
 	}
 
 	/**
@@ -58,11 +80,27 @@ class AIOWPSecurity_File_Scanner {
 	 *
 	 * @param string $key
 	 * @param mixed  $value
+	 *
+	 * @return void
 	 */
 	private function update_option($key, $value) {
 		if ($this->task) {
 			$this->task->update_option($key, $value);
 		}
+	}
+
+	/**
+	 * Get a task option.
+	 *
+	 * @param string $key
+	 *
+	 * @return mixed
+	 */
+	private function get_option($key) {
+		if ($this->task) {
+			return $this->task->get_option($key);
+		}
+		return false;
 	}
 
 	/**
@@ -83,6 +121,110 @@ class AIOWPSecurity_File_Scanner {
 		}
 	}
 
+	/**
+	 * Get any checksums cached for this task's current scan attempt.
+	 *
+	 * @return array|null
+	 */
+	private function get_cached_checksums() {
+		if ($this->task) {
+			return self::get_cached_checksums_for_task($this->task->get_id());
+		}
+		return null;
+	}
+
+	/**
+	 * Cache the checksums fetched for this task's current scan attempt.
+	 *
+	 * @param array $checksums
+	 *
+	 * @return void
+	 */
+	private function cache_checksums($checksums) {
+		if ($this->task) {
+			self::cache_checksums_for_task($this->task->get_id(), $checksums);
+		}
+	}
+
+	/**
+	 * Get the path to the checksums-cache file for the given scan task.
+	 *
+	 * @param int|string $task_id
+	 *
+	 * @return string
+	 */
+	private static function get_checksums_cache_filename($task_id) {
+		$aiowps_backup_dir = WP_CONTENT_DIR . '/' . AIO_WP_SECURITY_BACKUPS_DIR_NAME;
+		return $aiowps_backup_dir . '/aiowps_checksums_cache_' . $task_id;
+	}
+
+	/**
+	 * Get any checksums cached on disk for the given scan task's current attempt, so that
+	 * if the task is interrupted and restarted (this task framework's run() method may be
+	 * invoked more than once for the same task) it does not need to re-download them from
+	 * WordPress.org.
+	 *
+	 * Stored as a file (the same way the file-change-detection scan data itself is stored,
+	 * see get_fcd_filename()/save_fcd_data()) rather than in the database, since the full
+	 * checksum set for many installed plugins can be several megabytes - too large to
+	 * safely write into a single database row/option value on every host.
+	 *
+	 * @param int|string $task_id
+	 *
+	 * @return array|null - the cached checksums array, or null if none is cached
+	 */
+	public static function get_cached_checksums_for_task($task_id) {
+		// phpcs:disable WordPress.WP.AlternativeFunctions
+		$file = self::get_checksums_cache_filename($task_id);
+
+		if (!is_file($file) || empty(filesize($file))) return null;
+
+		$contents = @file_get_contents($file);
+		if (false === $contents) return null;
+
+		$checksums = json_decode($contents, true);
+		return is_array($checksums) ? $checksums : null;
+		// phpcs:enable WordPress.WP.AlternativeFunctions
+	}
+
+	/**
+	 * Cache checksums to disk for the given scan task's current attempt.
+	 *
+	 * @param int|string $task_id
+	 * @param array      $checksums
+	 *
+	 * @return void
+	 */
+	public static function cache_checksums_for_task($task_id, $checksums) {
+		// phpcs:disable WordPress.WP.AlternativeFunctions
+		global $aio_wp_security;
+
+		$aiowps_backup_dir = WP_CONTENT_DIR . '/' . AIO_WP_SECURITY_BACKUPS_DIR_NAME;
+
+		if (!AIOWPSecurity_Utility_File::create_dir($aiowps_backup_dir)) {
+			$aio_wp_security->debug_logger->log_debug(__METHOD__ . ' - Creation of backup directory failed, could not cache checksums to disk', 4);
+			return;
+		}
+
+		$file = self::get_checksums_cache_filename($task_id);
+		file_put_contents($file, wp_json_encode($checksums));
+		// phpcs:enable WordPress.WP.AlternativeFunctions
+	}
+
+	/**
+	 * Remove the cached checksums file for the given scan task, if present.
+	 *
+	 * @param int|string $task_id
+	 *
+	 * @return void
+	 */
+	public static function clear_cached_checksums_for_task($task_id) {
+		// phpcs:disable WordPress.WP.AlternativeFunctions
+		$file = self::get_checksums_cache_filename($task_id);
+		if (is_file($file)) unlink($file);
+		// phpcs:enable WordPress.WP.AlternativeFunctions
+	}
+
 	// -------------------------------------------------------------------------
 	// Public scan API
 	// -------------------------------------------------------------------------
@@ -91,7 +233,7 @@ class AIOWPSecurity_File_Scanner {
 	 * Entry point: run the full file-change detection scan.
 	 *
 	 * @global AIO_WP_Security $aio_wp_security
-	 * @return bool|array False on failure, scan result array on success.
+	 * @return bool|array False on failure or cancellation, scan result array on success.
 	 */
 	public function execute_file_change_detection_scan() {
 		global $aio_wp_security;
@@ -106,19 +248,33 @@ class AIOWPSecurity_File_Scanner {
 			return false;
 		}
 
-		AIOWPSecurity_Checksums::update_checksums();
+		$this->set_stage('downloading_checksums');
+
+		$cached_checksums = $this->get_cached_checksums();
+
+		AIOWPSecurity_Checksums::update_checksums($cached_checksums);
+
+		if (null === $cached_checksums) {
+			$this->cache_checksums(AIOWPSecurity_Checksums::get_checksums());
+		}
 
 		$scanned_data = $this->do_file_change_scan();
+		if (false === $scanned_data) return false;
+
 		$initial_scan = false;
 
 		if (empty($fcd_data)) {
-			$this->save_fcd_data($scanned_data);
+			$save_result = $this->save_fcd_data($scanned_data);
+			if (false === $save_result) return false;
 			$scan_result['initial_scan'] = '1';
 			$initial_scan = true;
 		} else {
 			$scan_result = $this->compare_scan_data($fcd_data['file_scan_data'], $scanned_data);
+			if (false === $scan_result) return false;
 			$scan_result['initial_scan'] = '';
-			$this->save_fcd_data($scanned_data, $scan_result);
+
+			$save_result = $this->save_fcd_data($scanned_data, $scan_result);
+			if (false === $save_result) return false;
 
 			if (!empty($scan_result['files_added']) || !empty($scan_result['files_removed']) || !empty($scan_result['files_changed'])) {
 				$aio_wp_security->configs->set_value('aiowps_fcds_change_detected', true, true);
@@ -132,6 +288,8 @@ class AIOWPSecurity_File_Scanner {
 		$this->update_option('initial_scan', $initial_scan ? '1' : '');
 
 		$this->complete();
+		
+		do_action('aios_file_scan_completed', $scan_result);
 
 		return $scan_result;
 	}
@@ -203,12 +361,26 @@ class AIOWPSecurity_File_Scanner {
 	}
 
 	/**
+	 * Check whether the given filename matches one of self::$ignored_file_patterns.
+	 *
+	 * @param string $filename - a bare filename (not a full path)
+	 *
+	 * @return bool
+	 */
+	private static function is_ignored_file_pattern($filename) {
+		foreach (self::$ignored_file_patterns as $pattern) {
+			if (preg_match($pattern, $filename)) return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Recursively scan $start_dir and return file size and last-modified for every regular file,
 	 * respecting the exclusion settings.
 	 *
 	 * @global AIO_WP_Security $aio_wp_security
 	 * @param string $start_dir
-	 * @return array
+	 * @return array|bool
 	 */
 	public function do_file_change_scan($start_dir = ABSPATH) {
 		global $aio_wp_security;
@@ -229,6 +401,10 @@ class AIOWPSecurity_File_Scanner {
 		$this->set_stage('scanning');
 
 		foreach ($rit as $filename => $fileinfo) {
+			if ('cancelled' === $this->get_option('current_stage')) {
+				return false;
+			}
+
 			$number_of_scanned_files++;
 
 			if (0 === $number_of_scanned_files % 100 || $number_of_scanned_files === $total_files) {
@@ -240,6 +416,10 @@ class AIOWPSecurity_File_Scanner {
 			}
 
 			if (in_array($fileinfo->getFilename(), self::$ignored_files, true)) {
+				continue;
+			}
+
+			if (self::is_ignored_file_pattern($fileinfo->getFilename())) {
 				continue;
 			}
 
@@ -277,7 +457,7 @@ class AIOWPSecurity_File_Scanner {
 	 *
 	 * @param array $last_scan_data
 	 * @param array $new_scanned_data
-	 * @return array
+	 * @return array|bool
 	 */
 	public function compare_scan_data($last_scan_data, $new_scanned_data) {
 		$this->set_stage('comparing');
@@ -291,10 +471,26 @@ class AIOWPSecurity_File_Scanner {
 		$files_kept    = array_diff_key($new_scanned_data, $files_added);
 		$files_changed = array();
 
+		$total_kept_files = count($files_kept);
+		$number_of_compared_files = 0;
+
+		$this->update_option('total_kept_files', $total_kept_files);
+		$this->update_option('number_of_compared_files', $number_of_compared_files);
+
 		foreach ($files_kept as $filename => $new_scan_meta) {
+			if ('cancelled' === $this->get_option('current_stage')) {
+				return false;
+			}
+
+			$number_of_compared_files++;
+
+			if (0 === $number_of_compared_files % 100 || $number_of_compared_files === $total_kept_files) {
+				$this->update_option('number_of_compared_files', $number_of_compared_files);
+			}
+
 			$last_scan_meta = $last_scan_data[$filename];
 			$checksum_result = AIOWPSecurity_Checksums::verify_file_checksums($filename);
-			
+
 			if (!$checksum_result['success']) {
 				$new_scan_meta['reason']    = 'checksum_mismatch';
 				$new_scan_meta['checksums'] = $checksum_result['checksums'];
@@ -324,7 +520,9 @@ class AIOWPSecurity_File_Scanner {
 		// phpcs:disable WordPress.WP.AlternativeFunctions
 		global $aio_wp_security;
 
-		$this->set_stage('saving');
+		if (!$this->set_stage('saving')) {
+			return false;
+		}
 
 		$fcd_filename      = $aio_wp_security->configs->get_value('aiowps_fcd_filename');
 		$aiowps_backup_dir = WP_CONTENT_DIR . '/' . AIO_WP_SECURITY_BACKUPS_DIR_NAME;

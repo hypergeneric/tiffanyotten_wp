@@ -1,4 +1,6 @@
 <?php
+if (!defined('ABSPATH')) die('No direct access allowed');
+
 if ('1' == $aio_wp_security->configs->get_value('aiowps_enable_rename_login_page')) {
 	?>
 <div class="aio_yellow_box">

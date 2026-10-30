@@ -129,7 +129,7 @@ trait AIOWPSecurity_Ip_Commands_Trait {
 		$result = AIOWPSecurity_Utility::blacklist_ip($data['ip']);
 
 		if (is_wp_error($result)) {
-			return $this->handle_response(false, nl2br($result->get_error_message()));
+			return $this->handle_response(false, $result->get_error_message());
 		} else {
 			return $this->handle_response(true, __('The selected IP address has been added to the blacklist.', 'all-in-one-wp-security-and-firewall'));
 		}

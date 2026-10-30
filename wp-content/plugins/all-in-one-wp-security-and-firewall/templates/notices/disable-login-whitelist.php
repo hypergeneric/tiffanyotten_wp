@@ -1,4 +1,4 @@
-<?php if (!defined('AIO_WP_SECURITY_PATH')) die('No direct access allowed'); ?>
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 
 <div class="error">
 	<h3><?php esc_html_e('Login whitelisting currently disabled', 'all-in-one-wp-security-and-firewall');?></h3>

@@ -14,10 +14,11 @@ $hero_image_mobile = tiffanyotten_block_value('hero_image_mobile', $args);
 $hero_video        = tiffanyotten_block_value('hero_video', $args);
 $hero_video_url    = tiffanyotten_block_value('hero_video_url', $args);
 
-$hero_image['mobile']  = $hero_image_mobile ? $hero_image_mobile : false;
-
-$has_media = ( $hero_image || $hero_video );
+$has_media = ( $hero_image || $hero_video || $hero_video_url );
 $classes   = $has_media ? [] : [ 'no-media' ];
+
+$hero_image            = $hero_image ? $hero_image : [];
+$hero_image['mobile']  = $hero_image_mobile ? $hero_image_mobile : false;
 
 list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, $classes, $args, $context);
 

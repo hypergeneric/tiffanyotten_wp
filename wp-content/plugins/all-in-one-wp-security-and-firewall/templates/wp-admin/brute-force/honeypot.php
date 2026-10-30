@@ -6,13 +6,10 @@
 </div>
 	<form action="" id="aios-honeypot-settings-form">
 	<div class="postbox">
-		<h3 class="hndle"><label for="title"><?php esc_html_e('Login form honeypot settings', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+		<h3 class="hndle"><?php esc_html_e('Login form honeypot settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
 		<div class="inside">
 			<div id="login-honeypot-badge">
-				<?php
-					// Display security info badge
-					$aiowps_feature_mgr->output_feature_details_badge("login-honeypot");
-				?>
+				<?php $aiowps_feature_mgr->output_feature_details_badge("login-honeypot"); ?>
 			</div>
 			<table class="form-table">
 				<tr valign="top">
@@ -27,13 +24,10 @@
 		</div>
 	</div>
 	<div class="postbox">
-		<h3 class="hndle"><label for="title"><?php esc_html_e('Registration form honeypot settings', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+		<h3 class="hndle"><?php esc_html_e('Registration form honeypot settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
 		<div class="inside">
 			<div id="registration-honeypot-badge">
-				<?php
-					// Display security info badge
-					$aiowps_feature_mgr->output_feature_details_badge("registration-honeypot");
-				?>
+				<?php $aiowps_feature_mgr->output_feature_details_badge("registration-honeypot"); ?>
 			</div>
 			<table class="form-table">
 				<tr valign="top">

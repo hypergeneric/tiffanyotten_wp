@@ -38,20 +38,10 @@ class AIOWPSecurity_Firewall_Menu extends AIOWPSecurity_Admin_Menu {
 				'render_callback' => array($this, 'render_htaccess_rules'),
 				'display_condition_callback' => array('AIOWPSecurity_Utility', 'allow_to_write_to_htaccess'),
 			),
-			'6g-firewall' => array(
-				'title' => __('6G firewall rules', 'all-in-one-wp-security-and-firewall'),
-				'render_callback' => array($this, 'render_6g_firewall'),
-				'display_condition_callback' => array('AIOWPSecurity_Utility_Permissions', 'is_main_site_and_super_admin'),
-			),
 			'5g-firewall' => array(
 				'title' => __('5G legacy rules', 'all-in-one-wp-security-and-firewall'),
 				'render_callback' => array($this, 'render_5g_firewall'),
 				'display_condition_callback' => array('AIOWPSecurity_Utility', 'render_5g_legacy_tab'),
-			),
-			'internet-bots' => array(
-				'title' => __('Internet bots', 'all-in-one-wp-security-and-firewall'),
-				'render_callback' => array($this, 'render_internet_bots'),
-				'display_condition_callback' => array('AIOWPSecurity_Utility_Permissions', 'is_main_site_and_super_admin'),
 			),
 			'block-and-allow-lists' => array(
 				'title' => __('Block & allow lists', 'all-in-one-wp-security-and-firewall'),
@@ -97,17 +87,6 @@ class AIOWPSecurity_Firewall_Menu extends AIOWPSecurity_Admin_Menu {
 
 		$aio_wp_security->include_template('wp-admin/firewall/htaccess-firewall-rules.php', false, compact('htaccess_rules_data'));
 	}
-	
-	/**
-	 * Renders the 6G Blacklist Firewall Rules tab
-	 *
-	 * @return void
-	 */
-	protected function render_6g_firewall() {
-		global $aio_wp_security;
-
-		$aio_wp_security->include_template('wp-admin/general/moved.php', false, array('key' => '6g'));
-	}
 
 	/**
 	 * Renders the 5G Blacklist Firewall Rules tab
@@ -119,18 +98,6 @@ class AIOWPSecurity_Firewall_Menu extends AIOWPSecurity_Admin_Menu {
 
 		$aio_wp_security->include_template('wp-admin/firewall/5g.php');
 	}
-
-	/**
-	 * Renders the Internet Bots tab
-	 *
-	 * @return void
-	 */
-	protected function render_internet_bots() {
-		global $aio_wp_security;
-
-		$aio_wp_security->include_template('wp-admin/general/moved.php', false, array('key' => 'internet-bots'));
-	}
-
 
 	/**
 	 * Renders the Advanced settings tab.

@@ -13,5 +13,8 @@ trait Action_Forbid_Trait {
 	 */
 	public function do_action() {
 		header('HTTP/1.1 403 Forbidden');
+		header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+		header('Pragma: no-cache');
+		header('Expires: 0');
 	}
 }

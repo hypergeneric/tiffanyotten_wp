@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) die('No direct access allowed');
 
+if (true === AIOWPSecurity_Utility::is_incompatible_tfa_premium_version_active()) return;
+
 if (!class_exists('Simba_Two_Factor_Authentication_1')) require AIO_WP_SECURITY_PATH.'/includes/simba-tfa/simba-tfa.php';
 
 /**
@@ -33,7 +35,7 @@ class AIO_WP_Security_Simba_Two_Factor_Authentication_Plugin extends Simba_Two_F
 	 */
 	public function __construct() {
 
-		add_filter('aiowpsecurity_setting_tabs', array($this, 'add_two_factor_setting_tab'));
+		add_filter('aios_setting_tabs', array($this, 'add_two_factor_setting_tab'));
 		add_filter('tfa_user_ip_address', array($this, 'aios_set_user_ip_address'));
 
 		if (false !== $this->is_incompatible_plugin_active()) return;

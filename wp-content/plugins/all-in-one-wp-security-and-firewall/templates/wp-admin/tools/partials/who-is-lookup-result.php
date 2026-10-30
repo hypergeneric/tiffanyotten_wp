@@ -1,3 +1,4 @@
+<?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <div class="postbox">
 	<h3 class="hndle">
 		<table>

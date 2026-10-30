@@ -218,8 +218,8 @@ class AIOWPSecurity_Dashboard_Menu extends AIOWPSecurity_Admin_Menu {
 		wp_add_dashboard_widget('logged_in_users', __('Logged in users', 'all-in-one-wp-security-and-firewall'), array($this, 'widget_logged_in_users'));
 		wp_add_dashboard_widget('locked_ip_addresses', __('Locked IP addresses', 'all-in-one-wp-security-and-firewall'), array($this, 'widget_locked_ip_addresses'));
 
-		do_action('aiowps_dashboard_setup');
-		$dashboard_widgets = apply_filters('aiowps_dashboard_widgets', array());
+		do_action('aios_dashboard_setup');
+		$dashboard_widgets = apply_filters('aios_dashboard_widgets', array());
 
 		foreach ($dashboard_widgets as $widget_id) {
 			$name = empty($wp_registered_widgets[$widget_id]['all_link']) ? $wp_registered_widgets[$widget_id]['name'] : $wp_registered_widgets[$widget_id]['name'] . " <a href='{$wp_registered_widgets[$widget_id]['all_link']}' class='edit-box open-box'>" . __('View all', 'all-in-one-wp-security-and-firewall') . '</a>';
@@ -305,7 +305,10 @@ class AIOWPSecurity_Dashboard_Menu extends AIOWPSecurity_Admin_Menu {
 
 	public function widget_spread_the_word() {
 		?>
-		<p><?php esc_html_e('We are working hard to make your WordPress site more secure.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html_e('Please support us, here is how:', 'all-in-one-wp-security-and-firewall');?></p>
+		<p>
+			<?php esc_html_e('We are working hard to make your WordPress site more secure.', 'all-in-one-wp-security-and-firewall'); ?>
+			<?php esc_html_e('Please support us, here is how:', 'all-in-one-wp-security-and-firewall'); ?>
+		</p>
 		<p><a href="https://x.com/TeamUpdraftWP" target="_blank"><?php esc_html_e('Follow us on', 'all-in-one-wp-security-and-firewall');?> X</a>
 		</p>
 		<p>
@@ -388,17 +391,17 @@ class AIOWPSecurity_Dashboard_Menu extends AIOWPSecurity_Admin_Menu {
 	 *
 	 * @return array
 	 */
-	public static function get_failed_login_byip_data() {
+	public static function get_failed_login_by_ip_data() {
 		global $wpdb;
 		$audit_log_table = AIOWPSEC_TBL_AUDIT_LOG;
 		if (is_super_admin()) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $audit_log_table is a plugin-defined constant
-			$failed_login_byip_data = $wpdb->get_results($wpdb->prepare("SELECT ip, count(id) as total FROM $audit_log_table WHERE event_type = %s GROUP BY ip ORDER BY total DESC LIMIT 5", array('failed_login')), ARRAY_A);
+			$failed_login_by_ip_data = $wpdb->get_results($wpdb->prepare("SELECT ip, count(id) as total FROM $audit_log_table WHERE event_type = %s GROUP BY ip ORDER BY total DESC LIMIT 5", array('failed_login')), ARRAY_A);
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $audit_log_table is a plugin-defined constant
-			$failed_login_byip_data = $wpdb->get_results($wpdb->prepare("SELECT ip, count(id) as total FROM $audit_log_table WHERE event_type = %s and site_id = %d GROUP BY ip ORDER BY total DESC LIMIT 5", array('failed_login', get_current_blog_id())), ARRAY_A);
+			$failed_login_by_ip_data = $wpdb->get_results($wpdb->prepare("SELECT ip, count(id) as total FROM $audit_log_table WHERE event_type = %s and site_id = %d GROUP BY ip ORDER BY total DESC LIMIT 5", array('failed_login', get_current_blog_id())), ARRAY_A);
 		}
-		return $failed_login_byip_data;
+		return $failed_login_by_ip_data;
 	}
 	
 	/**
@@ -442,20 +445,20 @@ class AIOWPSecurity_Dashboard_Menu extends AIOWPSecurity_Admin_Menu {
 			$this->dashboard_widget_chart($chart_data, 'bar');
 		}
 		
-		$failed_login_byip_data = self::get_failed_login_byip_data();
-		if (!empty($failed_login_byip_data)) {
-			$failed_login_byip_summary_table_data = array();
-			$failed_login_byip_summary_table_data['title'] = __('Top failed logins by IP', 'all-in-one-wp-security-and-firewall');
-			$failed_login_byip_summary_table_data['columns'] = array(
+		$failed_login_by_ip_data = self::get_failed_login_by_ip_data();
+		if (!empty($failed_login_by_ip_data)) {
+			$failed_login_by_ip_summary_table_data = array();
+			$failed_login_by_ip_summary_table_data['title'] = __('Top failed logins by IP', 'all-in-one-wp-security-and-firewall');
+			$failed_login_by_ip_summary_table_data['columns'] = array(
 				__('IP', 'all-in-one-wp-security-and-firewall'),
 				__('Total', 'all-in-one-wp-security-and-firewall'),
 			);
-			foreach ($failed_login_byip_data as $entry) {
-				$failed_login_byip_summary_table_data['data'][] = array($entry['ip'], $entry['total']);
+			foreach ($failed_login_by_ip_data as $entry) {
+				$failed_login_by_ip_summary_table_data['data'][] = array($entry['ip'], $entry['total']);
 			}
 			// Filter for aios premium to show the country code.
-			$failed_login_byip_summary_table_data = apply_filters('aios_failed_login_byip_summary', $failed_login_byip_summary_table_data, $failed_login_byip_data);
-			$this->dashboard_widget($failed_login_byip_summary_table_data);
+			$failed_login_by_ip_summary_table_data = apply_filters('aios_failed_login_by_ip_summary', $failed_login_by_ip_summary_table_data, $failed_login_by_ip_data);
+			$this->dashboard_widget($failed_login_by_ip_summary_table_data);
 		}
 		
 		$failed_login_summary_data = self::get_failed_login_summary_data();
@@ -590,11 +593,16 @@ class AIOWPSecurity_Dashboard_Menu extends AIOWPSecurity_Admin_Menu {
 	public function widget_brute_force() {
 		global $aio_wp_security;
 		if ($aio_wp_security->configs->get_value('aiowps_enable_brute_force_attack_prevention') == '1') {
-			$brute_force_login_feature_link = '<a href="admin.php?page=' . esc_attr(AIOWPSEC_BRUTE_FORCE_MENU_SLUG) . '&tab=cookie-based-brute-force-prevention" target="_blank">' . __('Cookie-based brute force', 'all-in-one-wp-security-and-firewall') . '</a>';
 			$brute_force_feature_secret_word = $aio_wp_security->configs->get_value('aiowps_brute_force_secret_word');
 			echo '<div class="aio_yellow_box">';
-			/* translators: %s: Brute Force Login URL  */
-			echo '<p>' . sprintf(esc_html__('The %s feature is currently active.', 'all-in-one-wp-security-and-firewall'), $brute_force_login_feature_link) . '</p>'; // phpcs:ignore 	WordPress.Security.EscapeOutput.OutputNotEscaped -- Output escaped above.
+			echo '<p>';
+			printf(
+				/* translators: 1: opening link tag 2: closing link tag  */
+				esc_html__('The %1$sCookie-based brute force feature%2$s is currently active.', 'all-in-one-wp-security-and-firewall'),
+				'<a href="admin.php?page='.esc_attr(AIOWPSEC_BRUTE_FORCE_MENU_SLUG).'&tab=cookie-based-brute-force-prevention" target="_blank">',
+				'</a>'
+			);
+			echo '</p>';
 			echo '<p>' . esc_html__('Your new WordPress login URL is now:', 'all-in-one-wp-security-and-firewall') . '</p>';
 			echo '<p><strong>' . esc_url(AIOWPSEC_WP_URL) . '/?' . esc_html($brute_force_feature_secret_word) . '=1</strong></p>';
 			echo '</div>'; //yellow box div
@@ -609,10 +617,15 @@ class AIOWPSecurity_Dashboard_Menu extends AIOWPSecurity_Admin_Menu {
 				$home_url = trailingslashit(home_url()) . '?';
 			}
 
-			$rename_login_feature_link = '<a href="admin.php?page=' . esc_attr(AIOWPSEC_BRUTE_FORCE_MENU_SLUG) . '&tab=rename-login" target="_blank">' . esc_html__('Rename login page', 'all-in-one-wp-security-and-firewall') . '</a>';
 			echo '<div class="aio_yellow_box">';
-			/* translators: %s: Rename Login URL  */
-			echo '<p>' . sprintf(esc_html__('The %s feature is currently active.', 'all-in-one-wp-security-and-firewall'), $rename_login_feature_link) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output escaped above.
+			echo '<p>';
+			printf(
+				/* translators: 1: opening link tag 2: closing link tag  */
+				esc_html__('The %1$sRename login page feature%2$s is currently active.', 'all-in-one-wp-security-and-firewall'),
+				'<a href="admin.php?page='.esc_attr(AIOWPSEC_BRUTE_FORCE_MENU_SLUG).'&tab=rename-login" target="_blank">',
+				'</a>'
+			);
+			echo '</p>';
 			echo '<p>' . esc_html__('Your new WordPress login URL is now:', 'all-in-one-wp-security-and-firewall') . '</p>';
 			echo '<p><strong>' . esc_url($home_url) . esc_html($aio_wp_security->configs->get_value('aiowps_login_page_slug')) . '</strong></p>';
 			echo '</div>'; //yellow box div
@@ -626,7 +639,6 @@ class AIOWPSecurity_Dashboard_Menu extends AIOWPSecurity_Admin_Menu {
 	 * @return void
 	 */
 	public function widget_logged_in_users() {
-		$users_online_link = '<a href="admin.php?page=' . AIOWPSEC_USER_SECURITY_MENU_SLUG . '&tab=logged-in-users">'.esc_html__('Logged in users', 'all-in-one-wp-security-and-firewall').'</a>';
 		// default display messages
 		$multiple_users_info_msg = esc_html__('Number of users currently logged into your site (including you) is:', 'all-in-one-wp-security-and-firewall');
 		$single_user_info_msg = esc_html__('There are no other users currently logged in.', 'all-in-one-wp-security-and-firewall');
@@ -657,27 +669,36 @@ class AIOWPSecurity_Dashboard_Menu extends AIOWPSecurity_Admin_Menu {
 		}
 		if ($num_users > 1) {
 			echo '<div class="aio_red_box"><p>' . esc_html($multiple_users_info_msg) . ' <strong>' . esc_html($num_users) . '</strong></p>';
-			/* translators: %s: Users Online URL  */
-			$info_msg = '<p>' . sprintf(esc_html__('Go to the %s menu to see more details', 'all-in-one-wp-security-and-firewall'), $users_online_link) . '</p>';
-			echo $info_msg . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output escaped above.
+			echo '<p>';
+			printf(
+				/* translators: 1: Opening link tag 2: closing link tag  */
+				esc_html__('Go to the %1$sLogged in users%2$s menu to see more details', 'all-in-one-wp-security-and-firewall'),
+				'<a href="admin.php?page='.esc_attr(AIOWPSEC_USER_SECURITY_MENU_SLUG).'&tab=logged-in-users">',
+				'</a>',
+			);
+			echo '</p></div>';
 		} else {
 			echo '<div class="aio_green_box"><p>' . esc_html($single_user_info_msg) . '</p></div>';
 		}
 	}
 
 	public function widget_locked_ip_addresses() {
-		$locked_ips_link = '<a href="admin.php?page=' . esc_attr(AIOWPSEC_MAIN_MENU_SLUG) . '&tab=locked-ip">'. esc_html__('Locked IP addresses', 'all-in-one-wp-security-and-firewall').'</a>';
-
+		
 		$locked_ips = AIOWPSecurity_Utility::get_locked_ips();
 		if (false === $locked_ips) {
 			echo '<div class="aio_green_box"><p>' . esc_html__('There are no IP addresses currently locked out.', 'all-in-one-wp-security-and-firewall') . '</p></div>';
 		} else {
 			$num_ips = count($locked_ips);
 			echo '<div class="aio_red_box"><p>' . esc_html__('Number of temporarily locked out IP addresses:', 'all-in-one-wp-security-and-firewall') . ' ' . ' <strong>' . esc_html($num_ips) . '</strong></p>';
-			/* translators: %s: Number of locked out IPs */
-			$info_msg = '<p>' . sprintf(esc_html__('Go to the %s menu to see more details', 'all-in-one-wp-security-and-firewall'), $locked_ips_link) . '</p>';
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output escaped above.
-			echo $info_msg . '</div>';
+			echo '<p>';
+			printf(
+				/* translators: 1: opening link tag 2: closing link tag */
+				esc_html__('Go to the %1$sLocked IP addresses%2$s menu to see more details', 'all-in-one-wp-security-and-firewall'),
+				'<a href="admin.php?page=' . esc_attr(AIOWPSEC_MAIN_MENU_SLUG) . '&tab=locked-ip">',
+				'</a>'
+			);
+			
+			echo '</p></div>';
 		}
 	}
 

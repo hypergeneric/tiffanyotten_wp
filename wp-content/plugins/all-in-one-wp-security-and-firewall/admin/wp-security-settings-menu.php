@@ -46,7 +46,8 @@ class AIOWPSecurity_Settings_Menu extends AIOWPSecurity_Admin_Menu {
 			),
 			'delete-plugin-settings' => array(
 				'title' => __('Delete plugin settings', 'all-in-one-wp-security-and-firewall'),
-				'render_callback' => array($this, 'render_delete_plugin_settings_tab')
+				'render_callback' => array($this, 'render_delete_plugin_settings_tab'),
+				'display_condition_callback' => array('AIOWPSecurity_Utility_Permissions', 'is_subsite_or_super_admin'),
 			),
 			'wp-version-info' => array(
 				'title' => __('WP version info', 'all-in-one-wp-security-and-firewall'),
@@ -55,15 +56,25 @@ class AIOWPSecurity_Settings_Menu extends AIOWPSecurity_Admin_Menu {
 			'settings-file-operations' => array(
 				'title' => __('Import/Export', 'all-in-one-wp-security-and-firewall'),
 				'render_callback' => array($this, 'render_settings_file_operations'),
+				'display_condition_callback' => array('AIOWPSecurity_Utility_Permissions', 'is_subsite_or_super_admin'),
 			),
 			'advanced-settings' => array(
 				'title' => __('Advanced settings', 'all-in-one-wp-security-and-firewall'),
 				'render_callback' => array($this, 'render_advanced_settings'),
 				'display_condition_callback' => array('AIOWPSecurity_Utility_Permissions', 'is_main_site_and_super_admin'),
 			),
+			
+			/*
+			Hidden until TeamUpdraft.com issues long-lived site keys; the current connection tokens expire after five minutes.
+			'team-updraft' => array(
+				'title' => __('TeamUpdraft', 'all-in-one-wp-security-and-firewall'),
+				'render_callback' => array($this, 'render_team_updraft_tab'),
+				'display_condition_callback' => array('AIOWPSecurity_Utility_Permissions', 'is_main_site_and_super_admin')
+			),
+			*/
 		);
 
-		$menu_tabs = apply_filters('aiowpsecurity_setting_tabs', $menu_tabs);
+		$menu_tabs = apply_filters('aios_setting_tabs', $menu_tabs);
 		$this->menu_tabs = array_filter($menu_tabs, array($this, 'should_display_tab'));
 	}
 
@@ -96,8 +107,9 @@ class AIOWPSecurity_Settings_Menu extends AIOWPSecurity_Admin_Menu {
 	 */
 	protected function render_wp_config_file_operations() {
 		global $aio_wp_security;
-
-		$aio_wp_security->include_template('wp-admin/settings/wp-config-file-operations.php', false, array());
+		$wp_config_file_details = AIOWPSecurity_Utility_File::get_file_permission_details('wp-config.php');
+		$settings = compact('wp_config_file_details');
+		$aio_wp_security->include_template('wp-admin/settings/wp-config-file-operations.php', false, $settings);
 	}
 
 	/**
@@ -153,5 +165,24 @@ class AIOWPSecurity_Settings_Menu extends AIOWPSecurity_Admin_Menu {
 		$advanced_settings_data = $aios_commands->get_ip_address_detection_data();
 
 		$aio_wp_security->include_template('wp-admin/settings/advanced-settings.php', false, $advanced_settings_data);
+	}
+
+	/**
+	 * Renders the submenu's TeamUpdraft tab.
+	 *
+	 * @return void
+	 */
+	protected function render_team_updraft_tab() {
+		global $aio_wp_security;
+
+		if (!class_exists('AIOWPSecurity_Updraft_Connect')) require_once(AIO_WP_SECURITY_PATH . '/classes/includes/wp-security-updraft-connect.php');
+
+		$updraft_redirect_token = $aio_wp_security->configs->get_value(AIOWPSecurity_Updraft_Connect::TOKEN_OPTION_KEY);
+		$updraft_connected_email = $aio_wp_security->configs->get_value(AIOWPSecurity_Updraft_Connect::EMAIL_OPTION_KEY);
+
+		$aio_wp_security->include_template('wp-admin/settings/team-updraft.php', false, array(
+			'updraft_redirect_token'  => $updraft_redirect_token,
+			'updraft_connected_email' => $updraft_connected_email,
+		));
 	}
 }

@@ -15,7 +15,7 @@ class AIOWPSecurity_Block_WpConfig extends AIOWPSecurity_Block_File {
 		if (!is_readable($this->file_path) || !is_writable($this->file_path)) {
 			return new WP_Error(
 				'file_wrong_permissions',
-				'The file has incorrect read or write permissions. Please double check its permissions and try again.',
+				'The file has incorrect read or write permissions. Check the file permissions and try again.',
 				$this->file_path
 			);
 		}

@@ -59,7 +59,12 @@ class AIOS_HIBP {
 		}
 
 		if (self::password_is_pwned($user->user_pass)) {
-			$errors->add('pass', __('<strong>Error:</strong> This password has been exposed in a data breach, according to Have I Been Pwned (HIBP).'));
+			$errors->add('pass', sprintf(
+				/* Translators: 1: opening <strong> tag 2: closing <strong> tag */
+				esc_html__('%1$sError:%2$s This password has been exposed in a data breach, according to Have I Been Pwned (HIBP).', 'all-in-one-wp-security-and-firewall'),
+				'<strong>',
+				'</strong>'
+			));
 		}
 	}
 
@@ -72,12 +77,19 @@ class AIOS_HIBP {
 	 */
 	public static function password_reset_check($errors) {
 		// Use get_error_code() instead of has_errors() for backward compatibility with WP 5.0.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Not processing anything here
 		if ($errors->get_error_code() || !isset($_POST['pass1']) || empty($_POST['pass1'])) {
 			return;
 		}
 
-		if (self::password_is_pwned($_POST['pass1'])) {
-			$errors->add('pass', __('<strong>Error:</strong> This password has been exposed in a data breach, according to Have I Been Pwned (HIBP).'));
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- No nonce available, not recommended to sanitize passwords.
+		if (self::password_is_pwned(wp_unslash($_POST['pass1']))) {
+			$errors->add('pass', sprintf(
+				/* Translators: 1: opening <strong> tag 2: closing <strong> tag */
+				esc_html__('%1$sError:%2$s This password has been exposed in a data breach, according to Have I Been Pwned (HIBP).', 'all-in-one-wp-security-and-firewall'),
+				'<strong>',
+				'</strong>'
+			));
 		}
 	}
 }

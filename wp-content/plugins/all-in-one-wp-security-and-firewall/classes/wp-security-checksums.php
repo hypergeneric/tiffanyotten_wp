@@ -17,8 +17,6 @@ class AIOWPSecurity_Checksums {
 
 	private static $plugin_endpoint_timeout = 15;
 
-	private static $plugin_checksums_ttl = 86400; // 24 hours
-
 	private static $checksums = array();
 
 	/**
@@ -112,6 +110,40 @@ class AIOWPSecurity_Checksums {
 	}
 
 	/**
+	 * This function will format an algorithm-keyed checksums array into one line per algorithm for display
+	 *
+	 * Each algorithm's value may be a single checksum or a list of checksums (e.g. when more than one version of a plugin file is valid); multiple checksums are joined with commas.
+	 * Algorithms with no string checksums are skipped. The returned text is not escaped.
+	 *
+	 * @param array $checksums - the checksums keyed by algorithm e.g. array('md5' => 'abc', 'sha256' => array('def', 'ghi'))
+	 *
+	 * @return array - an array of lines such as 'MD5: abc' and 'SHA-256: def, ghi', or an empty array if there are no checksums to display
+	 */
+	public static function format_checksums_for_display($checksums) {
+		if (!is_array($checksums)) return array();
+
+		$algorithm_labels = array(
+			'md5'    => 'MD5',
+			'sha256' => 'SHA-256',
+		);
+
+		$lines = array();
+
+		foreach ($checksums as $algorithm => $values) {
+			$values = array_filter((array) $values, function($value) {
+				return is_string($value) && '' !== $value;
+			});
+
+			if (empty($values)) continue;
+
+			$label = isset($algorithm_labels[$algorithm]) ? $algorithm_labels[$algorithm] : strtoupper($algorithm);
+			$lines[] = $label . ': ' . implode(', ', $values);
+		}
+
+		return $lines;
+	}
+
+	/**
 	 * This function will lookup the file checksums for the passed in file name
 	 *
 	 * @param string $filename - the file name
@@ -150,58 +182,41 @@ class AIOWPSecurity_Checksums {
 	}
 
 	/**
-	 * This function will update the checksums array
+	 * This function will update the checksums array, fetching fresh checksums from
+	 * WordPress.org for both core and every installed plugin. No persistent caching is
+	 * performed here; a fresh set of requests is made on every call unless the caller
+	 * already has a previously-fetched set (e.g. from a scan task resuming after being
+	 * interrupted) to pass in via $cached_checksums.
+	 *
+	 * @param array|null $cached_checksums - a previously fetched checksums array to reuse instead of downloading again, or null to always fetch fresh
 	 *
 	 * @return void
 	 */
-	public static function update_checksums() {
+	public static function update_checksums($cached_checksums = null) {
+		if (is_array($cached_checksums)) {
+			self::$checksums = $cached_checksums;
+			return;
+		}
+
+		global $wp_version;
+
 		$checksums = array();
-		$core_checksums = self::update_core_checksums();
-		$checksums['core'] = $core_checksums;
-		$plugin_checksums = self::update_plugin_checksums();
-		$checksums['plugins'] = $plugin_checksums;
+		$checksums['core'] = self::download_core_checksums($wp_version);
+		$checksums['plugins'] = self::get_plugins_checksums();
 
 		self::$checksums = $checksums;
 	}
 
 	/**
-	 * This function will update the core checksums merging the saved checksums with any new checksums found
-	 *
-	 * @return array - an array of core checksums
-	 */
-	private static function update_core_checksums() {
-		global $aio_wp_security, $wp_version;
-
-		$core_checksums = get_option('aiowps_core_checksums', array());
-
-		if (isset($core_checksums[$wp_version])) return $core_checksums[$wp_version];
-
-		$current_version_checksums = self::download_core_checksums($wp_version);
-		
-		if (is_wp_error($current_version_checksums)) {
-			$aio_wp_security->debug_logger->log_debug("AIOWPSecurity_Checksums::update_core_checksums() failed: {$current_version_checksums->get_error_message()}", 4);
-			return array('files' => array());
-		}
-
-		if (count($core_checksums) > 2) {
-			$core_checksums = array_slice($core_checksums, -2, 2, true);
-		}
-
-		$core_checksums[$wp_version] = $current_version_checksums;
-
-		update_option('aiowps_core_checksums', $core_checksums);
-
-		return $current_version_checksums;
-	}
-
-	/**
-	 * This function will return an array of MD5 hashes for the currently installed WordPress version and locale
+	 * This function will return an array of MD5 hashes for the currently installed WordPress version and locale,
+	 * fetched directly from the WordPress.org checksums API. No caching is performed.
 	 *
 	 * @param string $wp_version - the WordPress version
 	 *
-	 * @return array|WP_Error - returns an array of checksums or a WP_Error if something went wrong
+	 * @return array - returns an array of checksums, or array('files' => array()) if the request failed (the failure is logged via debug_logger)
 	 */
 	private static function download_core_checksums($wp_version) {
+		global $aio_wp_security;
 
 		$wp_locale = get_locale();
 
@@ -209,20 +224,27 @@ class AIOWPSecurity_Checksums {
 		$options = array(
 			'timeout' => self::$core_endpoint_timeout,
 		);
-	
+
 		$response = wp_remote_get($url, $options);
-	
-		if (is_wp_error($response)) return $response;
+
+		if (is_wp_error($response)) {
+			$aio_wp_security->debug_logger->log_debug("wp_remote_get() failed for core checksums URL: $url, error: {$response->get_error_message()}", 4);
+			return array('files' => array());
+		}
 
 		$response_code = wp_remote_retrieve_response_code($response);
-		
-		if (200 !== $response_code) return new WP_Error("unexpected_response_code", "$response_code returned from core checksums request");
+
+		if (200 !== $response_code) {
+			$aio_wp_security->debug_logger->log_debug("$response_code returned from core checksums request URL: $url", 4);
+			return array('files' => array());
+		}
 
 		$body = trim(wp_remote_retrieve_body($response));
 		$body = json_decode($body, true);
-	
+
 		if (!is_array($body) || !isset($body['checksums']) || !is_array($body['checksums'])) {
-			return new WP_Error("unexpected_response", "The returned core checksums response did not contain the expected data.");
+			$aio_wp_security->debug_logger->log_debug("The returned core checksums response did not contain the expected data.", 4);
+			return array('files' => array());
 		}
 
 		// Convert the checksums response to a standard format
@@ -233,25 +255,19 @@ class AIOWPSecurity_Checksums {
 		foreach ($body['checksums'] as $file => $md5) {
 			$checksums['files'][$file] = array('md5' => $md5);
 		}
-	
+
 		return $checksums;
 	}
 
 	/**
-	 * This function will update the plugin checksums, using cached data where available.
+	 * This function will fetch checksums for every installed plugin directly from
+	 * wordpress.org/plugin-checksums on every call. No caching is performed.
 	 *
-	 * Checksums are cached in the options table per slug+version with a TTL of
-	 * $plugin_checksums_ttl seconds. This avoids redundant downloads when a long-running
-	 * scan is interrupted and resumed on slow or unreliable hosts.
-	 *
-	 * @return array - an array of plugin checksums
+	 * @return array - an array of plugin checksums, keyed by plugin slug
 	 */
-	private static function update_plugin_checksums() {
+	private static function get_plugins_checksums() {
 
 		$plugin_checksums = array();
-		$cache = get_option('aiowps_plugin_checksums', array());
-		$cache_updated = false;
-		$now = time();
 
 		if (!function_exists('get_plugins')) include_once(ABSPATH.'wp-admin/includes/plugin.php');
 		$plugins = get_plugins();
@@ -259,27 +275,12 @@ class AIOWPSecurity_Checksums {
 		foreach ($plugins as $plugin_file => $plugin_data) {
 			$slug = dirname(plugin_basename($plugin_file));
 			$version = $plugin_data['Version'];
-			$cache_key = $slug . '|' . $version;
-
-			if (isset($cache[$cache_key]) && ($now - $cache[$cache_key]['downloaded_at']) < self::$plugin_checksums_ttl) {
-				$plugin_checksums[$slug] = $cache[$cache_key]['data'];
-				continue;
-			}
 
 			$downloaded = self::download_plugin_checksums_for_plugin($slug, $version, $plugin_file);
 
 			if (null === $downloaded) continue;
 
 			$plugin_checksums[$slug] = $downloaded;
-			$cache[$cache_key] = array(
-				'downloaded_at' => $now,
-				'data'          => $downloaded,
-			);
-			$cache_updated = true;
-		}
-
-		if ($cache_updated) {
-			update_option('aiowps_plugin_checksums', $cache);
 		}
 
 		return $plugin_checksums;

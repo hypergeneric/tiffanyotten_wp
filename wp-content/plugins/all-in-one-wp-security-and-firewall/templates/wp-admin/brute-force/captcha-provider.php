@@ -2,7 +2,7 @@
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- PCP error. Variables are not global.
 ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('CAPTCHA provider', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('CAPTCHA provider', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside aiowps-settings">
 		<?php if ($aio_wp_security->is_login_lockdown_by_const()) { ?>
 			<div class="aio_red_box">

@@ -98,25 +98,7 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 		} else {
 			$aiowps_firewall_config->set_value('aiowps_block_fake_googlebots', false);
 		}
-		$options['aiowps_disallow_unauthorized_rest_requests'] = isset($data["aiowps_disallow_unauthorized_rest_requests"]) ? '1' : '';
-		
-		$aios_whitelisted_rest_routes = array();
-		$route_namespaces = AIOWPSecurity_Utility::get_rest_namespaces();
-		foreach ($route_namespaces as $route_namespace) {
-			if (isset($data['aios_whitelisted_rest_routes_'.str_replace('-', '_', $route_namespace)])) {
-				$aios_whitelisted_rest_routes[] = $route_namespace;
-			}
-		}
-		$options['aios_whitelisted_rest_routes'] = $aios_whitelisted_rest_routes;
-		
-		$aios_roles_disallowed_rest_requests = array();
-		$user_roles = AIOWPSecurity_Utility_Permissions::get_user_roles();
-		foreach ($user_roles as $id => $name) {
-			if (!isset($data['aios_allowed_roles_rest_requests_'.$id])) {
-				$aios_roles_disallowed_rest_requests[] = $id;
-			}
-		}
-		$options['aios_roles_disallowed_rest_requests'] = $aios_roles_disallowed_rest_requests;
+		$options = array_merge($options, $this->get_rest_api_options($data));
 
 		// Commit the config settings
 		$this->save_settings($options);
@@ -156,6 +138,53 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 	}
 
 	/**
+	 * Perform saving the WP REST API settings
+	 *
+	 * These settings are stored per site, so unlike the other PHP firewall settings they can be saved by a multisite site admin.
+	 *
+	 * @param array $data - the request data contains the WP REST API settings
+	 *
+	 * @return array - containing a status and the updated feature badge
+	 */
+	public function perform_save_rest_api_settings($data) {
+		$this->save_settings($this->get_rest_api_options($data));
+
+		return $this->handle_response(true, '', array('badges' => array('disallow-unauthorised-requests')));
+	}
+
+	/**
+	 * Builds the WP REST API settings from the request data
+	 *
+	 * @param array $data - the request data contains the WP REST API settings
+	 *
+	 * @return array - the 'aiowps_disallow_unauthorized_rest_requests', 'aios_whitelisted_rest_routes' and 'aios_roles_disallowed_rest_requests' options
+	 */
+	private function get_rest_api_options($data) {
+		$options = array();
+		$options['aiowps_disallow_unauthorized_rest_requests'] = isset($data["aiowps_disallow_unauthorized_rest_requests"]) ? '1' : '';
+
+		$aios_whitelisted_rest_routes = array();
+		$route_namespaces = AIOWPSecurity_Utility::get_rest_namespaces();
+		foreach ($route_namespaces as $route_namespace) {
+			if (isset($data['aios_whitelisted_rest_routes_'.str_replace('-', '_', $route_namespace)])) {
+				$aios_whitelisted_rest_routes[] = $route_namespace;
+			}
+		}
+		$options['aios_whitelisted_rest_routes'] = $aios_whitelisted_rest_routes;
+
+		$aios_roles_disallowed_rest_requests = array();
+		$user_roles = AIOWPSecurity_Utility_Permissions::get_user_roles();
+		foreach ($user_roles as $id => $name) {
+			if (!isset($data['aios_allowed_roles_rest_requests_'.$id])) {
+				$aios_roles_disallowed_rest_requests[] = $id;
+			}
+		}
+		$options['aios_roles_disallowed_rest_requests'] = $aios_roles_disallowed_rest_requests;
+
+		return $options;
+	}
+
+	/**
 	 * Perform saving .htaccess firewall settings
 	 *
 	 * @param array $data - the request data contains the firewall settings
@@ -173,15 +202,11 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 
 		// Max file upload size in basic rules
 		$upload_size = absint($data['aiowps_max_file_upload_size']);
-
-		$max_allowed = apply_filters('aiowps_max_allowed_upload_config', 250); // Set a filterable limit of 250MB
-		$max_allowed = absint($max_allowed);
-
-		if ($upload_size > $max_allowed) {
-			$upload_size = $max_allowed;
-		} elseif (empty($upload_size) || 0 > $upload_size) {
+		$upload_size = apply_filters('aios_max_allowed_upload_config', $upload_size); // Set a filterable limit
+		
+		if (empty($upload_size) || 0 > $upload_size) {
 			$upload_size = AIOS_FIREWALL_MAX_FILE_UPLOAD_LIMIT_MB;
-			$info[] = __('Max file upload limit was set to default value, because you entered a negative or zero value');
+			$info[] = __('Max file upload limit was set to default value, because you entered a negative or zero value', 'all-in-one-wp-security-and-firewall');
 		}
 
 		// Store the current value in case the .htaccess write operation fails and we need to revert it
@@ -297,13 +322,13 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 		$aiowps_firewall_config->set_value('aiowps_enable_blacklisting', $aiowps_enable_blacklisting);
 
 		if (!empty($data['aiowps_banned_ip_addresses'])) {
-			$ip_addresses = sanitize_textarea_field(stripslashes($data['aiowps_banned_ip_addresses']));
+			$ip_addresses = sanitize_textarea_field($data['aiowps_banned_ip_addresses']);
 			$ip_list_array = AIOWPSecurity_Utility_IP::create_ip_list_array_from_string_with_newline($ip_addresses);
 			$validated_ip_list_array = AIOWPSecurity_Utility_IP::validate_ip_list($ip_list_array, 'blacklist');
 			if (is_wp_error($validated_ip_list_array)) {
 				$result = -1;
 				$success = false;
-				$message = nl2br($validated_ip_list_array->get_error_message());
+				$message = $validated_ip_list_array->get_error_message();
 			} else {
 				$banned_ip_addresses_list = preg_split('/\R/', $aio_wp_security->configs->get_value('aiowps_banned_ip_addresses')); // Historical settings where the separator may have depended on PHP_EOL.
 				if ($banned_ip_addresses_list !== $validated_ip_list_array) {
@@ -319,7 +344,7 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 		}
 
 		if (!empty($data['aiowps_banned_user_agents'])) {
-			$this->validate_user_agent_list(stripslashes($data['aiowps_banned_user_agents']));
+			$this->validate_user_agent_list($data['aiowps_banned_user_agents']);
 		} else {
 			// Clear the user agent list
 			$options['aiowps_banned_user_agents'] = '';
@@ -367,7 +392,7 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 
 		if (is_wp_error($validated_ip_list_array)) {
 			$success = false;
-			$message = nl2br($validated_ip_list_array->get_error_message());
+			$message = $validated_ip_list_array->get_error_message();
 		} else {
 			$aiowps_firewall_allow_list::add_ips($validated_ip_list_array);
 		}
@@ -527,7 +552,7 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 		}
 
 		if (!empty($errors)) {
-			return $this->handle_response(false, nl2br(trim($errors)), array('badges' => array('upgrade-unsafe-http-calls')));
+			return $this->handle_response(false, trim($errors), array('badges' => array('upgrade-unsafe-http-calls')));
 		}
 
 		$this->save_settings(array(
@@ -673,12 +698,14 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 		$aiowps_max_file_upload_size = $aio_wp_security->configs->get_value('aiowps_max_file_upload_size');
 		$aiowps_block_debug_log_file_access = $aio_wp_security->configs->get_value('aiowps_block_debug_log_file_access');
 		$aiowps_disable_index_views = $aio_wp_security->configs->get_value('aiowps_disable_index_views');
+		$wp_max_upload_size = AIOWPSecurity_Utility::get_wp_max_upload_size();
 
 		return array(
 			'aiowps_enable_basic_firewall' => $aiowps_enable_basic_firewall,
 			'aiowps_max_file_upload_size' => $aiowps_max_file_upload_size,
 			'aiowps_block_debug_log_file_access' => $aiowps_block_debug_log_file_access,
 			'aiowps_disable_index_views' => $aiowps_disable_index_views,
+			'wp_max_upload_size' => $wp_max_upload_size,
 		);
 	}
 
@@ -727,7 +754,7 @@ trait AIOWPSecurity_Firewall_Commands_Trait {
 				<p><?php esc_html_e('We were unable to access the firewall\'s configuration file:', 'all-in-one-wp-security-and-firewall');?></p>
 				<pre style="max-width: 100%;background-color: #f0f0f0;border: #ccc solid 1px;padding: 10px;white-space: pre-wrap;"><?php echo esc_html(AIOWPSecurity_Utility_Firewall::get_firewall_rules_path() . 'settings.php'); ?></pre>
 				<p><?php esc_html_e('As a result, the firewall will be unavailable.', 'all-in-one-wp-security-and-firewall');?></p>
-				<p><?php esc_html_e('Please check your PHP error log for further information.', 'all-in-one-wp-security-and-firewall');?></p>
+				<p><?php esc_html_e('Check your PHP error log for further information.', 'all-in-one-wp-security-and-firewall');?></p>
 				<p><?php esc_html_e('If you\'re unable to locate your PHP log file, please contact your web hosting company to ask them where it can be found on their setup.', 'all-in-one-wp-security-and-firewall');?></p>
 			</div>
 			<?php

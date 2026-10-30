@@ -1,4 +1,5 @@
 <?php
+if (!defined('ABSPATH')) die('No direct access.');
 /**
  * Merged by Davide Giunchi, from plugin "Stop User Enumeration"
  */

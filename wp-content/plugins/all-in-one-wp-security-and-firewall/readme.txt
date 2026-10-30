@@ -2,13 +2,13 @@
 Contributors: DavidAnderson, pmbaldha, Tips and Tricks HQ, wpsolutions, Peter Petreski, Ruhul Amin, mbrsolution
 Donate link: https://david.dw-perspective.org.uk/donate
 Tags: security, malware scanning, two factor authentication, firewall, login security
-Requires PHP: 5.6
-Requires at least: 5.0
+Requires PHP: 7.4
+Requires at least: 5.3
 Tested up to: 7.1
-Stable tag: 5.4.10
+Stable tag: 5.5.1
 License: GPLv3 or later
 
-Protect your website investment with All-In-One Security (AIOS) – a comprehensive and easy to use security plugin designed especially for WordPress. Featuring login security tools, a cutting-edge firewall and much more.
+Protect your WordPress site with All-In-One Security (AIOS): easy-to-use login security, a powerful firewall, and much more.
 
 == Description ==
 
@@ -245,10 +245,100 @@ Go to the settings menu after you activate the plugin and follow the instruction
 
 == Changelog ==
 
-= 5.4.10 - 16/Sep/2026 =
+= 5.5.1 - 30/Oct/2026 =
 
-* SECURITY: Login lockout unlock requests allowed users to unlock another account's lockout because they were validated based only on the IP address, without checking the user account. Thanks to Ananda Dhakal for disclosing this defect. (This would allow an attacker sharing the same IP address as a user with an active lockout to clear that user's lockout.)
+* FIX: Updated Cloudflare Turnstile key check regex to allow underscores and hyphens.
+* TWEAK: Removed unused lib-central library.
+* TWEAK: Add a Black Friday promo.
 
+= 5.5.0 - 26/Oct/2026 =
+
+* SECURITY: Prevented unauthorised clearing of login lockouts via an empty aiowps_auth_key parameter by requiring a valid nonce and unlock key. Thanks to [Filip Kowalski](https://filipkowalski.dev) for disclosing this defect.
+* SECURITY: Do not allow WooCommerce to auto-login a user who has TFA active when they perform a password reset.  i.e. On previous versions, if using WooCommerce's "Lost password" facility, someone with access to the email account to which the password reset link was sent could login without providing a TFA code.
+* SECURITY: On a site where users with lower privilege levels (e.g. subscriber) existed, a lower-privileged user could forge a request and thereby have his own TFA code accepted for someone else's account. To complete login he would also need to know the password of the account he was logging into. Thanks to Karol Czubernat for the responsible disclosure, via WPScan.
+* FEATURE: Added an Integration settings tab to connect a TeamUpdraft account, providing the authentication used by features that connect to the TeamUpdraft cloud.
+* FEATURE: Added an optional redirect URL to the Rename Login Page feature, so non-logged-in visitors who try to access wp-admin can be sent to a chosen page instead of seeing a "you do not have permission" message.
+* FEATURE: Added audit and debug logging to the firewall.
+* FEATURE: Added a session mechanism to the firewall.
+* FEATURE: Added a pagination dropdown to the audit logs table, allowing users to customize the number of logs displayed per page.
+* FIX: Error log entry for Beginning attempt to port private key encryption over to openssl when unnecessary.
+* FIX: Fixed warning "username" in notify_incorrect_tfa_code_attempts()
+* FIX: If TFA is compulsory for user roles (Premium), it remains required even after downgrading to the free version.
+* FIX: Resolve a PHP E_STRICT deprecation notice
+* FIX: QR code overflow on some resolutions
+* FIX: Two factor user settings block not appearing on new post creation.
+* FIX: Typo in Emergency Code Usage Email Notification Text.
+* FIX: Added confirmation when importing settings from another website for captcha keys and admin email.
+* FIX: Bulk actions row not visible on AJAX-driven list tables (e.g. Logged in users) until the page is manually reloaded.
+* FIX: Deleted users no longer remain visible in the Manual Approval table on WordPress Multisite.
+* FIX: Firewall IP allowlist setting is now included in settings import and export.
+* FIX: Google and Bingbot update failures could overwrite existing bot ranges.
+* FIX: Google reCAPTCHA secret key validation.
+* FIX: Invalid Google reCAPTCHA configuration notice still displaying after disabling CAPTCHA.
+* FIX: Improved InnoDB table migration task to handle upgrade scenarios where automatic table conversion may have been skipped.
+* FIX: Large database tables (over 10 MB) are no longer converted automatically during the InnoDB migration. Manual conversion instructions are displayed instead to help prevent timeouts and database lockups.
+* FIX: List table filters remain visible when no records exist.
+* FIX: Non-WWW wp-login.php canonical redirect exposing the renamed login page.
+* FIX: Potential PHP deprecation notice on PHP 8.1 or later.
+* FIX: Prevented file scans from failing on sites with many installed plugins, and added a live "Downloading Checksums" step so scan progress is clearer.
+* FIX: Search bar remains visible after an AJAX table refresh when no records remain.
+* FIX: Password reset email body could be truncated when REMOTE_ADDR was not a valid IP address.
+* FIX: Max file upload size setting in the .htaccess rules not reflected on the Add Media page in the admin area.
+* FIX: UpdraftCentral integration audit log event details were blank.
+* FIX: User deletion caused a HTTP 500 error on older WordPress versions leading to missing user details in audit logs.
+* FIX: Various translation and translation-help comments.
+* FIX: Fixed an issue where HTML links were displayed as plain text in lists and confirmation popups.
+* FIX: Prevent AIOS TFA code from loading when an incompatible TFA Premium plugin is active.
+* FIX: The file change scan results now show each file's MD5 and SHA-256 checksums correctly without generating a PHP warning.
+* FIX: IP blacklisting within an IP range not being logged properly.
+* FIX: Renamed login page URL exposed in remove personal data email confirmation.
+* FIX: Too few arguments to function AIOWPSecurity_Audit_Events::user_removed_from_blog on WordPress 5.3 or lower.
+* FIX: Prevent the data-colname attribute from being displayed as content in the List on mobile devices.
+* TWEAK: Prevent AIOS activation when on an incompatible WordPress version.
+* TWEAK: Updated the minimum required of PHP version to 7.4.
+* TWEAK: Updated the minimum required of WordPress version to 5.3.
+* TWEAK: Enhanced the locked IP table to work with AJAX.
+* TWEAK: Added AJAX support to debug logs table.
+* TWEAK: Added AJAX support to the logged-in users table.
+* TWEAK: Added AJAX support to the smart 404 blocked IPs list table.
+* TWEAK: Added AJAX support to the spammer IP table.
+* TWEAK: Added Cloudflare Turnstile site and secret key verification. 
+* TWEAK: Added an 'aios_file_scan_completed' action hook with file change scan results for other integrations
+* TWEAK: Added a constant to disable the setup wizard. Add define('AIOS_DISABLE_SETUP_WIZARD', true); to wp-config.php to disable it.
+* TWEAK: Added audit log data retention settings.
+* TWEAK: Added block reason filtering and filtered bulk unblock actions to the Permanent Block List table.
+* TWEAK: Added handling for deleting 404 event logs when no logs are available.
+* TWEAK: Added no-cache headers to lockout and redirect responses to prevent caching by cache plugins and CDNs.
+* TWEAK: Allow subsite admins to permanently block IPs from their subsite in the spammer IPs list.
+* TWEAK: Audit the firewall and replace appropriate `error_log` calls with the debug log.
+* TWEAK: Changed default audit log retention period to 30 days.
+* TWEAK: Changed script enqueue hook from admin_print_scripts/admin_print_styles to the more standard admin_enqueue_scripts.
+* TWEAK: Changed the UI for User Security > user accounts tab to match the UI for the PHP firewall rules tab.
+* TWEAK: Disabled the ability to collapse UI sections.
+* TWEAK: Drop a redundant user_id index from the logged in users table.
+* TWEAK: Enhance the security for .htaccess and wp-config.php restore by matching file content hash.
+* TWEAK: Improved scanner start up time.
+* TWEAK: Improved PHPCS naming convention compliance by standardizing custom hook prefixes to aios_* and adding PHPCS ignore comments where appropriate for WordPress core hooks.
+* TWEAK: Improved badge positioning to be more consistent across admin pages.
+* TWEAK: Moved "More info" help text to tooltips.
+* TWEAK: Moved the Have I Been Pwned "HIBP" tab & related settings to User Security → Password Settings.
+* TWEAK: Refactored comment commands class to use response helper method.
+* TWEAK: Refactored the 404 log export to work with AJAX.
+* TWEAK: Refactored user command class to use new AJAX response helper method.
+* TWEAK: Replace htmlspecialchars() with WordPress escaping functions where appropriate.
+* TWEAK: Updated AIOS documentation links to the TeamUpdraft Docusaurus documentation routes.
+* TWEAK: Updated audit log SQL queries to use prepared statements, resolving unescaped database parameter warnings.
+* TWEAK: Updated the review request notice design.
+* TWEAK: Updated some help texts for better readability.
+* TWEAK: Updated numeric settings to use HTML number inputs.
+* TWEAK: Removed unnecessary stripslashes() usage to improve code consistency.
+* TWEAK: Removed unused 'aios_loaded' action.
+* TWEAK: Removed the legacy security log files and logs directory as they're no longer used.
+* TWEAK: Removed the message store as it's no longer needed.
+* TWEAK: Removed unused "Internet bots" and "6G firewall rules" tabs.
+
+= 5.4.10 – 16/Sep/2026 =
+* SECURITY: Login lockout unlock requests allowed users to unlock another account’s lockout because they were validated based only on the IP address, without checking the user account. Thanks to Ananda Dhakal for disclosing this defect. (This would allow an attacker sharing the same IP address as a user with an active lockout to clear that user’s lockout.)
 
 = 5.4.9 - 5/Jun/2026 =
 
@@ -1716,5 +1806,5 @@ those who want to enable the basic firewall but do not have "AllowOverride" opti
 - First commit to the WP repository.
 
 == Upgrade Notice ==
-* 5.4.10: Fixed login lockout unlock requests allowing users to unlock another account's lockout when sharing the same IP address.
+* 5.5.1: Updated Cloudflare Turnstile key check regex to allow underscores and hyphens.
 

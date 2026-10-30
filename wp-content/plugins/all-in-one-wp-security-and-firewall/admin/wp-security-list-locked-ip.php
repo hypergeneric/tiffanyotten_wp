@@ -4,20 +4,31 @@ if (!defined('ABSPATH')) {
 	exit; // Exit if accessed directly
 }
 
-class AIOWPSecurity_List_Locked_IP extends AIOWPSecurity_List_Table {
-	
-	public function __construct() {
+/**
+ * Locked IP list table class.
+ *
+ * Handles rendering, bulk actions, pagination, and AJAX responses for the locked IP table.
+ */
+class AIOWPSecurity_List_Locked_IP extends AIOWPSecurity_Ajax_Data_Table {
 
-		
+	/**
+	 * Constructs the table object and sets up its attributes.
+	 *
+	 * @param array $data - An array containing additional data for the table. Default is an empty array.
+	 * @return void
+	 */
+	public function __construct($data = array()) {
+
 		// Set parent defaults
 		parent::__construct(array(
-			'singular'  => 'item',     //singular name of the listed records
-			'plural'    => 'items',    //plural name of the listed records
-			'ajax'      => false        //does this table support ajax?
+			'singular' => 'item', // singular name of the listed records
+			'plural' => 'items',  // plural name of the listed records
+			'ajax' => true,       // does this table support ajax?
+			'data' => $data       // Request data
 		));
-		
+
 	}
-	
+
 	/**
 	 * Renders created column in datetime format as per user setting time zone.
 	 *
@@ -161,33 +172,30 @@ class AIOWPSecurity_List_Locked_IP extends AIOWPSecurity_List_Table {
 	}
 
 	/**
-	 * Process bulk actions.
+	 * Processes bulk actions for the locked IP list table.
+	 *
+	 * Handles supported bulk actions such as deleting records and unlocking IP addresses for the selected table items.
+	 *
+	 * @param string $action - The bulk action to be performed.
+	 * @param array  $items  - An array of record IDs on which the action will be performed. Default is an empty array.
 	 *
 	 * @return void
 	 */
-	private function process_bulk_action() {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- PCP warning. This is the nonce.
-		if (empty($_REQUEST['_wpnonce']) || !isset($_REQUEST['_wp_http_referer'])) return;
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- PCP warning. This is the nonce.
-		$result = AIOWPSecurity_Utility_Permissions::check_nonce_and_user_cap($_REQUEST['_wpnonce'], 'bulk-items');
-		if (is_wp_error($result)) return;
+	private function process_bulk_action($action, $items = array()) {
 
-		if ('delete' == $this->current_action()) { // Process delete bulk actions
-			if (!isset($_REQUEST['item'])) {
-				AIOWPSecurity_Admin_Menu::show_msg_error_st(__('Please select some records using the checkboxes', 'all-in-one-wp-security-and-firewall'));
-			} else {
-				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- PCP warning. Sanitized later.
-				$this->delete_lockout_records(wp_unslash($_REQUEST['item']));
-			}
+		if (empty($items)) {
+			AIOS_Helper::set_message('aios_list_message', __('Select records using the checkboxes', 'all-in-one-wp-security-and-firewall'), 'error');
+			return;
 		}
 
-		if ('unlock' == $this->current_action()) { //Process unlock bulk actions
-			if (!isset($_REQUEST['item'])) {
-				AIOWPSecurity_Admin_Menu::show_msg_error_st(__('Please select some records using the checkboxes', 'all-in-one-wp-security-and-firewall'));
-			} else {
-				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- PCP warning. Sanitized later.
-				$this->unlock_ips((wp_unslash($_REQUEST['item'])));
-			}
+		// Process delete bulk actions.
+		if ('delete' === $action) {
+			$this->delete_lockout_records($items);
+		}
+
+		// Process unlock bulk actions.
+		if ('unlock' === $action) {
+			$this->unlock_ips($items);
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended -- PCP warning. This is the nonce.
 	}
@@ -205,52 +213,57 @@ class AIOWPSecurity_List_Locked_IP extends AIOWPSecurity_List_Table {
 		$lockout_table = AIOWPSEC_TBL_LOGIN_LOCKOUT;
 
 		// Unlock multiple records
-		$entries = array_filter($entries, 'is_numeric');  // Discard non-numeric ID values
-		$id_list = '(' .implode(',', $entries) .')';  // Create comma separate list for DB operation
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
-		$result = $wpdb->query("UPDATE $lockout_table SET `released` = UNIX_TIMESTAMP() WHERE `id` IN $id_list");
+		$in_clause = AIOWPSecurity_Utility::prepare_numeric_in_clause($entries);
+		if (false === $in_clause) {
+			return;
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery -- Query is prepared via prepare_numeric_in_clause().
+		$result = $wpdb->query("UPDATE `$lockout_table` SET released = UNIX_TIMESTAMP() WHERE id $in_clause");
 
-		if (null != $result) {
-			AIOWPSecurity_Admin_Menu::show_msg_updated_st(__('The selected IP entries were unlocked successfully.', 'all-in-one-wp-security-and-firewall'));
+		if (false !== $result) {
+			AIOS_Helper::set_message('aios_list_message', __('The selected IP entries were unlocked successfully.', 'all-in-one-wp-security-and-firewall'));
+		} else {
+			AIOS_Helper::set_message('aios_list_message', __('The selected IP entries could not be unlocked', 'all-in-one-wp-security-and-firewall'), 'error');
 		}
 	}
 
 	/**
 	 * Deletes one or more records from the AIOWPSEC_TBL_LOGIN_LOCKOUT table.
 	 *
-	 * @param array|string|integer $entries - ids or a single id
+	 * @param array|string|integer $entries - ids or a single id.
 	 *
-	 * @return void|string
+	 * @return void
 	 */
 	public function delete_lockout_records($entries) {
 		global $wpdb, $aio_wp_security;
 		$lockout_table = AIOWPSEC_TBL_LOGIN_LOCKOUT;
+		$result = false;
+
 		if (is_array($entries)) {
 			// Delete multiple records
-			$entries = array_filter($entries, 'is_numeric'); //discard non-numeric ID values
-			$id_list = "(" .implode(",", $entries) .")"; //Create comma separate list for DB operation
-			$delete_command = "DELETE FROM ".$lockout_table." WHERE id IN ".$id_list;
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP error. Ignore.
-			$result = $wpdb->query($delete_command);
-			if ($result) {
-				AIOWPSecurity_Admin_Menu::show_msg_record_deleted_st();
-			} else {
-				// Error on bulk delete
-				$aio_wp_security->debug_logger->log_debug('Database error occurred when deleting rows from login lockout table. Database error: '.$wpdb->last_error, 4);
-				AIOWPSecurity_Admin_Menu::show_msg_record_not_deleted_st();
+			$in_clause = AIOWPSecurity_Utility::prepare_numeric_in_clause($entries);
+			if (false === $in_clause) {
+				AIOS_Helper::set_message('aios_list_message', AIOWPSecurity_Admin_Menu::show_msg_record_not_deleted_st(true, true), 'error');
+				return;
 			}
-		} elseif (null != $entries) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery -- Query is prepared via prepare_numeric_in_clause().
+			$result = $wpdb->query("DELETE FROM `$lockout_table` WHERE id $in_clause");
+
+		} elseif (!empty($entries)) {
 			// Delete single record
-			$delete_command = "DELETE FROM ".$lockout_table." WHERE id = '".absint($entries)."'";
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP error. Ignore.
-			$result = $wpdb->query($delete_command);
-			if ($result) {
-				return AIOWPSecurity_Admin_Menu::show_msg_record_deleted_st(true);
-			} elseif (false === $result) {
-				// Error on single delete
-				$aio_wp_security->debug_logger->log_debug('Database error occurred when deleting rows from login lockout table. Database error: '.$wpdb->last_error, 4);
-				return AIOWPSecurity_Admin_Menu::show_msg_record_not_deleted_st(true);
-			}
+			$entry_id = absint($entries);
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- PCP warning. Ignore.
+			$result = $wpdb->delete($lockout_table, array('id' => $entry_id), array('%d'));
+
+		}
+
+		if (false !== $result) {
+			AIOS_Helper::set_message('aios_list_message', AIOWPSecurity_Admin_Menu::show_msg_record_deleted_st(true, true));
+		} else {
+			// Error on bulk/single delete.
+			$aio_wp_security->debug_logger->log_debug('Database error occurred when deleting rows from login lockout table. Database error: '.$wpdb->last_error, 4);
+			AIOS_Helper::set_message('aios_list_message', AIOWPSecurity_Admin_Menu::show_msg_record_not_deleted_st(true, true), 'error');
+
 		}
 	}
 
@@ -265,8 +278,30 @@ class AIOWPSecurity_List_Locked_IP extends AIOWPSecurity_List_Table {
 		global $wpdb;
 
 		$lockout_table = AIOWPSEC_TBL_LOGIN_LOCKOUT;
+		$no_action = '-1';
+		$items = array();
 
-		$this->process_bulk_action();
+		if (isset($this->_args['data']['items'])) {
+			if (is_array($this->_args['data']['items'])) {
+				foreach ($this->_args['data']['items'] as $item) {
+					$items[] = sanitize_text_field($item);
+				}
+			} else {
+				$items[] = sanitize_text_field($this->_args['data']['items']);
+			}
+		} else {
+			$items = null;
+		}
+
+		if (isset($this->_args['data']['bulk_apply']) && 'true' === $this->_args['data']['bulk_apply']) {
+			$action = isset($this->_args['data']['action']) ? sanitize_text_field($this->_args['data']['action']) : $no_action;
+
+			if ($no_action !== $action) {
+				$this->process_bulk_action($action, $items);
+			} else {
+				AIOS_Helper::set_message('aios_list_message', __('Select a bulk action from the dropdown.', 'all-in-one-wp-security-and-firewall'), 'error');
+			}
+		}
 
 		// How many records per page to show
 		$per_page = 100;
@@ -276,14 +311,9 @@ class AIOWPSecurity_List_Locked_IP extends AIOWPSecurity_List_Table {
 
 		$this->_column_headers = array($columns, $hidden, $sortable);
 
-		// Parameters that are going to be used to order the result
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
-		$orderby = isset($_GET['orderby']) ? sanitize_text_field(wp_unslash($_GET['orderby'])) : '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
-		$order = isset($_GET['order']) ? sanitize_text_field(wp_unslash($_GET['order'])) : '';
-
-		$orderby = !empty($orderby) ? esc_sql($orderby) : 'created';
-		$order = !empty($order) ? esc_sql($order) : 'DESC';
+		// Parameters that are going to be used to order the result.
+		$orderby = isset($this->_args['data']["orderby"]) ? sanitize_text_field($this->_args['data']["orderby"]) : 'created';
+		$order = isset($this->_args['data']["order"]) ? sanitize_text_field($this->_args['data']["order"]) : 'DESC';
 
 		$orderby = AIOWPSecurity_Utility::sanitize_value_by_array($orderby, $sortable);
 		$order = AIOWPSecurity_Utility::sanitize_value_by_array($order, array('DESC' => '1', 'ASC' => '1'));
@@ -295,10 +325,10 @@ class AIOWPSecurity_List_Locked_IP extends AIOWPSecurity_List_Table {
 		$total_items = $wpdb->get_var("SELECT COUNT(*) FROM {$lockout_table} WHERE `released` > UNIX_TIMESTAMP()");
 
 		if ($ignore_pagination) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
+			// phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
 			$data = $wpdb->get_results("SELECT * FROM {$lockout_table} WHERE `released` > UNIX_TIMESTAMP() ORDER BY {$orderby} {$order}", 'ARRAY_A');
 		} else {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
+			// phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
 			$data = $wpdb->get_results("SELECT * FROM {$lockout_table} WHERE `released` > UNIX_TIMESTAMP() ORDER BY {$orderby} {$order} LIMIT {$per_page} OFFSET {$offset}", 'ARRAY_A');
 		}
 
@@ -312,5 +342,4 @@ class AIOWPSecurity_List_Locked_IP extends AIOWPSecurity_List_Table {
 			'total_pages' => ceil($total_items / $per_page)  // WE have to calculate the total number of pages
 		));
 	}
-
 }

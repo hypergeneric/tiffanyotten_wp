@@ -118,4 +118,18 @@ class AIOWPSecurity_Utility_API {
 		// Return raw response body if it's not JSON
 		return $response_body;
 	}
+
+	/**
+	 * Get the singleton instance of the class.
+	 *
+	 * @return AIOWPSecurity_Utility_API
+	 */
+	public static function get_instance() {
+		static $instance = null;
+		if (null === $instance) {
+			$instance = new self();
+		}
+		return $instance;
+	}
+
 }

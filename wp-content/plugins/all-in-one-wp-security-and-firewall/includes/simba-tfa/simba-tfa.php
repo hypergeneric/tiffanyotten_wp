@@ -148,11 +148,18 @@ class Simba_Two_Factor_Authentication_1 {
 
 		add_filter('pre_update_option', array($this, 'setup_secret_encryption'), 10, 2);
 
+		// phpcs:ignore WordPress.Security.NonceVerification -- No nonce.
 		if (defined('DOING_AJAX') && DOING_AJAX && defined('WP_ADMIN') && WP_ADMIN && !empty($_REQUEST['action']) && 'simbatfa-init-otp' == $_REQUEST['action']) {
 			// Try to prevent PHP notices breaking the AJAX conversation
 			$this->output_buffering = true;
 			$this->logged = array();
-			set_error_handler(array($this, 'get_php_errors'), E_ALL & ~E_STRICT);
+
+			$errorLevel = E_ALL;
+			if (PHP_VERSION_ID < 80400) { // E_STRICT is deprecated as of PHP 8.4
+				$errorLevel &= ~E_STRICT;
+			}
+			//phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Required for error handling.
+			set_error_handler(array($this, 'get_php_errors'), $errorLevel);
 			ob_start();
 		}
 	}
@@ -180,9 +187,9 @@ class Simba_Two_Factor_Authentication_1 {
 	 */
 	final public function show_user_profile($user) {
 		if ($user->ID !== get_current_user_id() || !$this->is_activated_for_user($user->ID)) return;
-		echo '<h2>'.__('Two Factor Authentication', 'all-in-one-wp-security-and-firewall').'</h2>';
+		echo '<h2>' . esc_html__('Two Factor Authentication', 'all-in-one-wp-security-and-firewall') . '</h2>';
 		$settings_url = admin_url('admin.php').'?page='.$this->get_user_settings_page_slug();
-		printf('<a target="_blank" href="%s">%s</a>', $settings_url, __('Go here for your two factor authentication settings...', 'all-in-one-wp-security-and-firewall'));
+		printf('<a target="_blank" href="%s">%s</a>', esc_url($settings_url), esc_html__('Go here for your two factor authentication settings...', 'all-in-one-wp-security-and-firewall'));
 	}
 
 	/**
@@ -193,9 +200,9 @@ class Simba_Two_Factor_Authentication_1 {
 	public function enqueue_gutenberg_block_scripts() {
 		global $pagenow;
 		
-		if ($pagenow == 'post.php' || has_block('twofactor/user-settings')) {
+		if ($pagenow == 'post.php' || $pagenow == 'post-new.php' || has_block('twofactor/user-settings')) {
 			$script_ver = (defined('WP_DEBUG') && WP_DEBUG) ? time() : filemtime($this->includes_dir() . '/gutenberg-blocks.js');
-			wp_enqueue_script('twofactor-gutenberg-blocks', $this->includes_url() . '/gutenberg-blocks.js', array('wp-blocks', 'wp-element', 'wp-server-side-render'), $script_ver);
+			wp_enqueue_script('twofactor-gutenberg-blocks', $this->includes_url() . '/gutenberg-blocks.js', array('wp-blocks', 'wp-element', 'wp-server-side-render'), $script_ver, false);
 	
 			wp_localize_script('twofactor-gutenberg-blocks', 'tfa_trans',
 				array(
@@ -455,7 +462,7 @@ class Simba_Two_Factor_Authentication_1 {
 	 * @param String $class
 	 */
 	public function show_admin_warning($message, $class = 'updated') {
-		echo '<div class="tfamessage '.$class.'">'."<p>$message</p></div>";
+		echo '<div class="tfamessage ' . esc_attr($class) . '">' . "<p>" . wp_kses_post($message) . "</p></div>";
 	}
 
 	/**
@@ -502,9 +509,25 @@ class Simba_Two_Factor_Authentication_1 {
 	public function register_two_factor_auth_settings() {
 		$config_keys = $this->get_config_keys();
 
+		$args = array(
+			'sanitize_callback' => array($this,'sanitize_two_factor_auth_settings'),
+		);
+
 		foreach ($config_keys as $name => $group) {
-			register_setting($group, $name);
+			// phpcs:ignore PluginCheck.CodeAnalysis.SettingSanitization.register_settingDynamic -- Added sanitization and PCP still flagged it.
+			register_setting($group, $name, $args);
 		}
+	}
+
+	/**
+	 * Sanitizes the settings for the two-factor authentication plugin.
+	 *
+	 * @param string $input The value to be sanitized.
+	 *
+	 * @return string
+	 */
+	public function sanitize_two_factor_auth_settings($input) {
+		return sanitize_text_field($input);
 	}
 
 	/**
@@ -604,6 +627,7 @@ class Simba_Two_Factor_Authentication_1 {
 		// On multisite, also check roles on non-main sites
 		if (is_multisite()) {
 			global $wpdb, $table_prefix;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders -- PCP warning. Direct query required.
 			$roles_db = $wpdb->get_results($wpdb->prepare("SELECT meta_key, meta_value FROM {$wpdb->usermeta} WHERE user_id=%d AND meta_key LIKE '".esc_sql($table_prefix)."%_capabilities'", $user_id));
 			if (is_array($roles_db)) {
 				foreach ($roles_db as $role_info) {
@@ -630,7 +654,7 @@ class Simba_Two_Factor_Authentication_1 {
 	 * @return Boolean
 	 */
 	public function is_required_for_user($user_id) {
-		return apply_filters('simba_tfa_required_for_user', $this->user_property_active($user_id, 'required_'), $user_id);
+		return apply_filters('simba_tfa_required_for_user', false, $user_id);
 	}
 
 	/**
@@ -718,9 +742,9 @@ class Simba_Two_Factor_Authentication_1 {
 		$token = bin2hex($this->random_bytes(40));
 
 		$trusted_devices[] = array(
-			'ip' => $_SERVER['REMOTE_ADDR'],
+			'ip' => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
 			'until' => $until,
-			'user_agent' => empty($_SERVER['HTTP_USER_AGENT']) ? '' : (string) $_SERVER['HTTP_USER_AGENT'],
+			'user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? (string) sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '',
 			'token' => $token
 		);
 
@@ -769,8 +793,8 @@ class Simba_Two_Factor_Authentication_1 {
 		if (null === $expires) $expires = time() + 86400;
 		$secure = is_ssl();
 		$secure_logged_in_cookie = ($secure && 'https' === parse_url(get_option('home'), PHP_URL_SCHEME));
-		$secure = apply_filters('secure_auth_cookie', $secure, get_current_user_id());
-		$secure_logged_in_cookie = apply_filters('secure_logged_in_cookie', $secure_logged_in_cookie, get_current_user_id(), $secure);
+		$secure = apply_filters('secure_auth_cookie', $secure, get_current_user_id()); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
+		$secure_logged_in_cookie = apply_filters('secure_logged_in_cookie', $secure_logged_in_cookie, get_current_user_id(), $secure); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		setcookie($name, $value, $expires, ADMIN_COOKIE_PATH, COOKIE_DOMAIN, $secure, true);
 		setcookie($name, $value, $expires, COOKIEPATH, COOKIE_DOMAIN, $secure_logged_in_cookie, true);
@@ -802,14 +826,15 @@ class Simba_Two_Factor_Authentication_1 {
 	/**
 	 * Used with set_error_handler()
 	 *
-	 * @param Integer $errno
-	 * @param String  $errstr
-	 * @param String  $errfile
-	 * @param Integer $errline
+	 * @param int     $errno
+	 * @param string  $errstr
+	 * @param string  $errfile
+	 * @param int     $errline
 	 *
-	 * @return Boolean
+	 * @return bool
 	 */
 	final public function get_php_errors($errno, $errstr, $errfile, $errline) {
+		//phpcs:ignore WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting -- Required fort error handling.
 		if (0 == error_reporting()) return true;
 		$logline = $this->php_error_to_logline($errno, $errstr, $errfile, $errline);
 		$this->logged[] = $logline;
@@ -817,25 +842,39 @@ class Simba_Two_Factor_Authentication_1 {
 		return true;
 	}
 
+	/**
+	 * Converts error details to a logline.
+	 *
+	 * @param int     $errno
+	 * @param string  $errstr
+	 * @param string  $errfile
+	 * @param int     $errline
+	 *
+	 * @return string
+	 */
 	public function php_error_to_logline($errno, $errstr, $errfile, $errline) {
 		switch ($errno) {
-			case 1:		$e_type = 'E_ERROR'; break;
-			case 2:		$e_type = 'E_WARNING'; break;
-			case 4:		$e_type = 'E_PARSE'; break;
-			case 8:		$e_type = 'E_NOTICE'; break;
-			case 16:	$e_type = 'E_CORE_ERROR'; break;
-			case 32:	$e_type = 'E_CORE_WARNING'; break;
-			case 64:	$e_type = 'E_COMPILE_ERROR'; break;
-			case 128:	$e_type = 'E_COMPILE_WARNING'; break;
-			case 256:	$e_type = 'E_USER_ERROR'; break;
-			case 512:	$e_type = 'E_USER_WARNING'; break;
-			case 1024:	$e_type = 'E_USER_NOTICE'; break;
-			case 2048:	$e_type = 'E_STRICT'; break;
-			case 4096:	$e_type = 'E_RECOVERABLE_ERROR'; break;
-			case 8192:	$e_type = 'E_DEPRECATED'; break;
-			case 16384:	$e_type = 'E_USER_DEPRECATED'; break;
-			case 30719:	$e_type = 'E_ALL'; break;
-			default:	$e_type = "E_UNKNOWN ($errno)"; break;
+			case E_ERROR:             $e_type = 'E_ERROR'; break;
+			case E_WARNING:           $e_type = 'E_WARNING'; break;
+			case E_PARSE:             $e_type = 'E_PARSE'; break;
+			case E_NOTICE:            $e_type = 'E_NOTICE'; break;
+			case E_CORE_ERROR:        $e_type = 'E_CORE_ERROR'; break;
+			case E_CORE_WARNING:      $e_type = 'E_CORE_WARNING'; break;
+			case E_COMPILE_ERROR:     $e_type = 'E_COMPILE_ERROR'; break;
+			case E_COMPILE_WARNING:   $e_type = 'E_COMPILE_WARNING'; break;
+			case E_USER_ERROR:        $e_type = 'E_USER_ERROR'; break;
+			case E_USER_WARNING:      $e_type = 'E_USER_WARNING'; break;
+			case E_USER_NOTICE:       $e_type = 'E_USER_NOTICE'; break;
+			case E_RECOVERABLE_ERROR: $e_type = 'E_RECOVERABLE_ERROR'; break;
+			case E_DEPRECATED:        $e_type = 'E_DEPRECATED'; break;
+			case E_USER_DEPRECATED:   $e_type = 'E_USER_DEPRECATED'; break;
+			default:
+				if (PHP_VERSION_ID < 80400 && E_STRICT == $errno) { // E_STRICT is deprecated as of PHP 8.4
+					$e_type = 'E_STRICT';
+				} else {
+					$e_type = "E_UNKNOWN ($errno)";
+				}
+				break;
 		}
 
 		if (!is_string($errstr)) $errstr = serialize($errstr);
@@ -883,6 +922,7 @@ class Simba_Two_Factor_Authentication_1 {
 	 * @return Simba_TFA_Provider_totp
 	 */
 	public function get_totp_controller() {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error -- required for error handling.
 		trigger_error("Deprecated: Call get_controller('totp'), not get_totp_controller()", E_USER_WARNING);
 		return $this->get_controller('totp');
 	}
@@ -892,11 +932,12 @@ class Simba_Two_Factor_Authentication_1 {
 	 */
 	final public function shared_ajax() {
 
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Unneeded for nonce.
 		if (empty($_POST['subaction']) || empty($_POST['nonce']) || !is_user_logged_in() || !wp_verify_nonce($_POST['nonce'], 'tfa_shared_nonce')) die('Security check (3).');
 
 		global $current_user;
 
-		$subaction = $_POST['subaction'];
+		$subaction = sanitize_text_field(wp_unslash($_POST['subaction']));
 
 		if ('refreshotp' == $subaction) {
 
@@ -907,7 +948,7 @@ class Simba_Two_Factor_Authentication_1 {
 			die(json_encode(array('code' => $code)));
 
 		} elseif ('untrust_device' == $subaction && isset($_POST['device_id'])) {
-			$this->untrust_device(stripslashes($_POST['device_id']));
+			$this->untrust_device(sanitize_text_field(wp_unslash($_POST['device_id'])));
 			ob_start();
 			$this->include_template('trusted-devices-inner-box.php', array('trusted_devices' => $this->user_get_trusted_devices()));
 			echo json_encode(array('trusted_list' => ob_get_clean()));
@@ -942,6 +983,7 @@ class Simba_Two_Factor_Authentication_1 {
 	 */
 	public function tfaInitLogin() {
 
+		// phpcs:ignore WordPress.Security.NonceVerification -- No nonce.
 		if (empty($_POST['user'])) die('Security check (2).');
 
 		if (defined('TWO_FACTOR_DISABLE') && TWO_FACTOR_DISABLE) {
@@ -951,8 +993,10 @@ class Simba_Two_Factor_Authentication_1 {
 			if (!function_exists('sanitize_user')) require_once ABSPATH.WPINC.'/formatting.php';
 
 			// WP's password-checking sanitizes the supplied user, so we must do the same to check if TFA is enabled for them
-			$auth_info = array('log' => sanitize_user(stripslashes((string)$_POST['user'])));
+			// phpcs:ignore WordPress.Security.NonceVerification -- No nonce.
+			$auth_info = array('log' => sanitize_user(wp_unslash((string)$_POST['user'])));
 
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Not recommended to sanitize tokens.
 			if (!empty($_COOKIE['simbatfa_trust_token'])) $auth_info['trust_token'] = (string) $_COOKIE['simbatfa_trust_token'];
 
 			$res = $this->pre_auth($auth_info, 'array');
@@ -1025,6 +1069,7 @@ class Simba_Two_Factor_Authentication_1 {
 		}
 		
 		$original_user = $user;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- No nonce.
 		$params = stripslashes_deep($_POST);
 		
 		// If (only) the error was a wrong password, but it looks like the user appended a TFA code to their password, then have another go
@@ -1046,7 +1091,9 @@ class Simba_Two_Factor_Authentication_1 {
 				$may_be_email = true;
 			}
 
-			$params['caller'] = $_SERVER['PHP_SELF'] ? $_SERVER['PHP_SELF'] : $_SERVER['REQUEST_URI'];
+			$request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+			$params['caller'] = isset($_SERVER['PHP_SELF']) ? sanitize_text_field(wp_unslash($_SERVER['PHP_SELF'])) : $request_uri;
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Not recommended to sanitize tokens.
 			if (!empty($_COOKIE['simbatfa_trust_token'])) $params['trust_token'] = (string) $_COOKIE['simbatfa_trust_token'];
 
 			if (isset($from_password) && false !== $from_password) {
@@ -1061,7 +1108,7 @@ class Simba_Two_Factor_Authentication_1 {
 				$ret = $code_ok;
 			} elseif (!$code_ok) {
 				$encryption_enabled = $this->get_option('tfa_encrypt_secrets');
-				$additional = ($encryption_enabled && (!defined('SIMBA_TFA_DB_ENCRYPTION_KEY') || '' === SIMBA_TFA_DB_ENCRYPTION_KEY)) ? ' ' . htmlspecialchars(__('The "encrypt secrets" feature is currently enabled, but no encryption key has been found (set via the SIMBA_TFA_DB_ENCRYPTION_KEY constant).', 'all-in-one-wp-security-and-firewall').' '.__('This indicates that either setup failed, or your WordPress installation has been corrupted.', 'all-in-one-wp-security-and-firewall')) . ' <a href="' . esc_url($this->get_faq_url()) . '">'. __('Go here for the FAQs, which explain how a website owner can de-activate the plugin without needing to login.', 'all-in-one-wp-security-and-firewall') .'</a>' : '';
+				$additional = ($encryption_enabled && (!defined('SIMBA_TFA_DB_ENCRYPTION_KEY') || '' === SIMBA_TFA_DB_ENCRYPTION_KEY)) ? ' ' . esc_html__('The "encrypt secrets" feature is currently enabled, but no encryption key has been found (set via the SIMBA_TFA_DB_ENCRYPTION_KEY constant).', 'all-in-one-wp-security-and-firewall').' '.esc_html__('This indicates that either setup failed, or your WordPress installation has been corrupted.', 'all-in-one-wp-security-and-firewall') . ' <a href="' . esc_url($this->get_faq_url()) . '">'. esc_html__('Go here for the FAQs, which explain how a website owner can de-activate the plugin without needing to login.', 'all-in-one-wp-security-and-firewall') .'</a>' : '';
 				$error_message = apply_filters(
 					'simba_tfa_message_code_incorrect',
 					__('The one-time password (TFA code) you entered was incorrect.', 'all-in-one-wp-security-and-firewall') . $additional
@@ -1089,6 +1136,7 @@ class Simba_Two_Factor_Authentication_1 {
 				if (function_exists('wp_authenticate_username_password') && $may_be_email && filter_var($username, FILTER_VALIDATE_EMAIL)) {
 					global $wpdb;
 					// This has to match self::authorise_user_from_login()
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- PCP warning. Direct query required.
 					$response = $wpdb->get_row($wpdb->prepare("SELECT ID, user_registered from ".$wpdb->users." WHERE user_email=%s", $username));
 					if (is_object($response)) $username_is_email = true;
 				}
@@ -1103,7 +1151,8 @@ class Simba_Two_Factor_Authentication_1 {
 		// If the TFA code was actually validated (not just not required, for example), then $code_ok is (boolean)true
 		if (isset($code_ok) && true === $code_ok && is_a($ret, 'WP_User')) {
 			// Though $_SERVER['SERVER_NAME'] can't always be trusted (if the webserver is misconfigured), anyone using this already has password and TFA clearance.
-			if (!empty($params['simba_tfa_mark_as_trusted']) && $this->user_can_trust($ret->ID) && (is_ssl() || (!empty($_SERVER['SERVER_NAME']) && ('localhost' == $_SERVER['SERVER_NAME'] ||'127.0.0.1' == $_SERVER['SERVER_NAME'] || preg_match('/\.localdomain$/', $_SERVER['SERVER_NAME']))))) {
+			$server_name = isset($_SERVER['SERVER_NAME']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME'])) : '';
+			if (!empty($params['simba_tfa_mark_as_trusted']) && $this->user_can_trust($ret->ID) && (is_ssl() || (!empty($server_name) && ('localhost' == $server_name ||'127.0.0.1' == $server_name || preg_match('/\.localdomain$/', $server_name))))) {
 
 				$trusted_for = $this->get_option('tfa_trusted_for');
 				$trusted_for = (false === $trusted_for) ? 30 : (string) absint($trusted_for);
@@ -1199,7 +1248,8 @@ class Simba_Two_Factor_Authentication_1 {
 	 * @return Array
 	 */
 	private function get_incorrect_tfa_attempt_info() {
-		$ip_address = apply_filters('tfa_user_ip_address', $_SERVER['REMOTE_ADDR']);
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Two Factor Authentication compatibility.
+		$ip_address = apply_filters('tfa_user_ip_address', isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '');
 		return array('activity_time' => time(), 'ip_address' => $ip_address);
 	}
 	
@@ -1211,7 +1261,7 @@ class Simba_Two_Factor_Authentication_1 {
 	 * @return Array
 	 */
 	private function get_incorrect_tfa_user_info($user) {
-		return array('user_id' => $user->ID, 'attempts' => array($this->get_incorrect_tfa_attempt_info()));
+		return array('user_id' => $user->ID, 'username' => $user->user_nicename, 'attempts' => array($this->get_incorrect_tfa_attempt_info()));
 	}
 	
 	/**
@@ -1222,6 +1272,7 @@ class Simba_Two_Factor_Authentication_1 {
 	 */
 	private function notify_incorrect_tfa_code_attempts($user_info, $user_email) {
 		$subject = __('Incorrect TFA code attempts', 'all-in-one-wp-security-and-firewall');
+		/* translators: %s: Username.  */
 		$email_msg = sprintf(__('There has been an incorrect TFA code entered for logging in to your account %s.', 'all-in-one-wp-security-and-firewall'), $user_info['username']) . "\n\n" .
 			__('Attempts', 'all-in-one-wp-security-and-firewall') . "\n\n";
 		foreach ($user_info['attempts'] as $index => $attempt) {
@@ -1250,11 +1301,14 @@ class Simba_Two_Factor_Authentication_1 {
 	public function pre_auth($params, $response_format = 'simple') {
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- PCP warning. Direct query required.
 		$query = filter_var($params['log'], FILTER_VALIDATE_EMAIL) ? $wpdb->prepare("SELECT ID, user_email from ".$wpdb->users." WHERE user_email=%s", $params['log']) : $wpdb->prepare("SELECT ID, user_email from ".$wpdb->users." WHERE user_login=%s", $params['log']);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- PCP warning. Direct query required. Prepared above.
 		$user = $wpdb->get_row($query);
 
 		if (!$user && filter_var($params['log'], FILTER_VALIDATE_EMAIL)) {
 			// Corner-case: login looks like an email, but is a username rather than email address
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- PCP warning. Direct query required.
 			$user = $wpdb->get_row($wpdb->prepare("SELECT ID, user_email from ".$wpdb->users." WHERE user_login=%s", $params['log']));
 		}
 
@@ -1298,9 +1352,9 @@ class Simba_Two_Factor_Authentication_1 {
 	/**
 	 * Print the radio buttons for enabling/disabling TFA
 	 *
-	 * @param Integer $user_id	  - the WordPress user ID
+	 * @param Integer $user_id    - the WordPress user ID
 	 * @param Boolean $long_label - whether to use a long label rather than a short one
-	 * @param String  $style	  - valid values are "show_current" and "require_current"
+	 * @param String  $style      - valid values are "show_current" and "require_current"
 	 */
 	public function paint_enable_tfa_radios($user_id, $long_label = false, $style = 'show_current') {
 
@@ -1312,30 +1366,44 @@ class Simba_Two_Factor_Authentication_1 {
 		$is_activated = $this->is_activated_by_user($user_id);
 
 		if ($is_required) {
-			$require_after = absint($this->get_option('tfa_requireafter'));
-			echo '<p class="tfa_required_warning" style="font-weight:bold; font-style:italic;">'.sprintf(__('N.B. This site is configured to forbid you to log in if you disable two-factor authentication after your account is %d days old', 'all-in-one-wp-security-and-firewall'), $require_after).'</p>';
+			echo '<p class="tfa_required_warning" style="font-weight:bold; font-style:italic;">';
+			printf(
+				/* translators: %d: Account age in days. */
+				esc_html__('N.B. This site is configured to forbid you to log in if you disable two-factor authentication after your account is %d days old', 'all-in-one-wp-security-and-firewall'),
+				absint($this->get_option('tfa_requireafter'))
+			);
+			echo '</p>';
 		}
 
 		$tfa_enabled_label = $long_label ? __('Enable two-factor authentication', 'all-in-one-wp-security-and-firewall') : __('Enabled', 'all-in-one-wp-security-and-firewall');
 
 		if ('show_current' == $style) {
-			$tfa_enabled_label .= ' '.sprintf(__('(Current code: %s)', 'all-in-one-wp-security-and-firewall'), $this->get_controller('totp')->current_otp_code($user_id));
+			$tfa_enabled_label .= ' (' . __('Current code:', 'all-in-one-wp-security-and-firewall') . ' ' . $this->get_controller('totp')->current_otp_code($user_id) . ')';
 		} elseif ('require_current' == $style) {
-			$tfa_enabled_label .= ' '.sprintf(__('(you must enter the current code: %s)', 'all-in-one-wp-security-and-firewall'), '<input type="text" class="tfa_enable_current" name="tfa_enable_current" size="6" style="height">');
+			$tfa_enabled_label .= ' (' . __('you must enter the current code', 'all-in-one-wp-security-and-firewall') . '): ' . '<input type="text" class="tfa_enable_current" name="tfa_enable_current" size="6">';
 		}
 
 		$show_disable = ((is_multisite() && is_super_admin()) || (!is_multisite() && current_user_can($this->get_management_capability())) || false == $is_activated || !$is_required || !$this->get_option('tfa_hide_turn_off')) ? true : false;
 
 		$tfa_disabled_label = $long_label ? __('Disable two-factor authentication', 'all-in-one-wp-security-and-firewall') : __('Disabled', 'all-in-one-wp-security-and-firewall');
 
-		if ('require_current' == $style) echo '<input type="hidden" name="require_current" value="1">'."\n";
+		if ('require_current' == $style) echo '<input type="hidden" name="require_current" value="1">';
 
-		echo '<input type="radio" class="tfa_enable_radio" id="tfa_enable_tfa_true" name="tfa_enable_tfa" value="true" '.(true == $is_activated ? 'checked="checked"' : '').'> <label class="tfa_enable_radio_label" for="tfa_enable_tfa_true">'.apply_filters('simbatfa_radiolabel_enabled', $tfa_enabled_label, $long_label).'</label> <br>';
+		$allowed_label_html = array(
+			'input' => array(
+				'type'  => true,
+				'class' => true,
+				'name'  => true,
+				'size'  => true,
+			),
+		);
+
+		echo '<input type="radio" class="tfa_enable_radio" id="tfa_enable_tfa_true" name="tfa_enable_tfa" value="true" ' . (true == $is_activated ? 'checked="checked"' : '') . '> <label class="tfa_enable_radio_label" for="tfa_enable_tfa_true">' . wp_kses(apply_filters('simbatfa_radiolabel_enabled', $tfa_enabled_label, $long_label), $allowed_label_html) . '</label> <br>';
 
 		// Show the 'disabled' option if the user is an admin, or if it is currently set, or if TFA is not compulsory, or if the site owner doesn't require it to be hidden
 		// Note that this just hides the option in the UI. The user could POST to turn off TFA, but, since it's required, they won't be able to log in.
 		if ($show_disable) {
-			echo '<input type="radio" class="tfa_enable_radio" id="tfa_enable_tfa_false" name="tfa_enable_tfa" value="false" '.(false == $is_activated ? 'checked="checked"' :'').'> <label class="tfa_enable_radio_label" for="tfa_enable_tfa_false">'.apply_filters('simbatfa_radiolabel_disabled', $tfa_disabled_label, $long_label).'</label> <br>';
+			echo '<input type="radio" class="tfa_enable_radio" id="tfa_enable_tfa_false" name="tfa_enable_tfa" value="false" ' . (false == $is_activated ? 'checked="checked"' : '') . '> <label class="tfa_enable_radio_label" for="tfa_enable_tfa_false">' . esc_html(apply_filters('simbatfa_radiolabel_disabled', $tfa_disabled_label, $long_label)) . '</label> <br>';
 		}
 	}
 
@@ -1411,7 +1479,7 @@ class Simba_Two_Factor_Authentication_1 {
 			$setting = $this->get_option('tfa_'.$prefix.$id);
 			$setting = ($setting === false) ? $default : ($setting ? 1 : 0);
 
-			echo '<input type="checkbox" id="tfa_'.esc_attr($prefix.$id).'" name="tfa_'.esc_attr($prefix.$id).'" class="tfa_'.esc_attr($prefix).'user_roles" value="1" '.($setting ? 'checked="checked"' :'').'> <label for="tfa_'.esc_attr($prefix.$id).'">'.htmlspecialchars($name)."</label><br>\n";
+			echo '<input type="checkbox" id="tfa_' . esc_attr($prefix) . esc_attr($id) . '" name="tfa_' . esc_attr($prefix) . esc_attr($id) . '" class="tfa_' . esc_attr($prefix) . 'user_roles" value="1" ' . ($setting ? 'checked="checked"' :'').'> <label for="tfa_' . esc_attr($prefix) . esc_attr($id) . '">' . esc_html($name) . "</label><br>\n";
 		}
 
 		global $wp_roles;
@@ -1421,7 +1489,7 @@ class Simba_Two_Factor_Authentication_1 {
 			$setting = $this->get_option('tfa_'.$prefix.$id);
 			$setting = ($setting === false) ? $default : ($setting ? 1 : 0);
 
-			echo '<input type="checkbox" id="tfa_'.esc_attr($prefix.$id).'" name="tfa_'.esc_attr($prefix.$id).'" class="tfa_'.esc_attr($prefix).'user_roles" value="1" '.($setting ? 'checked="checked"' :'').'> <label for="tfa_'.esc_attr($prefix.$id).'">'.htmlspecialchars(translate_user_role($name))."</label><br>\n";
+			echo '<input type="checkbox" id="tfa_' . esc_attr($prefix) . esc_attr($id) . '" name="tfa_' . esc_attr($prefix) . esc_attr($id) . '" class="tfa_' . esc_attr($prefix) . 'user_roles" value="1" ' . ($setting ? 'checked="checked"' :'') . '> <label for="tfa_' . esc_attr($prefix) . esc_attr($id) . '">' . esc_html(translate_user_role($name)) . "</label><br>\n";
 		}
 
 	}
@@ -1437,7 +1505,7 @@ class Simba_Two_Factor_Authentication_1 {
 		);
 
 		foreach($types as $id => $name) {
-			print '<input type="radio" name="tfa_xmlrpc_on" id="tfa_xmlrpc_on_'.$id.'" value="'.$id.'" '.($setting == $id ? 'checked="checked"' : '').'> <label for="tfa_xmlrpc_on_'.$id.'">'.htmlspecialchars($name)."</label><br>\n";
+			print '<input type="radio" name="tfa_xmlrpc_on" id="tfa_xmlrpc_on_' . esc_attr($id) . '" value="' . esc_attr($id) . '" ' . ($setting == $id ? 'checked="checked"' : '') . '> <label for="tfa_xmlrpc_on_' . esc_attr($id) . '">' . esc_html($name) . "</label><br>\n";
 		}
 	}
 
@@ -1459,17 +1527,22 @@ class Simba_Two_Factor_Authentication_1 {
 	 */
 	public function authorise_user_from_login($params, $may_be_email = false) {
 
+		// This key should only be supplied (if at all) via the filter
+		unset($params['creds_user_id']);
 		$params = apply_filters('simbatfa_auth_user_from_login_params', $params);
 
 		global $wpdb;
 
 		if (!$this->is_caller_active()) return 1;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- PCP warning. Direct query required.
 		$query = ($may_be_email && filter_var($params['log'], FILTER_VALIDATE_EMAIL)) ? $wpdb->prepare("SELECT ID, user_registered from ".$wpdb->users." WHERE user_email=%s", $params['log']) : $wpdb->prepare("SELECT ID, user_registered from ".$wpdb->users." WHERE user_login=%s", $params['log']);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- PCP warning. Direct query required. Prepared above.
 		$response = $wpdb->get_row($query);
 
 		if (!$response && $may_be_email && filter_var($params['log'], FILTER_VALIDATE_EMAIL)) {
 			// Corner-case: login looks like an email, but is a username rather than email address
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- PCP warning. Direct query required.
 			$response = $wpdb->get_row($wpdb->prepare("SELECT ID, user_registered from ".$wpdb->users." WHERE user_login=%s", $params['log']));
 		}
 
@@ -1573,11 +1646,27 @@ class Simba_Two_Factor_Authentication_1 {
 	protected function get_ajax_url() {
 		$ajax_url = admin_url('admin-ajax.php');
 		$parsed_url = parse_url($ajax_url);
-		if (strtolower($parsed_url['host']) !== strtolower($_SERVER['HTTP_HOST']) && !empty($parsed_url['path'])) {
+		if (strtolower($parsed_url['host']) !== strtolower(isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '') && !empty($parsed_url['path'])) {
 			// Mismatch - return the relative URL only
 			$ajax_url = $parsed_url['path'];
 		}
 		return $ajax_url;
+	}
+	
+	/**
+	 * Gets the current request URL.
+	 *
+	 * Constructs the current URL using the request scheme, host, and request URI,
+	 * then sanitizes it before returning.
+	 *
+	 * @return string The current request URL, or an empty string if unavailable.
+	 */ 
+	public function get_current_url() {
+		$scheme = is_ssl() ? 'https://' : 'http://';
+		$host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
+		$request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+
+		return esc_url_raw($scheme . $host . $request_uri);
 	}
 
 	/**
@@ -1588,6 +1677,7 @@ class Simba_Two_Factor_Authentication_1 {
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- No nonce.
 		if (isset($_GET['action']) && 'logout ' != $_GET['action'] && 'login' != $_GET['action']) return;
 
 		static $already_done = false;
@@ -1597,7 +1687,7 @@ class Simba_Two_Factor_Authentication_1 {
 		// Prevent caching when in debug mode
 		$script_ver = (defined('WP_DEBUG') && WP_DEBUG) ? time() : filemtime($this->includes_dir().'/tfa.js');
 
-		wp_enqueue_script('tfa-ajax-request', $this->includes_url().'/tfa.js', array('jquery'), $script_ver);
+		wp_enqueue_script('tfa-ajax-request', $this->includes_url().'/tfa.js', array('jquery'), $script_ver, false);
 
 		$trusted_for = $this->get_option('tfa_trusted_for');
 		$trusted_for = (false === $trusted_for) ? 30 : (string) absint($trusted_for);
@@ -1608,6 +1698,7 @@ class Simba_Two_Factor_Authentication_1 {
 			'enter_username_first' => __('You have to enter a username first.', 'all-in-one-wp-security-and-firewall'),
 			'otp' => __('One Time Password (i.e. 2FA)', 'all-in-one-wp-security-and-firewall'),
 			'otp_login_help' => __('(check your OTP app to get this password)', 'all-in-one-wp-security-and-firewall'),
+			/* translators: %d: Trusted days. */
 			'mark_as_trusted' => sprintf(_n('Trust this device (allow login without 2FA for %d day)', 'Trust this device (allow login without TFA for %d days)', $trusted_for, 'all-in-one-wp-security-and-firewall'), $trusted_for),
 			'is_trusted' => __('(Trusted device - no OTP code required)', 'all-in-one-wp-security-and-firewall'),
 			'nonce' => wp_create_nonce('simba_tfa_loginform_nonce'),
@@ -1640,8 +1731,8 @@ class Simba_Two_Factor_Authentication_1 {
 		}
 
 		global $wpdb;
-		$sql = $wpdb->prepare('SELECT COUNT(user_id) FROM ' . $wpdb->usermeta . ' WHERE meta_key = %s AND meta_value = %d LIMIT 1', 'tfa_enable_tfa', 1);
-		$count_user_id = $wpdb->get_var($sql);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- PCP warning. Direct query required.
+		$count_user_id = $wpdb->get_var($wpdb->prepare('SELECT COUNT(user_id) FROM ' . $wpdb->usermeta . ' WHERE meta_key = %s AND meta_value = %d LIMIT 1', 'tfa_enable_tfa', 1));
 
 		if (is_null($count_user_id)) { // Error in query.
 			return apply_filters('simbatfa_enqueue_login_scripts', true);
@@ -1667,13 +1758,14 @@ class Simba_Two_Factor_Authentication_1 {
 
 		if ($return_instead_of_echo) ob_start();
 
-		$template_file = apply_filters('simatfa_template_file', $this->templates_dir().'/'.$path, $path, $extract_these, $return_instead_of_echo);
+		$template_file = apply_filters('simbatfa_template_file', $this->templates_dir().'/'.$path, $path, $extract_these, $return_instead_of_echo);
 
 		do_action('simbatfa_before_template', $path, $return_instead_of_echo, $extract_these, $template_file);
 
 		if (!file_exists($template_file)) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log --  Required for error handling.
 			error_log("TFA: template not found: $template_file (from $path)");
-			echo __('Error:', 'all-in-one-wp-security-and-firewall').' '.__('Template path not found:', 'all-in-one-wp-security-and-firewall')." (".htmlspecialchars($path).")";
+			echo esc_html__('Error:', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('Template path not found:', 'all-in-one-wp-security-and-firewall') . " (" . esc_html($path) . ")";
 		} else {
 			extract($extract_these);
 			// The following are useful variables which can be used in the template.

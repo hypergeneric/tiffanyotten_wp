@@ -124,6 +124,8 @@ class AIOWPSecurity_Configure_Settings {
 
 		//Brute Force features
 		$aio_wp_security->configs->set_value('aiowps_enable_rename_login_page', '');//Checkbox
+		$aio_wp_security->configs->set_value('aiowps_enable_rename_login_redirect', '');//Checkbox
+		$aio_wp_security->configs->set_value('aiowps_rename_login_redirect_slug', '');
 		$aio_wp_security->configs->set_value('aiowps_enable_login_honeypot', '');//Checkbox
 		$aio_wp_security->configs->set_value('aiowps_disable_application_password', '');//Checkbox
 
@@ -336,6 +338,8 @@ class AIOWPSecurity_Configure_Settings {
 
 		//Brute Force features
 		$aio_wp_security->configs->add_value('aiowps_enable_rename_login_page', '');//Checkbox
+		$aio_wp_security->configs->add_value('aiowps_enable_rename_login_redirect', '');//Checkbox
+		$aio_wp_security->configs->add_value('aiowps_rename_login_redirect_slug', '');
 		$aio_wp_security->configs->add_value('aiowps_enable_login_honeypot', '');//Checkbox
 		$aio_wp_security->configs->add_value('aiowps_disable_application_password', ''); // Checkbox
 
@@ -744,7 +748,7 @@ class AIOWPSecurity_Configure_Settings {
 			$res = true;
 		}
 		if (!$res) {
-			$aio_wp_security->debug_logger->log_debug(__METHOD__ . " - Could not write to the .htaccess file. Please check the file permissions.", 4);
+			$aio_wp_security->debug_logger->log_debug(__METHOD__ . " - Could not write to the .htaccess file. Check the file permissions.", 4);
 		}
 	}
 	
@@ -797,4 +801,178 @@ class AIOWPSecurity_Configure_Settings {
 		Allow_List::add_ips(array()); // Remove firewall whitelisted IPs
 	}
 
+	/**
+	 * Sanitize settings value when imported from file
+	 *
+	 * @param mixed $settings Imported Settings
+	 *
+	 * @return mixed $configs Sanitized settings
+	 */
+	public static function sanitize_setting_values($settings) {
+		$configs = array();
+		if (!empty($settings['aiowps_enable_debug'])) $configs['aiowps_enable_debug'] = sanitize_text_field($settings['aiowps_enable_debug']);
+		if (!empty($settings['aiowps_enable_php_backtrace_in_email'])) $configs['aiowps_enable_php_backtrace_in_email'] = sanitize_text_field($settings['aiowps_enable_php_backtrace_in_email']);
+		if (!empty($settings['aiowps_remove_wp_generator_meta_info'])) $configs['aiowps_remove_wp_generator_meta_info'] = sanitize_text_field($settings['aiowps_remove_wp_generator_meta_info']);
+		if (!empty($settings['aiowps_prevent_hotlinking'])) $configs['aiowps_prevent_hotlinking'] = sanitize_text_field($settings['aiowps_prevent_hotlinking']);
+		if (!empty($settings['aiowps_enable_login_lockdown'])) $configs['aiowps_enable_login_lockdown']  = sanitize_text_field($settings['aiowps_enable_login_lockdown']);
+		if (!empty($settings['aiowps_allow_unlock_requests'])) $configs['aiowps_allow_unlock_requests'] = sanitize_text_field($settings['aiowps_allow_unlock_requests']);
+		if (!empty($settings['aiowps_max_login_attempts'])) $configs['aiowps_max_login_attempts'] = sanitize_text_field($settings['aiowps_max_login_attempts']);
+		if (!empty($settings['aiowps_retry_time_period'])) $configs['aiowps_retry_time_period'] = sanitize_text_field($settings['aiowps_retry_time_period']);
+		if (!empty($settings['aiowps_lockout_time_length'])) $configs['aiowps_lockout_time_length'] = sanitize_text_field($settings['aiowps_lockout_time_length']);
+		if (!empty($settings['aiowps_max_lockout_time_length'])) $configs['aiowps_max_lockout_time_length'] = sanitize_text_field($settings['aiowps_max_lockout_time_length']);
+		if (!empty($settings['aiowps_set_generic_login_msg'])) $configs['aiowps_set_generic_login_msg'] = sanitize_textarea_field($settings['aiowps_set_generic_login_msg']);
+		if (!empty($settings['aiowps_enable_email_notify'])) $configs['aiowps_enable_email_notify'] = sanitize_text_field($settings['aiowps_enable_email_notify']);
+		if (!empty($settings['aiowps_email_address'])) $configs['aiowps_email_address'] = is_array($settings['aiowps_email_address']) ? array_map('sanitize_email', $settings['aiowps_email_address']) : sanitize_email($settings['aiowps_email_address']);
+		if (!empty($settings['aiowps_enable_forced_logout'])) $configs['aiowps_enable_forced_logout'] = sanitize_text_field($settings['aiowps_enable_forced_logout']);
+		if (!empty($settings['aiowps_logout_time_period'])) $configs['aiowps_logout_time_period'] = sanitize_text_field($settings['aiowps_logout_time_period']);
+		if (!empty($settings['aiowps_enable_invalid_username_lockdown'])) $configs['aiowps_enable_invalid_username_lockdown'] = sanitize_text_field($settings['aiowps_enable_invalid_username_lockdown']);
+		if (!empty($settings['aiowps_instantly_lockout_specific_usernames'])) $configs['aiowps_instantly_lockout_specific_usernames'] = array_map('sanitize_text_field', $settings['aiowps_instantly_lockout_specific_usernames']);
+		if (!empty($settings['aiowps_unlock_request_secret_key'])) $configs['aiowps_unlock_request_secret_key'] = sanitize_text_field($settings['aiowps_unlock_request_secret_key']);
+		if (!empty($settings['aiowps_lockdown_enable_whitelisting'])) $configs['aiowps_lockdown_enable_whitelisting'] = sanitize_text_field($settings['aiowps_lockdown_enable_whitelisting']);
+		if (!empty($settings['aiowps_lockdown_allowed_ip_addresses'])) $configs['aiowps_lockdown_allowed_ip_addresses'] = sanitize_textarea_field($settings['aiowps_lockdown_allowed_ip_addresses']);
+		if (!empty($settings['aiowps_http_authentication_admin'])) $configs['aiowps_http_authentication_admin'] = sanitize_text_field($settings['aiowps_http_authentication_admin']);
+		if (!empty($settings['aiowps_http_authentication_frontend'])) $configs['aiowps_http_authentication_frontend'] = sanitize_text_field($settings['aiowps_http_authentication_frontend']);
+		if (!empty($settings['aiowps_http_authentication_username'])) $configs['aiowps_http_authentication_username'] = sanitize_text_field($settings['aiowps_http_authentication_username']);
+		if (!empty($settings['aiowps_http_authentication_password'])) $configs['aiowps_http_authentication_password'] = sanitize_text_field($settings['aiowps_http_authentication_password']);
+		if (!empty($settings['aiowps_hibp_user_profile_update'])) $configs['aiowps_hibp_user_profile_update'] = sanitize_text_field($settings['aiowps_hibp_user_profile_update']);
+		if (!empty($settings['aiowps_http_password_reset'])) $configs['aiowps_http_password_reset'] = sanitize_text_field($settings['aiowps_http_password_reset']);
+		if (!empty($settings['aiowps_http_authentication_failure_message'])) $configs['aiowps_http_authentication_failure_message'] = wp_kses_post($settings['aiowps_http_authentication_failure_message']);
+		if (!empty($settings['aiowps_default_captcha'])) $configs['aiowps_default_captcha'] = sanitize_text_field($settings['aiowps_default_captcha']);
+		if (!empty($settings['aiowps_enable_login_captcha'])) $configs['aiowps_enable_login_captcha'] = sanitize_text_field($settings['aiowps_enable_login_captcha']);
+		if (!empty($settings['aiowps_enable_custom_login_captcha'])) $configs['aiowps_enable_custom_login_captcha'] = sanitize_text_field($settings['aiowps_enable_custom_login_captcha']);
+		if (!empty($settings['aiowps_enable_password_protected_captcha'])) $configs['aiowps_enable_password_protected_captcha'] = sanitize_text_field($settings['aiowps_enable_password_protected_captcha']);
+		if (!empty($settings['aiowps_enable_woo_login_captcha'])) $configs['aiowps_enable_woo_login_captcha'] = sanitize_text_field($settings['aiowps_enable_woo_login_captcha']);
+		if (!empty($settings['aiowps_enable_woo_lostpassword_captcha'])) $configs['aiowps_enable_woo_lostpassword_captcha'] = sanitize_text_field($settings['aiowps_enable_woo_lostpassword_captcha']);
+		if (!empty($settings['aiowps_enable_woo_register_captcha'])) $configs['aiowps_enable_woo_register_captcha'] = sanitize_text_field($settings['aiowps_enable_woo_register_captcha']);
+		if (!empty($settings['aiowps_enable_woo_checkout_captcha'])) $configs['aiowps_enable_woo_checkout_captcha'] = sanitize_text_field($settings['aiowps_enable_woo_checkout_captcha']);
+		if (!empty($settings['aiowps_enable_lost_password_captcha'])) $configs['aiowps_enable_lost_password_captcha'] = sanitize_text_field($settings['aiowps_enable_lost_password_captcha']);
+		if (!empty($settings['aiowps_enable_contact_form_7_captcha'])) $configs['aiowps_enable_contact_form_7_captcha'] = sanitize_text_field($settings['aiowps_enable_contact_form_7_captcha']);
+		if (!empty($settings['aiowps_captcha_secret_key'])) $configs['aiowps_captcha_secret_key'] = sanitize_text_field($settings['aiowps_captcha_secret_key']);
+		if (!empty($settings['aiowps_enable_whitelisting'])) $configs['aiowps_enable_whitelisting'] = sanitize_text_field($settings['aiowps_enable_whitelisting']);
+		if (!empty($settings['aiowps_allowed_ip_addresses'])) $configs['aiowps_allowed_ip_addresses'] = sanitize_textarea_field($settings['aiowps_allowed_ip_addresses']);
+		if (!empty($settings['aiowps_enable_manual_registration_approval'])) $configs['aiowps_enable_manual_registration_approval'] = sanitize_text_field($settings['aiowps_enable_manual_registration_approval']);
+		if (!empty($settings['aiowps_enable_salt_postfix'])) $configs['aiowps_enable_salt_postfix'] = sanitize_text_field($settings['aiowps_enable_salt_postfix']);
+		if (!empty($settings['aiowps_enable_registration_page_captcha'])) $configs['aiowps_enable_registration_page_captcha'] = sanitize_text_field($settings['aiowps_enable_registration_page_captcha']);
+		if (!empty($settings['aiowps_enable_registration_honeypot'])) $configs['aiowps_enable_registration_honeypot'] = sanitize_text_field($settings['aiowps_enable_registration_honeypot']);
+		if (!empty($settings['aiowps_enforce_strong_password'])) $configs['aiowps_enforce_strong_password'] = sanitize_text_field($settings['aiowps_enforce_strong_password']);
+		if (!empty($settings['aiowps_enable_random_prefix'])) $configs['aiowps_enable_random_prefix'] = sanitize_text_field($settings['aiowps_enable_random_prefix']);
+		if (!empty($settings['aiowps_disable_file_editing'])) $configs['aiowps_disable_file_editing'] = sanitize_text_field($settings['aiowps_disable_file_editing']);
+		if (!empty($settings['aiowps_prevent_default_wp_file_access'])) $configs['aiowps_prevent_default_wp_file_access'] = sanitize_text_field($settings['aiowps_prevent_default_wp_file_access']);
+		if (!empty($settings['aiowps_auto_delete_default_wp_files'])) $configs['aiowps_auto_delete_default_wp_files'] = sanitize_text_field($settings['aiowps_auto_delete_default_wp_files']);
+		if (!empty($settings['aiowps_system_log_file'])) $configs['aiowps_system_log_file'] = sanitize_text_field($settings['aiowps_system_log_file']);
+		if (!empty($settings['aiowps_enable_blacklisting'])) $configs['aiowps_enable_blacklisting'] = sanitize_text_field($settings['aiowps_enable_blacklisting']);
+		if (!empty($settings['aiowps_banned_ip_addresses'])) $configs['aiowps_banned_ip_addresses'] = sanitize_textarea_field($settings['aiowps_banned_ip_addresses']);
+		if (!empty($settings['aiowps_banned_user_agents'])) $configs['aiowps_banned_user_agents'] = sanitize_textarea_field($settings['aiowps_banned_user_agents']);
+		if (!empty($settings['aiowps_enable_basic_firewall'])) $configs['aiowps_enable_basic_firewall'] = sanitize_text_field($settings['aiowps_enable_basic_firewall']);
+		if (!empty($settings['aiowps_max_file_upload_size'])) $configs['aiowps_max_file_upload_size'] = sanitize_text_field($settings['aiowps_max_file_upload_size']);
+		if (!empty($settings['aiowps_disable_xmlrpc_pingback_methods'])) $configs['aiowps_disable_xmlrpc_pingback_methods'] = sanitize_text_field($settings['aiowps_disable_xmlrpc_pingback_methods']);
+		if (!empty($settings['aiowps_disable_rss_and_atom_feeds'])) $configs['aiowps_disable_rss_and_atom_feeds'] = sanitize_text_field($settings['aiowps_disable_rss_and_atom_feeds']);
+		if (!empty($settings['aiowps_block_debug_log_file_access'])) $configs['aiowps_block_debug_log_file_access'] = sanitize_text_field($settings['aiowps_block_debug_log_file_access']);
+		if (!empty($settings['aiowps_disable_index_views'])) $configs['aiowps_disable_index_views'] = sanitize_text_field($settings['aiowps_disable_index_views']);
+		if (!empty($settings['aiowps_disable_trace_and_track'])) $configs['aiowps_disable_trace_and_track'] = sanitize_text_field($settings['aiowps_disable_trace_and_track']);
+		if (!empty($settings['aiowps_enable_5g_firewall'])) $configs['aiowps_enable_5g_firewall'] = sanitize_text_field($settings['aiowps_enable_5g_firewall']);
+		if (!empty($settings['aiowps_enable_6g_firewall'])) $configs['aiowps_enable_6g_firewall'] = sanitize_text_field($settings['aiowps_enable_6g_firewall']);
+		if (!empty($settings['aiowps_enable_custom_rules'])) $configs['aiowps_enable_custom_rules'] = sanitize_text_field($settings['aiowps_enable_custom_rules']);
+		if (!empty($settings['aiowps_place_custom_rules_at_top'])) $configs['aiowps_place_custom_rules_at_top'] = sanitize_text_field($settings['aiowps_place_custom_rules_at_top']);
+		if (!empty($settings['aiowps_custom_rules'])) $configs['aiowps_custom_rules'] = $settings['aiowps_custom_rules']; // for .htaccess rules no sanization should be used it may break rules.
+		if (!empty($settings['aiowps_upgrade_unsafe_http_calls'])) $configs['aiowps_upgrade_unsafe_http_calls'] = sanitize_text_field($settings['aiowps_upgrade_unsafe_http_calls']);
+		if (!empty($settings['aiowps_upgrade_unsafe_http_calls_url_exceptions'])) $configs['aiowps_upgrade_unsafe_http_calls_url_exceptions'] = sanitize_textarea_field($settings['aiowps_upgrade_unsafe_http_calls_url_exceptions']);
+		if (!empty($settings['aiowps_enable_404_logging'])) $configs['aiowps_enable_404_logging'] = sanitize_text_field($settings['aiowps_enable_404_logging']);
+		if (!empty($settings['aiowps_enable_404_IP_lockout'])) $configs['aiowps_enable_404_IP_lockout'] = sanitize_text_field($settings['aiowps_enable_404_IP_lockout']);
+		if (!empty($settings['aiowps_404_lockout_time_length'])) $configs['aiowps_404_lockout_time_length'] = sanitize_text_field($settings['aiowps_404_lockout_time_length']);
+		if (!empty($settings['aiowps_404_lock_redirect_url'])) $configs['aiowps_404_lock_redirect_url'] = esc_url_raw($settings['aiowps_404_lock_redirect_url']);
+		if (!empty($settings['aiowps_enable_rename_login_page'])) $configs['aiowps_enable_rename_login_page'] = sanitize_text_field($settings['aiowps_enable_rename_login_page']);
+		if (!empty($settings['aiowps_login_page_slug'])) $configs['aiowps_login_page_slug'] = sanitize_text_field($settings['aiowps_login_page_slug']);
+		if (!empty($settings['aiowps_enable_rename_login_redirect'])) $configs['aiowps_enable_rename_login_redirect'] = sanitize_text_field($settings['aiowps_enable_rename_login_redirect']);
+		// Uses isset() rather than !empty() so that an explicitly blank exported value clears any redirect configured on the importing site, instead of being skipped.
+		if (isset($settings['aiowps_rename_login_redirect_slug'])) {
+			$rename_login_redirect_slug = sanitize_text_field($settings['aiowps_rename_login_redirect_slug']);
+			// An imported value that is external or resolves back to wp-admin/the login page would create a redirect loop (or a pointless one), so it's dropped rather than imported as-is.
+			if ('' !== $rename_login_redirect_slug && (AIOWPSecurity_Utility::is_external_redirect_slug($rename_login_redirect_slug) || AIOWPSecurity_Utility::is_admin_or_login_redirect_slug($rename_login_redirect_slug))) {
+				$rename_login_redirect_slug = '';
+			}
+			$configs['aiowps_rename_login_redirect_slug'] = $rename_login_redirect_slug;
+		}
+		if (!empty($settings['aiowps_enable_login_honeypot'])) $configs['aiowps_enable_login_honeypot'] = sanitize_text_field($settings['aiowps_enable_login_honeypot']);
+		if (!empty($settings['aiowps_disable_application_password'])) $configs['aiowps_disable_application_password'] = sanitize_text_field($settings['aiowps_disable_application_password']);
+		if (!empty($settings['aiowps_enable_brute_force_attack_prevention'])) $configs['aiowps_enable_brute_force_attack_prevention'] = sanitize_text_field($settings['aiowps_enable_brute_force_attack_prevention']);
+		if (!empty($settings['aiowps_brute_force_secret_word'])) $configs['aiowps_brute_force_secret_word'] = sanitize_text_field($settings['aiowps_brute_force_secret_word']);
+		if (!empty($settings['aiowps_cookie_brute_test'])) $configs['aiowps_cookie_brute_test'] = sanitize_text_field($settings['aiowps_cookie_brute_test']);
+		if (!empty($settings['aiowps_cookie_based_brute_force_redirect_url'])) $configs['aiowps_cookie_based_brute_force_redirect_url'] = esc_url_raw($settings['aiowps_cookie_based_brute_force_redirect_url']);
+		if (!empty($settings['aiowps_brute_force_attack_prevention_pw_protected_exception'])) $configs['aiowps_brute_force_attack_prevention_pw_protected_exception'] = sanitize_text_field($settings['aiowps_brute_force_attack_prevention_pw_protected_exception']);
+		if (!empty($settings['aiowps_brute_force_attack_prevention_ajax_exception'])) $configs['aiowps_brute_force_attack_prevention_ajax_exception'] = sanitize_text_field($settings['aiowps_brute_force_attack_prevention_ajax_exception']);
+		if (!empty($settings['aiowps_site_lockout'])) $configs['aiowps_site_lockout'] = sanitize_text_field($settings['aiowps_site_lockout']);
+		if (!empty($settings['aiowps_site_lockout_msg'])) $configs['aiowps_site_lockout_msg'] = wp_kses_post($settings['aiowps_site_lockout_msg']);
+		if (!empty($settings['aiowps_enable_comment_captcha'])) $configs['aiowps_enable_comment_captcha'] = sanitize_text_field($settings['aiowps_enable_comment_captcha']);
+		if (!empty($settings['aiowps_enable_autoblock_spam_ip'])) $configs['aiowps_enable_autoblock_spam_ip'] = sanitize_text_field($settings['aiowps_enable_autoblock_spam_ip']);
+		if (!empty($settings['aiowps_spam_ip_min_comments_block'])) $configs['aiowps_spam_ip_min_comments_block'] = sanitize_text_field($settings['aiowps_spam_ip_min_comments_block']);
+		if (!empty($settings['aiowps_enable_bp_register_captcha'])) $configs['aiowps_enable_bp_register_captcha'] = sanitize_text_field($settings['aiowps_enable_bp_register_captcha']);
+		if (!empty($settings['aiowps_enable_bbp_new_topic_captcha'])) $configs['aiowps_enable_bbp_new_topic_captcha'] = sanitize_text_field($settings['aiowps_enable_bbp_new_topic_captcha']);
+		if (!empty($settings['aiowps_enable_spambot_detecting'])) $configs['aiowps_enable_spambot_detecting'] = sanitize_text_field($settings['aiowps_enable_spambot_detecting']);
+		if (!empty($settings['aiowps_spambot_detect_usecookies'])) $configs['aiowps_spambot_detect_usecookies'] = sanitize_text_field($settings['aiowps_spambot_detect_usecookies']);
+		if (!empty($settings['aiowps_spam_comments_should'])) $configs['aiowps_spam_comments_should'] = sanitize_text_field($settings['aiowps_spam_comments_should']);
+		if (!empty($settings['aiowps_enable_trash_spam_comments'])) $configs['aiowps_enable_trash_spam_comments'] = sanitize_text_field($settings['aiowps_enable_trash_spam_comments']);
+		if (!empty($settings['aiowps_trash_spam_comments_after_days'])) $configs['aiowps_trash_spam_comments_after_days'] = sanitize_text_field($settings['aiowps_trash_spam_comments_after_days']);
+		if (!empty($settings['aiowps_enable_automated_fcd_scan'])) $configs['aiowps_enable_automated_fcd_scan'] = sanitize_text_field($settings['aiowps_enable_automated_fcd_scan']);
+		if (!empty($settings['aiowps_fcd_scan_frequency'])) $configs['aiowps_fcd_scan_frequency'] = sanitize_text_field($settings['aiowps_fcd_scan_frequency']);
+		if (!empty($settings['aiowps_fcd_scan_interval'])) $configs['aiowps_fcd_scan_interval'] = sanitize_text_field($settings['aiowps_fcd_scan_interval']);
+		if (!empty($settings['aiowps_fcd_exclude_filetypes'])) $configs['aiowps_fcd_exclude_filetypes'] = sanitize_textarea_field($settings['aiowps_fcd_exclude_filetypes']);
+		if (!empty($settings['aiowps_fcd_exclude_files'])) $configs['aiowps_fcd_exclude_files'] = sanitize_textarea_field($settings['aiowps_fcd_exclude_files']);
+		if (!empty($settings['aiowps_send_fcd_scan_email'])) $configs['aiowps_send_fcd_scan_email'] = sanitize_text_field($settings['aiowps_send_fcd_scan_email']);
+		if (!empty($settings['aiowps_fcd_scan_email_address'])) $configs['aiowps_fcd_scan_email_address'] = sanitize_textarea_field($settings['aiowps_fcd_scan_email_address']);
+		$configs['aiowps_fcds_change_detected'] = !empty($settings['aiowps_fcds_change_detected']);
+		if (!empty($settings['aiowps_copy_protection'])) $configs['aiowps_copy_protection'] = sanitize_text_field($settings['aiowps_copy_protection']);
+		if (!empty($settings['aiowps_prevent_site_display_inside_frame'])) $configs['aiowps_prevent_site_display_inside_frame'] = sanitize_text_field($settings['aiowps_prevent_site_display_inside_frame']);
+		if (!empty($settings['aiowps_prevent_users_enumeration'])) $configs['aiowps_prevent_users_enumeration'] = sanitize_text_field($settings['aiowps_prevent_users_enumeration']);
+		if (!empty($settings['aiowps_disallow_unauthorized_rest_requests'])) $configs['aiowps_disallow_unauthorized_rest_requests'] = sanitize_text_field($settings['aiowps_disallow_unauthorized_rest_requests']);
+		if (!empty($settings['aios_roles_disallowed_rest_requests'])) $configs['aios_roles_disallowed_rest_requests'] = array_map('sanitize_text_field', $settings['aios_roles_disallowed_rest_requests']);
+		if (!empty($settings['aios_whitelisted_rest_routes'])) $configs['aios_whitelisted_rest_routes'] = array_map('sanitize_text_field', $settings['aios_whitelisted_rest_routes']);
+		if (!empty($settings['aiowps_ip_retrieve_method'])) $configs['aiowps_ip_retrieve_method'] = sanitize_text_field($settings['aiowps_ip_retrieve_method']);
+		if (!empty($settings['aiowps_turnstile_site_key'])) $configs['aiowps_turnstile_site_key'] = sanitize_text_field($settings['aiowps_turnstile_site_key']);
+		if (!empty($settings['aiowps_turnstile_secret_key'])) $configs['aiowps_turnstile_secret_key'] = sanitize_text_field($settings['aiowps_turnstile_secret_key']);
+		if (!empty($settings['aiowps_recaptcha_site_key'])) $configs['aiowps_recaptcha_site_key'] = sanitize_text_field($settings['aiowps_recaptcha_site_key']);
+		if (!empty($settings['aiowps_recaptcha_secret_key'])) $configs['aiowps_recaptcha_secret_key'] = sanitize_text_field($settings['aiowps_recaptcha_secret_key']);
+		if (!empty($settings['aiowps_default_recaptcha'])) $configs['aiowps_default_recaptcha'] = sanitize_text_field($settings['aiowps_default_recaptcha']);
+		if (!empty($settings['aiowps_on_uninstall_delete_db_tables'])) $configs['aiowps_on_uninstall_delete_db_tables'] = sanitize_text_field($settings['aiowps_on_uninstall_delete_db_tables']);
+		if (!empty($settings['aiowps_on_uninstall_delete_configs'])) $configs['aiowps_on_uninstall_delete_configs'] = sanitize_text_field($settings['aiowps_on_uninstall_delete_configs']);
+		return $configs;
+	}
+	
+	/**
+	 * Sanitize firewall settings value when imported from file
+	 *
+	 * @param mixed $settings Imported Settings
+	 *
+	 * @return mixed $configs Sanitized settings
+	 */
+	public static function sanitize_firewall_setting_values($settings) {
+		$configs = array();
+		$configs['aios_enable_rename_login_page'] = empty($settings['aios_enable_rename_login_page']) ? '' : sanitize_text_field($settings['aios_enable_rename_login_page']);
+		$configs['aios_login_page_slug'] = empty($settings['aios_login_page_slug']) ? '' : sanitize_text_field($settings['aios_login_page_slug']);
+		$configs['aios_enable_brute_force_attack_prevention'] = empty($settings['aios_enable_brute_force_attack_prevention']) ? '' : sanitize_text_field($settings['aios_enable_brute_force_attack_prevention']);
+		$configs['aios_brute_force_secret_word'] = empty($settings['aios_brute_force_secret_word']) ? '' : sanitize_text_field($settings['aios_brute_force_secret_word']);
+		$configs['aios_cookie_based_brute_force_redirect_url'] = empty($settings['aios_cookie_based_brute_force_redirect_url']) ? '' : esc_url_raw($settings['aios_cookie_based_brute_force_redirect_url']);
+		$configs['aios_brute_force_attack_prevention_pw_protected_exception'] = empty($settings['aios_brute_force_attack_prevention_pw_protected_exception']) ? '' : sanitize_text_field($settings['aios_brute_force_attack_prevention_pw_protected_exception']);
+		$configs['aios_brute_force_attack_prevention_ajax_exception'] = empty($settings['aios_brute_force_attack_prevention_ajax_exception']) ? '' : sanitize_text_field($settings['aios_brute_force_attack_prevention_ajax_exception']);
+		$configs['aios_brute_force_secret_cookie_name'] = empty($settings['aios_brute_force_secret_cookie_name']) ? '' : sanitize_text_field($settings['aios_brute_force_secret_cookie_name']);
+		$configs['aios_ip_retrieve_method'] = empty($settings['aios_ip_retrieve_method']) ? '' : sanitize_text_field($settings['aios_ip_retrieve_method']);
+		$configs['aiowps_ip_retrieve_method'] = empty($settings['aiowps_ip_retrieve_method']) ? '0' : sanitize_text_field($settings['aiowps_ip_retrieve_method']);
+		$configs['aiowps_blacklist_ips'] = empty($settings['aiowps_blacklist_ips']) ? '' : array_map('sanitize_text_field', $settings['aiowps_blacklist_ips']);
+		$configs['aiowps_blacklist_user_agents'] = empty($settings['aiowps_blacklist_user_agents']) ? '' : array_map('sanitize_text_field', $settings['aiowps_blacklist_user_agents']);
+		$configs['aiowps_block_fake_googlebots'] = !empty($settings['aiowps_block_fake_googlebots']);
+		$configs['aiowps_googlebot_ip_ranges'] = empty($settings['aiowps_googlebot_ip_ranges']) ? '' : array_map('sanitize_text_field', $settings['aiowps_googlebot_ip_ranges']);
+		$configs['aiowps_bingbot_ip_ranges'] = empty($settings['aiowps_bingbot_ip_ranges']) ? '' : array_map('sanitize_text_field', $settings['aiowps_bingbot_ip_ranges']);
+		$configs['aiowps_enable_pingback_firewall'] = !empty($settings['aiowps_enable_pingback_firewall']);
+		$configs['aiowps_forbid_proxy_comments'] = !empty($settings['aiowps_forbid_proxy_comments']);
+		$configs['aiowps_deny_bad_query_strings'] = !empty($settings['aiowps_deny_bad_query_strings']);
+		$configs['aiowps_forbid_proxy_comments'] = !empty($settings['aiowps_forbid_proxy_comments']);
+		$configs['aiowps_advanced_char_string_filter'] = !empty($settings['aiowps_advanced_char_string_filter']);
+		$configs['aiowps_6g_block_request_methods'] = empty($settings['aiowps_6g_block_request_methods']) ? '' : array_map('sanitize_text_field', $settings['aiowps_6g_block_request_methods']);
+		$configs['aiowps_6g_block_query'] = !empty($settings['aiowps_6g_block_query']);
+		$configs['aiowps_6g_block_request'] = !empty($settings['aiowps_6g_block_request']);
+		$configs['aiowps_6g_block_referrers'] = !empty($settings['aiowps_6g_block_referrers']);
+		$configs['aiowps_6g_block_agents'] = !empty($settings['aiowps_6g_block_agents']);
+		$configs['aiowps_ban_post_blank_headers'] = !empty($settings['aiowps_ban_post_blank_headers']);
+		return $configs;
+	}
 }

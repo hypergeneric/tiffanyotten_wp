@@ -1,3 +1,4 @@
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 <div class="aio_yellow_box">
 	<p>
 		<?php

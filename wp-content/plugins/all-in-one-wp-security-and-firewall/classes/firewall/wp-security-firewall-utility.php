@@ -215,4 +215,47 @@ class Utility {
 		return !empty($wpdb);
 		
 	}
+
+	/**
+	 * Appends a trailing slash
+	 *
+	 * @see https://developer.wordpress.org/reference/functions/trailingslashit/
+	 * @param string $value
+	 * @return string
+	 */
+	public static function trailingslashit($value) {
+		return self::untrailingslashit($value) . '/';
+	}
+
+	/**
+	 * Removes trailing forward slashes and backslashes if they exist
+	 *
+	 * @see https://developer.wordpress.org/reference/functions/untrailingslashit/
+	 * @param string $value
+	 * @return string
+	 */
+	public static function untrailingslashit($value) {
+		return rtrim($value, '/\\');
+	}
+
+	/**
+	 * Creates a blank index file at $path
+	 *
+	 * @param string $path
+	 * @return void
+	 */
+	public static function create_index_file($path) {
+		$path = self::normalize_path(self::untrailingslashit($path).'/index.php');
+		if (!file_exists($path)) file_put_contents($path, '<?php', LOCK_EX);
+	}
+
+	/**
+	 * Generates a salt
+	 *
+	 * @param  int $length - Length of the random bytes to generate (not the hex output)
+	 * @return string
+	 */
+	public static function generate_salt($length = 16) {
+		return bin2hex(random_bytes($length));
+	}
 }

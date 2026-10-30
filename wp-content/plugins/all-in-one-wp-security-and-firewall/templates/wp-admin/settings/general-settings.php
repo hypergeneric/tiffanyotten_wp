@@ -8,7 +8,7 @@ if (!is_super_admin()) {
 } else {
 ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('All-In-One Security', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('All-In-One Security', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<p>
 			<?php
@@ -37,7 +37,7 @@ if (!is_super_admin()) {
 	</div>
 </div> <!-- end postbox-->
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Disable security features', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Disable security features', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form method="post" action="" id="aiowpsec-disable-all-features-form">
 			<div class="aio_blue_box">
@@ -52,7 +52,7 @@ if (!is_super_admin()) {
 	</div>
 </div> <!-- end postbox-->
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Disable all firewall rules', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Disable all firewall rules', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form method="post" action="" id="aiowpsec-disable-all-firewall-rules-form">
 			<div class="aio_blue_box">
@@ -67,7 +67,7 @@ if (!is_super_admin()) {
 	</div>
 </div> <!-- end postbox-->
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Reset settings', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Reset settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form method="post" action="" id="aiowpsec-reset-settings-form">
 			<div class="aio_blue_box">
@@ -77,7 +77,7 @@ if (!is_super_admin()) {
 				echo '<p>' . esc_html__('Use this feature if you were locked out by the All-In-One Security plugin and/or you are having issues logging in when that plugin is activated.', 'all-in-one-wp-security-and-firewall') . '</p>';
 				echo '<p>' . esc_html__('In addition to the settings it will also delete any directives which were added to the .htaccess file by the All-In-One Security Plugin.', 'all-in-one-wp-security-and-firewall') . '</p>';
 				/* translators: 1: Open strong tag, 2: Close strong tag.  */
-				echo '<p>' . sprintf(esc_html__('%1$sNOTE: %2$sAfter deleting the settings you will need to re-configure the All-In-One Security plugin.', 'all-in-one-wp-security-and-firewall'), '<strong>', '</strong>') . '</p>';
+				echo '<p>' . sprintf(esc_html__('%1$sNote: %2$sAfter deleting the settings you will need to re-configure the All-In-One Security plugin.', 'all-in-one-wp-security-and-firewall'), '<strong>', '</strong>') . '</p>';
 				?>
 			</div>
 			<div class="submit">
@@ -90,7 +90,7 @@ if (!is_super_admin()) {
 } // End if statements
 ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Debug settings', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Debug settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form method="post" action="" id="aiowpsec-save-debug-settings-form">
 			<div class="aio_blue_box">

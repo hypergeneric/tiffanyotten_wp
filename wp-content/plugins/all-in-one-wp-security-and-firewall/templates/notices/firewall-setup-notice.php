@@ -1,4 +1,4 @@
-<?php if (!defined('AIO_WP_SECURITY_PATH')) die('No direct access allowed'); ?>
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 
 <div id="aios-firewall-setup-notice" class="notice notice-information">
 

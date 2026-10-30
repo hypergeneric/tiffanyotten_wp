@@ -1,5 +1,4 @@
-<?php
-if (!defined('AIO_WP_SECURITY_PATH')) die('No direct access allowed');
+<?php if (!defined('ABSPATH')) die('Access denied.');
 
 if (!AIOWPSecurity_Utility::is_apache_server()) {
 	?>

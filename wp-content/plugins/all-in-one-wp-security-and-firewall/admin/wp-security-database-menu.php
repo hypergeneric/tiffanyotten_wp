@@ -126,7 +126,7 @@ class AIOWPSecurity_Database_Menu extends AIOWPSecurity_Admin_Menu {
 					$perform_db_change = true;
 				} else {
 					if (empty($_POST['aiowps_new_manual_db_prefix'])) {
-						$this->show_msg_error(__('Please enter a value for the DB prefix.', 'all-in-one-wp-security-and-firewall'));
+						$this->show_msg_error(__('Enter a value for the DB prefix.', 'all-in-one-wp-security-and-firewall'));
 					} else {
 						// User has chosen their own DB prefix value
 						$new_db_prefix = trim(sanitize_text_field(wp_unslash($_POST['aiowps_new_manual_db_prefix'])));
@@ -204,13 +204,17 @@ class AIOWPSecurity_Database_Menu extends AIOWPSecurity_Admin_Menu {
 			return;
 		}
 		$table_count = 0;
-		$info_msg_string = '<p class="aio_info_with_icon">' . esc_html__('Starting DB prefix change operations.....', 'all-in-one-wp-security-and-firewall').'</p>';
+		echo '<p class="aio_info_with_icon">' . esc_html__('Starting DB prefix change operations.....', 'all-in-one-wp-security-and-firewall').'</p>';
 
-		/* translators: 1. Number of tables 2. New DB table prefix. */
-		$info_msg_string .= '<p class="aio_info_with_icon">' . sprintf(esc_html__('Your WordPress system has a total of %1$s tables and your new DB prefix will be: %2$s', 'all-in-one-wp-security-and-firewall'), '<strong>' . esc_html($num_rows) . '</strong>', '<strong>' . esc_html($table_new_prefix) . '</strong>') . '</p>';
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variable escaped earlier.
-		echo $info_msg_string;
-
+		echo '<p class="aio_info_with_icon">';
+		printf(
+			/* translators: 1. Number of tables 2. New DB table prefix. */
+			esc_html__('Your WordPress system has a total of %1$s tables and your new DB prefix will be: %2$s', 'all-in-one-wp-security-and-firewall'),
+			'<strong>'.esc_html($num_rows).'</strong>',
+			'<strong>'.esc_html($table_new_prefix).'</strong>'
+		);
+		echo '</p>';
+		
 		// Do a back of the config file
 		if (!AIOWPSecurity_Utility_File::backup_and_rename_wp_config($config_file)) {
 			echo '<div class="aio_red_box"><p>' . esc_html__('Failed to make a backup of the wp-config.php file.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('This operation will not go ahead.', 'all-in-one-wp-security-and-firewall').'</p></div>';
@@ -251,7 +255,7 @@ class AIOWPSecurity_Database_Menu extends AIOWPSecurity_Admin_Menu {
 		}
 		if (1 == $error) {
 			/* translators: %s: New DB table name. */
-			echo '<p class="aio_error_with_icon">' . sprintf(esc_html__('Please change the prefix manually for the above tables to: %s', 'all-in-one-wp-security-and-firewall'), '<strong>' . esc_html($table_new_prefix) . '</strong>') . '</p>';
+			echo '<p class="aio_error_with_icon">' . sprintf(esc_html__('Change the prefix manually for the above tables to: %s', 'all-in-one-wp-security-and-firewall'), '<strong>' . esc_html($table_new_prefix) . '</strong>') . '</p>';
 		} else {
 			/* translators: %s: DB table count. */
 			echo '<p class="aio_success_with_icon">' . sprintf(esc_html__('%s tables had their prefix updated successfully!', 'all-in-one-wp-security-and-firewall'), '<strong>' . esc_html($table_count) . '</strong>') . '</p>';
@@ -277,7 +281,7 @@ class AIOWPSecurity_Database_Menu extends AIOWPSecurity_Admin_Menu {
 			echo '<p class="aio_success_with_icon">'. esc_html__('wp-config.php file was updated successfully!', 'all-in-one-wp-security-and-firewall').'</p>';
 		} else {
 			/* translators: %s: New DB table prefix. */
-			echo '<p class="aio_error_with_icon">'.sprintf(esc_html__('The "wp-config.php" file was not able to be modified.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('Please modify this file manually using your favourite editor and search for variable "$table_prefix" and assign the following value to that variable: %s', 'all-in-one-wp-security-and-firewall'), '<strong>' . esc_html($table_new_prefix) . '</strong>') . '</p>';
+			echo '<p class="aio_error_with_icon">'.sprintf(esc_html__('The "wp-config.php" file was not able to be modified.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('Edit this file manually using your favourite editor and search for variable "$table_prefix" and assign the following value to that variable: %s', 'all-in-one-wp-security-and-firewall'), '<strong>' . esc_html($table_new_prefix) . '</strong>') . '</p>';
 			$aio_wp_security->debug_logger->log_debug("DB Security Feature - Unable to modify wp-config.php", 4);
 		}
 
@@ -412,7 +416,7 @@ class AIOWPSecurity_Database_Menu extends AIOWPSecurity_Admin_Menu {
 
 			$view_name = AIOWPSecurity_Utility::quote_identifier($item->TABLE_NAME);
 
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange -- ALTER VIEW requires a raw SQL fragment for the view definition which cannot be parameterized with $wpdb->prepare. We have to do a schema change for this feature.
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, PluginCheck.Security.DirectDB.UnescapedDBParameter -- ALTER VIEW requires a raw SQL fragment for the view definition which cannot be parameterized with $wpdb->prepare. We have to do a schema change for this feature.
 			$view_res = $wpdb->query("ALTER VIEW $view_name AS $new_def");
 			if (false === $view_res) {
 				/* translators: %s: Old definition. */

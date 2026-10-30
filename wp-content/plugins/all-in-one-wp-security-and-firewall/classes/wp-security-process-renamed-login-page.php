@@ -12,6 +12,7 @@ class AIOWPSecurity_Process_Renamed_Login_Page {
 		add_filter('wp_redirect', array($this, 'aiowps_wp_redirect'), 10, 2);
 		add_filter('register', array($this, 'register_link'));
 		add_filter('user_request_action_email_content', array($this, 'aiowps_user_request_email_content'), 10, 2);
+		add_filter('redirect_canonical', array($this, 'aios_disable_canonical_redirect_for_wp_login'), 10, 2);
 		remove_action('template_redirect', 'wp_redirect_admin_locations', 1000); //To prevent redirect to login page when people type "login" at end of home URL
 
 	}
@@ -42,21 +43,30 @@ class AIOWPSecurity_Process_Renamed_Login_Page {
 	}
 
 	/**
-	 * Filter confirm link so we hide the secret login slug in the export_personal_data email
+	 * Filter confirm link so we hide the secret login slug in the export_personal_data & remove_personal_data email.
 	 *
-	 * @param string $email_text
-	 * @param string $email_data
-	 * @return string
+	 * @param string $email_text The email content.
+	 * @param array  $email_data The personal data request email data.
+	 * @return string The filtered email content.
 	 */
 	public function aiowps_user_request_email_content($email_text, $email_data) {
 		global $aio_wp_security;
 		if (isset($email_data['request']) && isset($email_data['request']->action_name)) {
-			if ('export_personal_data' == $email_data['request']->action_name) {
+			$action_name = $email_data['request']->action_name;
+			if ('export_personal_data' === $action_name || 'remove_personal_data' === $action_name) {
 				$confirm_url = $email_data['confirm_url'];
-				$login_slug = $aio_wp_security->configs->get_value('aiowps_login_page_slug');
 				if (get_option('permalink_structure')) {
-					$new_confirm_url = str_replace($login_slug, 'wp-login.php', $confirm_url);
+					// Rebuild the URL on the real wp-login.php, keeping only the query string
+					// (action, request_id, confirm_key) from the original confirm URL.
+					$query = wp_parse_url($confirm_url, PHP_URL_QUERY);
+					if (!empty($query)) {
+						// get_option('home') is used instead of home_url() to bypass any URL filters.
+						$new_confirm_url = untrailingslashit(get_option('home')) . '/wp-login.php/?' . $query;
+					} else {
+						$new_confirm_url = $confirm_url;
+					}
 				} else {
+					$login_slug = $aio_wp_security->configs->get_value('aiowps_login_page_slug');
 					$search_pattern = '?'.$login_slug.'&action';
 					$new_confirm_url = str_replace($search_pattern, '/wp-login.php/?action', $confirm_url);
 				}
@@ -94,6 +104,21 @@ class AIOWPSecurity_Process_Renamed_Login_Page {
 	}
 
 	/**
+	 * Prevent canonical redirects for direct wp-login.php requests.
+	 *
+	 * @param string|false $redirect_url  The canonical redirect URL.
+	 * @param string       $requested_url The requested URL.
+	 * @return string|false The redirect URL or false to prevent the redirect.
+	 */
+	public function aios_disable_canonical_redirect_for_wp_login($redirect_url, $requested_url) {
+		$requested_path = wp_parse_url($requested_url, PHP_URL_PATH);
+		if (is_string($requested_path) && preg_match('#(^|/)wp-login\.php(/|$)#i', $requested_path)) {
+			return false;
+		}
+		return $redirect_url;
+	}
+	
+	/**
 	 * Login page renamed related tasks, do not allow access if not logged with rename login page.
 	 *
 	 * @return void
@@ -110,7 +135,7 @@ class AIOWPSecurity_Process_Renamed_Login_Page {
 
 		//The following will process the native wordpress post password protection form
 		//Normally this is done by wp-login.php file but we cannot use that since the login page has been renamed
-		
+
 		// Bots with URLs like: /index.php?action[]=aaaa will return an array here. It needs to be a string.
 		$action = (isset($_GET['action']) && is_string($_GET['action'])) ? sanitize_text_field(wp_unslash($_GET['action'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- No nonce available.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing -- No nonce available.
@@ -134,7 +159,7 @@ class AIOWPSecurity_Process_Renamed_Login_Page {
 			 *
 			 * @param int $expires The expiry time, as passed to setcookie().
 			 */
-			$expire = apply_filters('post_password_expires', time() + 10 * DAY_IN_SECONDS);
+			$expire = apply_filters('post_password_expires', time() + 10 * DAY_IN_SECONDS); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- No nonce available, not recommended to sanitize passwords.
 			setcookie('wp-postpass_' . COOKIEHASH, $hasher->HashPassword(wp_unslash($_POST['post_password'])), $expire, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
 
@@ -145,34 +170,34 @@ class AIOWPSecurity_Process_Renamed_Login_Page {
 		//case where someone attempting to reach wp-admin
 		if (is_admin() && !is_user_logged_in() && (isset($_SERVER["SCRIPT_FILENAME"]) ? basename(sanitize_text_field(wp_unslash($_SERVER["SCRIPT_FILENAME"]))) : '') !== 'admin-post.php') {
 			//Fix to prevent fatal error caused by some themes and Yoast SEO
-			do_action('aiowps_before_wp_die_renamed_login');
-			wp_die(esc_html__('You do not have permission to access this page.', 'all-in-one-wp-security-and-firewall') .  ' ' . esc_html__('Please log in and try again.', 'all-in-one-wp-security-and-firewall'), 403);
+			do_action('aios_before_wp_die_renamed_login');
+			if ('1' === $aio_wp_security->configs->get_value('aiowps_enable_rename_login_redirect')) {
+				// An empty (or "/") redirect slug is a valid, deliberate choice here - it means "redirect to the homepage" - so no empty() guard.
+				$redirect_slug = $aio_wp_security->configs->get_value('aiowps_rename_login_redirect_slug');
+				AIOWPSecurity_Utility::redirect_to_url(home_url($redirect_slug));
+			}
+			wp_die(esc_html__('You do not have permission to access this page.', 'all-in-one-wp-security-and-firewall') .  ' ' . esc_html__('Log in and try again.', 'all-in-one-wp-security-and-firewall'), 403);
 		}
 
 		//case where someone attempting to reach wp-login
-		if (isset($_SERVER['REQUEST_URI']) && stripos(urldecode(esc_url_raw(wp_unslash($_SERVER['REQUEST_URI']))), 'wp-login.php') && !is_user_logged_in()) {
+		if (isset($_SERVER['REQUEST_URI']) && stripos(urldecode(esc_url_raw(wp_unslash($_SERVER['REQUEST_URI']))), 'wp-login.php')) {
 
-			// Handle export personal data request for rename login case
-			if (isset($_GET['request_id'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce available.
-				$request_id = (int) sanitize_text_field(wp_unslash($_GET['request_id'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce available.
-				$result = '';
-				if (isset($_GET['confirm_key'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce available.
-					$key = sanitize_text_field(wp_unslash($_GET['confirm_key'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce available.
-					$result = wp_validate_user_request_key($request_id, $key);
-				} else {
-					$result = new WP_Error('invalid_key', esc_html__('Invalid key', 'all-in-one-wp-security-and-firewall'));
+			// Let core handle the privacy request confirmation (validation, confirmation hook, message, login template).
+			if ('confirmaction' === $action && isset($_GET['request_id'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- No nonce available.
+
+				$script = isset($_SERVER['SCRIPT_FILENAME']) ? basename(sanitize_text_field(wp_unslash($_SERVER['SCRIPT_FILENAME']))) : '';
+
+				// wp-login.php is already the running script (direct request), so just let core carry on.
+				if ('wp-login.php' === $script) {
+					return;
 				}
 
-				if (is_wp_error($result)) {
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- PCP error. $result is WPError object with sanitized strings.
-					wp_die($result);
-				} elseif (!empty($result)) {
-					_wp_privacy_account_request_confirmed($request_id);
-					$message = _wp_privacy_account_request_confirmed_message($request_id);
-					login_header(__('User action confirmed.', 'all-in-one-wp-security-and-firewall'), $message);
-					login_footer();
-					exit;
-				}
+				// Reached via another entry point (e.g. index.php), so load wp-login.php ourselves.
+				$_SERVER['PHP_SELF'] = '/wp-login.php';
+
+				global $user_login, $error; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable -- Required because wp-login.php normally runs in the global scope.
+				include ABSPATH . 'wp-login.php';
+				exit;
 			}
 
 			//Check if the maintenance (lockout) mode is active - if so prevent access to site by not displaying 404 page!
@@ -202,34 +227,27 @@ class AIOWPSecurity_Process_Renamed_Login_Page {
 				// or to requested redirect-page, filtered in 'login_redirect'.
 				if (isset($_REQUEST['redirect_to'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce available.
 					$redirect_to = wp_sanitize_redirect(wp_unslash($_REQUEST['redirect_to'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce available.
-					$redirect_to = wp_validate_redirect($redirect_to, apply_filters('wp_safe_redirect_fallback', admin_url(), 302));
+					$redirect_to = wp_validate_redirect($redirect_to, apply_filters('wp_safe_redirect_fallback', admin_url(), 302)); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 					$requested_redirect_to = $redirect_to;
 				} else {
 					$redirect_to = admin_url();
 					$requested_redirect_to = '';
 				}
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 				$redirect_to = apply_filters('login_redirect', $redirect_to, $requested_redirect_to, wp_get_current_user());
 				AIOWPSecurity_Utility::redirect_to_url($redirect_to);
 			} else {
-				global $wp_version;
-				do_action('aiowps_rename_login_load');
+				do_action('aios_rename_login_load');
 				// logout action called by WooCommerce does not apply the login whitelist which shows a 403 error for the customer
 				if (!(isset($_GET['action']) && 'logout' == $_GET['action'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce available.
 					AIOWPSecurity_Utility_IP::check_login_whitelist_and_forbid();
 				}
 
-				status_header(200);
-				if (version_compare($wp_version, '6.6', '>=')) {
-					require_once(AIO_WP_SECURITY_PATH . '/other-includes/wp-security-rename-login-feature.php');
-				} elseif (version_compare($wp_version, '5.7', '>=')) {
-					require_once(AIO_WP_SECURITY_PATH . '/other-includes/wp-security-rename-login-feature-pre-6-6.php');
-				} elseif (version_compare($wp_version, '5.2', '>=')) {
-					require_once(AIO_WP_SECURITY_PATH . '/other-includes/wp-security-rename-login-feature-pre-5-7.php');
-				} else {
-					require_once(AIO_WP_SECURITY_PATH . '/other-includes/wp-security-rename-login-feature-pre-5-2.php');
-				}
+				$_SERVER['PHP_SELF'] = '/wp-login.php';
 
-				die;
+				global $user_login, $error; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable -- Required because wp-login.php normally runs in the global scope.
+				include ABSPATH.'wp-login.php';
+				exit;
 			}
 		}
 	}
@@ -246,14 +264,16 @@ class AIOWPSecurity_Process_Renamed_Login_Page {
 
 	public static function aiowps_set_404() {
 		global $wp_query;
-		do_action('aiowps_before_set_404'); // This hook is for themes which produce a fatal error when the rename login feature is enabled and someone visits "wp-admin" slug directly
+		do_action('aios_before_set_404'); // This hook is for themes which produce a fatal error when the rename login feature is enabled and someone visits "wp-admin" slug directly
 
 		status_header(404);
 		$wp_query->set_404();
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 		do_action('template_redirect'); // Trigger 'template_redirect' to allow third-party plugins to intercept and inject custom logic before rendering the fallback template.
 
 		$template = get_404_template();
 		if (empty($template)) $template = get_index_template();
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 		$template = apply_filters('template_include', $template);
 		if ($template) include($template);
 		die;

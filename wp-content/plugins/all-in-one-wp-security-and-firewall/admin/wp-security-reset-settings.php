@@ -78,7 +78,6 @@ if (!class_exists('AIOWPSecurity_Reset_Settings')) :
 			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- PCP error. Ignore.
 			if (is_main_site()) {
 				$wpdb->query('TRUNCATE ' . AIOWPSEC_TBL_LOGGED_IN_USERS);
-				$wpdb->query('TRUNCATE ' . AIOWPSEC_TBL_MESSAGE_STORE);
 				$wpdb->query('TRUNCATE ' . AIOWPSEC_TBL_DEBUG_LOG);
 				$wpdb->query('TRUNCATE ' . AIOWPSEC_TBL_AUDIT_LOG);
 			}

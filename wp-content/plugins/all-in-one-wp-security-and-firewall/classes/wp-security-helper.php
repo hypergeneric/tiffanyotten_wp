@@ -16,6 +16,15 @@ class AIOS_Helper {
 	private static $messages = array();
 
 	/**
+	 * Constants for the different return values of `is_ip_address_within_list`.
+	 *
+	 * @var int
+	 */
+	const IP_NOT_IN_LIST = 0;
+	const IP_EXACT_MATCH = 1;
+	const IP_RANGE_MATCH = 2;
+
+	/**
 	 * Maps a firewall rule to its admin URL
 	 *
 	 * @param string $rule - The key to the rule's URL. The key format is '<rule_name>::<rule_family>'
@@ -26,26 +35,26 @@ class AIOS_Helper {
 		$rule = strtolower($rule);
 
 		$basic_firewall = array(
-			'completely block xmlrpc::general' => 'page=aiowpsec_firewall',
+			'completely block xmlrpc::general' => 'page=aiowpsec_firewall&tab=php-rules',
 		);
 		$additional_firewall = array(
-			'advanced character filter::general' => 'page=aiowpsec_firewall&tab=additional-firewall',
-			'bad query strings::general' => 'page=aiowpsec_firewall&tab=additional-firewall',
-			'proxy comment posting::general' => 'page=aiowpsec_firewall&tab=additional-firewall',
+			'advanced character filter::general' => 'page=aiowpsec_firewall&tab=php-rules&subtab=advanced-character-filter',
+			'bad query strings::general' => 'page=aiowpsec_firewall&tab=php-rules&subtab=bad-query-strings',
+			'proxy comment posting::general' => 'page=aiowpsec_firewall&tab=php-rules&subtab=proxy-comment',
 		);
 		$bruteforce = array(
 			'cookie based prevent bruteforce::bruteforce' => 'page=aiowpsec_brute_force&tab=cookie-based-brute-force-prevention',
 		);
 		$blacklist = array(
-			'blocked ips::blacklist' => 'page=aiowpsec_blacklist',
-			'blocked user agents::blacklist' => 'page=aiowpsec_blacklist',
+			'blocked ips::blacklist' => 'page=aiowpsec_firewall&tab=block-and-allow-lists',
+			'blocked user agents::blacklist' => 'page=aiowpsec_firewall&tab=block-and-allow-lists',
 		);
 		$firewall_6g = array(
-			'block request methods::6g' => 'page=aiowpsec_firewall&tab=6g-firewall',
-			'block query strings::6g' => 'page=aiowpsec_firewall&tab=6g-firewall',
-			'block referrer strings::6g' => 'page=aiowpsec_firewall&tab=6g-firewall',
-			'block request strings::6g' => 'page=aiowpsec_firewall&tab=6g-firewall',
-			'block user-agents::6g' => 'page=aiowpsec_firewall&tab=6g-firewall',
+			'block request methods::6g' => 'page=aiowpsec_firewall&tab=php-rules&subtab=ng',
+			'block query strings::6g' => 'page=aiowpsec_firewall&tab=php-rules&subtab=ng',
+			'block referrer strings::6g' => 'page=aiowpsec_firewall&tab=php-rules&subtab=ng',
+			'block request strings::6g' => 'page=aiowpsec_firewall&tab=php-rules&subtab=ng',
+			'block user-agents::6g' => 'page=aiowpsec_firewall&tab=php-rules&subtab=ng',
 		);
 
 		// merge all the locations to one
@@ -101,7 +110,6 @@ class AIOS_Helper {
 		}
 		
 		$visitor_ip = self::get_server_detected_user_ip_address();
-
 		if (in_array($visitor_ip, array('', '127.0.0.1', '::1'))) {
 			$external_ip_address = self::get_external_ip_address();
 			if (false != $external_ip_address) {
@@ -111,47 +119,116 @@ class AIOS_Helper {
 
 		return $visitor_ip;
 	}
-	
+
 	/**
-	 * Check user IP Address is with in list.
+	 * Normalise all local IP addresses to the value stored in $normalise_value.
 	 *
-	 * @param array $ip_address_list
-	 *
-	 * @return boolean.
+	 * @param string $ip              - The IP address to check and normalise
+	 * @param string $normalise_value - The value to normalise the IP address
+	 * @return string
 	 */
-	public static function is_user_ip_address_within_list($ip_address_list) {
-	
-		if (!(include_once AIOWPS_FIREWALL_DIR.'/../../vendor/mlocati/ip-lib/ip-lib.php')) {
-			throw new \Exception("AIOS_Helper::is_user_ip_address_within_list failed to load ip-lib.php");
+	public static function normalise_local_ip($ip, $normalise_value = 'localhost') {
+		return self::is_ip_local($ip) ? $normalise_value : $ip;
+	}
+
+	/**
+	 * Determines whether the IP address is a local address (either a loopback address or localhost)
+	 *
+	 * @param string $ip - The IP address to check
+	 * @return boolean|null
+	 */
+	public static function is_ip_local($ip) {
+
+		if (strtolower($ip) === 'localhost') return true;
+
+		if (!(include_once AIOWPS_FIREWALL_DIR.'/../../vendor/mlocati/ip-lib/ip-lib.php')) return null;
+
+		$check_ip = \IPLib\Factory::parseAddressString($ip);
+
+		if (is_null($check_ip)) return null;
+
+		return $check_ip->getRangeType() === \IPLib\Range\Type::T_LOOPBACK;
+	}
+
+	/**
+	 * Checks if a range contains an IPvX address.
+	 * This can also be used to compare IPvX addresses since IPLib has a `\IPLib\Range\Single` type.
+	 *
+	 * @param \IPLib\Range\AbstractRange|void      $range
+	 * @param \IPLib\Address\AddressInterface|void $ip
+	 *
+	 * @return int
+	 */
+	public static function range_contains_ip($range, $ip) {
+		if (null == $range || null == $ip) return self::IP_NOT_IN_LIST;
+
+		if (6 == $range->getAddressType() && 4 == $ip->getAddressType()) {
+			$range = \IPLib\Factory::getRangeFromBoundaries($range->getStartAddress()->toIPv4(), $range->getEndAddress()->toIPv4());
+		} elseif (4 == $range->getAddressType() && 6 == $ip->getAddressType()) {
+			$ip = $ip->toIPv4();
 		}
 
-		if (empty($ip_address_list)) return false;
+		if (null == $range || null == $ip) return self::IP_NOT_IN_LIST;
 
-		$user_ip = self::get_user_ip_address();
-		$user_ip_address = \IPLib\Factory::parseAddressString($user_ip);
-		if (null != $user_ip_address) {
-			$user_ip_address_type = $user_ip_address->getAddressType();
-			$user_ipv4_address_parsed = (6 == $user_ip_address_type) ? $user_ip_address->toIPv4() : $user_ip_address;
-			// linear search used to compare ips list.
-			foreach ($ip_address_list as $ip_address) {
-				if (preg_match("/\/|\*/", $ip_address)) {  // checks user ipadress with in range of ip range.
-					$range = \IPLib\Factory::parseRangeString($ip_address);
-					if (null != $range && $range->contains($user_ip_address)) return true;
-				} elseif ($ip_address == $user_ip) {
-					return true;
-				} elseif (null != $user_ipv4_address_parsed) { // check for ip matches if ipv6 to ipv4 or vice versa
-					$ip_address_parsed = \IPLib\Factory::parseAddressString($ip_address);
-					if (null != $ip_address_parsed) {
-						$ip_address_parsed_type = $ip_address_parsed->getAddressType();
-						$ipv4_address_parsed = (6 == $ip_address_parsed_type) ? $ip_address_parsed->toIPv4() : $ip_address_parsed;
-						if ((string) $user_ipv4_address_parsed == (string) $ipv4_address_parsed) return true;
-					}
+		if ($range->contains($ip)) {
+			if ($range instanceof \IPLib\Range\Single) {
+				return self::IP_EXACT_MATCH;
+			} else {
+				return self::IP_RANGE_MATCH;
+			}
+		} else {
+			return self::IP_NOT_IN_LIST;
+		}
+	}
+
+	/**
+	 * Check if IP address is within a given list.
+	 *
+	 * @param string $needle_ip
+	 * @param array  $ip_address_list
+	 *
+	 * @return int
+	 */
+	public static function is_ip_address_within_list($needle_ip, $ip_address_list) {
+		if (empty($ip_address_list)) return self::IP_NOT_IN_LIST;
+
+		if (!(include_once AIOWPS_FIREWALL_DIR.'/../../vendor/mlocati/ip-lib/ip-lib.php')) {
+			throw new \Exception("AIOS_Helper::is_ip_address_within_list failed to load ip-lib.php");
+		}
+
+		$needle_iplib_address = \IPLib\Factory::parseAddressString($needle_ip);
+
+		$exact_match = false;
+
+		foreach ($ip_address_list as $ip_address) {
+			if ($ip_address == $needle_ip) {
+				$exact_match = true; // Not returning immediately because there might be a range match further into the array.
+			} else {
+				switch (self::range_contains_ip(\IPLib\Factory::parseRangeString($ip_address), $needle_iplib_address)) {
+					case self::IP_RANGE_MATCH:
+						return self::IP_RANGE_MATCH;
+					case self::IP_EXACT_MATCH:
+						$exact_match = true; // Not returning immediately because there might be a range match further into the array.
 				}
 			}
 		}
-		return false;
+
+		return $exact_match ? self::IP_EXACT_MATCH : self::IP_NOT_IN_LIST;
 	}
-	
+
+	/**
+	 * Check if user IP Address is within a given list.
+	 *
+	 * @param array $ip_address_list
+	 *
+	 * @return boolean
+	 */
+	public static function is_user_ip_address_within_list($ip_address_list) {
+		if (empty($ip_address_list)) return false;
+
+		return self::is_ip_address_within_list(self::get_user_ip_address(), $ip_address_list) != self::IP_NOT_IN_LIST;
+	}
+
 	/**
 	 * Get user IP Address using an external service.
 	 * This can be used as a fallback for users on localhost where
@@ -280,7 +357,7 @@ class AIOS_Helper {
 						break;
 				}
 
-				$reverse_lookup_data = apply_filters('aiowps_login_lockdown_lookup_result', $reverse_lookup_data, $data, $service_name);
+				$reverse_lookup_data = apply_filters('aios_login_lockdown_lookup_result', $reverse_lookup_data, $data, $service_name);
 				break;
 			}
 		}
@@ -292,13 +369,15 @@ class AIOS_Helper {
 	 * Gets hash of given string using auth Authentication scheme
 	 *
 	 * @param string $data - Plain text to hash.
+	 * @param string $algo - Algorithm for hash.
+	 * @param string $salt - Salt to hash.
 	 *
 	 * @return string - Hash of $data
 	 */
-	public static function get_hash($data) {
+	public static function get_hash($data, $algo = 'md5', $salt = '') {
 		$aiowps_firewall_constants = AIOS_Firewall_Resource::request(AIOS_Firewall_Resource::CONSTANTS);
-		$salt = $aiowps_firewall_constants->AUTH_KEY.$aiowps_firewall_constants->AUTH_SALT;
-		return hash_hmac('md5', $data, $salt);
+		if (empty($salt)) $salt = $aiowps_firewall_constants->AUTH_KEY.$aiowps_firewall_constants->AUTH_SALT;
+		return hash_hmac($algo, $data, $salt);
 	}
 
 	/**
@@ -322,7 +401,17 @@ class AIOS_Helper {
 	 * @return array|null The message for the given context, or null if not found.
 	 */
 	public static function get_message($context) {
-		return isset(self::$messages[$context]) ? self::$messages[$context] : null;
+		if (!isset(self::$messages[$context])) {
+			return null;
+		}
+
+		$message = self::$messages[$context];
+
+		if (isset($message['message'])) {
+			$message['message'] = nl2br(esc_html($message['message']));
+		}
+
+		return $message;
 	}
 
 	/**

@@ -1,3 +1,4 @@
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 <div id="aios-firewall-installed-notice" class='notice notice-success is-dismissible'>
 	<p><strong><?php esc_html_e('All-In-One Security', 'all-in-one-wp-security-and-firewall'); ?></strong></p>
 	<p>

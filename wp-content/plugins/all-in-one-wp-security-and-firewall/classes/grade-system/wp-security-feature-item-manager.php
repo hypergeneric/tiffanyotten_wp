@@ -612,7 +612,7 @@ class AIOWPSecurity_Feature_Item_Manager {
 			)
 		);
 
-		$feature_list = apply_filters('aiowpsecurity_feature_list', $feature_list);
+		$feature_list = apply_filters('aios_feature_list', $feature_list);
 		$this->feature_list = array_filter($feature_list, array($this, 'should_add_item'));
 	}
 
@@ -673,19 +673,21 @@ class AIOWPSecurity_Feature_Item_Manager {
 		$security_level = $feature_item->get_security_level_string();
 		$protection_level = (0 == $current_security_points) ? 'none' : 'full';
 		$status_icon = (0 == $current_security_points) ? 'dashicons-unlock' : 'dashicons-lock';
-	
-		$badge_html = '<div class="aiowps_feature_details_badge">';
-		$badge_html .= '<span class="aiowps_feature_details_badge_difficulty aiowps_feature_protection_'.$protection_level.'" title="'.__('Feature difficulty', 'all-in-one-wp-security-and-firewall').'">';
-		$badge_html .= '<span class="dashicons '.$status_icon.'"></span>'.$security_level.'</span>';
-		$badge_html .= '<span class="aiowps_feature_details_badge_points" title="'.__('Security points', 'all-in-one-wp-security-and-firewall').'">';
-		$badge_html .= $current_security_points.'/'.$max_security_points.'</span>';
-		$badge_html .= '</div>';
-	
+		
+		ob_start();
+		
+		echo '<div class="aiowps_feature_details_badge">';
+		echo '<span class="aiowps_feature_details_badge_difficulty aiowps_feature_protection_'.esc_attr($protection_level).'" title="'.esc_attr__('Feature difficulty', 'all-in-one-wp-security-and-firewall').'">';
+		echo '<span class="dashicons '.esc_attr($status_icon).'"></span>'.esc_html($security_level).'</span>';
+		echo '<span class="aiowps_feature_details_badge_points" title="'.esc_attr__('Security points', 'all-in-one-wp-security-and-firewall').'">';
+		echo absint($current_security_points).'/'.absint($max_security_points).'</span>';
+		echo '</div>';
+		
 		if ($return_instead_of_echo) {
-			return $badge_html;
-		} else {
-			echo $badge_html;
+			return ob_get_clean();
 		}
+		
+		ob_end_flush();
 	}
 
 	/**
@@ -792,7 +794,7 @@ class AIOWPSecurity_Feature_Item_Manager {
 	 */
 	private function check_user_accounts_change_admin_user_feature($item) {
 		if (AIOWPSecurity_Utility::check_user_exists('admin')) {
-			 $item->set_feature_status($this->feature_inactive);
+			$item->set_feature_status($this->feature_inactive);
 		} else {
 			$item->set_feature_status($this->feature_active);
 		}
@@ -1000,7 +1002,7 @@ class AIOWPSecurity_Feature_Item_Manager {
 			),
 		);
 
-		$critical_features = apply_filters('aiowps_filter_critical_features_array', $critical_features);
+		$critical_features = apply_filters('aios_filter_critical_features_array', $critical_features);
 		$critical_features = array_filter($critical_features, array(self::class, 'should_add_feature'));
 
 		return $critical_features;

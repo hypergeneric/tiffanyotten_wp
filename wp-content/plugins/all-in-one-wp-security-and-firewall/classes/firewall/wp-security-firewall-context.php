@@ -2,7 +2,7 @@
 namespace AIOWPS\Firewall;
 
 /**
- * The firewall can be loaded from several different contexts. This class detects from which context the firewall is loaded.
+ * The firewall can be loaded from several different entry points. This class detects from which one the firewall loaded from.
  */
 class Context {
 
@@ -15,7 +15,7 @@ class Context {
 	const MU_PLUGIN      = 'mu-plugin';
 
 	/**
-	 * Get the current context where the firewall is running
+	 * Get the current entry point where the firewall was loaded from
 	 *
 	 * @return string
 	 */
@@ -48,11 +48,20 @@ class Context {
 	 * @return boolean
 	 */
 	public static function wordpress_safe() {
+		return (function_exists('do_action') && function_exists('apply_filters'));
+	}
+
+	/**
+	 * Check whether the entry point for the firewall is from within WordPress
+	 *
+	 * @return boolean
+	 */
+	public static function wordpress_entry() {
 		return (self::plugins_loaded() || self::mu_plugin());
 	}
 
 	/**
-	 * Check if the current context is `plugins_loaded`
+	 * Check if the current entry point is `plugins_loaded`
 	 *
 	 * @return boolean
 	 */
@@ -61,7 +70,7 @@ class Context {
 	}
 
 	/**
-	 * Check if the current context is `directive` (i.e: auto_prepend_file)
+	 * Check if the current entry point is `directive` (i.e: auto_prepend_file)
 	 *
 	 * @return boolean
 	 */
@@ -70,7 +79,7 @@ class Context {
 	}
 
 	/**
-	 * Check if the current context is `wp_config`
+	 * Check if the current entry point is `wp_config`
 	 *
 	 * @return boolean
 	 */
@@ -79,7 +88,7 @@ class Context {
 	}
 
 	/**
-	 * Check if the current context is `mu_plugin`
+	 * Check if the current entry point is `mu_plugin`
 	 *
 	 * @return boolean
 	 */

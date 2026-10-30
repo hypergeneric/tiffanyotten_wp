@@ -18,7 +18,7 @@ trait AIOWPSecurity_Tools_Commands_Trait {
 	public function perform_whois_lookup($data) {
 		global $aio_wp_security;
 
-		$ip_or_domain = trim(stripslashes($data['aiowps_whois_ip_or_domain']));
+		$ip_or_domain = trim($data['aiowps_whois_ip_or_domain']);
 
 		$invalid_domain = false;
 
@@ -29,16 +29,16 @@ trait AIOWPSecurity_Tools_Commands_Trait {
 		}
 
 		if ($invalid_domain) {
-			$result = esc_html__('Please enter a valid IP address or domain name to look up.', 'all-in-one-wp-security-and-firewall');
+			$result = esc_html__('Enter a valid IP address or domain name to look up.', 'all-in-one-wp-security-and-firewall');
 			$result .= esc_html__('Nothing to show.', 'all-in-one-wp-security-and-firewall');
 		} else {
 			$result = $this->whois_lookup($ip_or_domain);
 
 			if (is_wp_error($result)) {
-				$result = htmlspecialchars($result->get_error_message());
+				$result = esc_html($result->get_error_message());
 				$result .= esc_html__('Nothing to show.', 'all-in-one-wp-security-and-firewall');
 			} else {
-				$result = htmlspecialchars($result);
+				$result = esc_html($result);
 			}
 		}
 
@@ -122,7 +122,7 @@ trait AIOWPSecurity_Tools_Commands_Trait {
 		$options['aiowps_site_lockout_msg'] = $maint_msg; // Text area/msg box
 		$this->save_settings($options);
 
-		do_action('aiowps_site_lockout_settings_saved');
+		do_action('aios_site_lockout_settings_saved');
 
 		return array(
 			'status' => 'success',
@@ -146,7 +146,7 @@ trait AIOWPSecurity_Tools_Commands_Trait {
 		$options['aiowps_site_lockout'] = isset($data["aiowps_site_lockout"]) ? '1' : '';
 		$this->save_settings($options);
 
-		do_action('aiowps_site_lockout_settings_saved');
+		do_action('aios_site_lockout_settings_saved');
 
 		return $this->handle_response(true);
 	}

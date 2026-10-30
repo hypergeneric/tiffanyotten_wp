@@ -9,7 +9,7 @@ class Rule_Block_Fake_Googlebots extends Rule {
 	/**
 	 * Implements the action to be taken.
 	 */
-	use Action_Exit_Trait;
+	use Action_Forbid_and_Exit_Trait;
 
 	/**
 	 * Construct our rule.

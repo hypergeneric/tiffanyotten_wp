@@ -90,6 +90,13 @@ class AIOWPSecurity_Ajax_Data_Table {
 	protected $modes = array();
 
 	/**
+	 * Allowed per-page dropdown options.
+	 *
+	 * @var array
+	 */
+	protected $per_page_options = array(10, 25, 50, 100, 250, 500);
+
+	/**
 	 * Stores the value returned by ->get_column_info().
 	 *
 	 * @since 4.1.0
@@ -135,9 +142,10 @@ class AIOWPSecurity_Ajax_Data_Table {
 	 */
 	protected $allowed_html = array(
 		'a' => array(
-			'class' => true,
-			'id'    => true,
-			'href'  => true,
+			'class'  => true,
+			'id'     => true,
+			'href'   => true,
+			'target' => true,
 		),
 		'div' => array(
 			'class' => true,
@@ -161,6 +169,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 			'size'             => true,
 			'aria-describedby' => true,
 		),
+		'br' => array(),
 	);
 
 	/**
@@ -347,7 +356,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 
 		// Redirect if page number is invalid and headers are not already sent.
 		if (!headers_sent() && !wp_doing_ajax() && $args['total_pages'] > 0 && $this->get_pagenum() > $args['total_pages']) {
-			wp_redirect(add_query_arg('paged', $args['total_pages']));
+			wp_safe_redirect(add_query_arg('paged', $args['total_pages']));
 			exit;
 		}
 
@@ -458,7 +467,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 		 *
 		 * @param string[]     - $views An array of available list table views.
 		 */
-		$views = apply_filters("views_{$this->screen->id}", $views);
+		$views = apply_filters("views_{$this->screen->id}", $views); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		if (empty($views)) {
 			return;
@@ -509,7 +518,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 			 *
 			 * @param string[] $actions     - An array of the available bulk actions.
 			 */
-			$this->_actions = apply_filters("bulk_actions-{$this->screen->id}", $this->_actions);
+			$this->_actions = apply_filters("bulk_actions-{$this->screen->id}", $this->_actions); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 			$two            = '';
 		} else {
 			$two = '2';
@@ -519,16 +528,85 @@ class AIOWPSecurity_Ajax_Data_Table {
 			return;
 		}
 
-		echo '<label for="bulk-action-selector-' . esc_attr($which) . '" class="screen-reader-text">' . esc_html__('Select bulk action', 'all-in-one-wp-security-and-firewall') . '</label>';
-		echo '<select name="action' . esc_attr($two) . '" id="bulk-action-selector-' . esc_attr($which) . "\">\n";
-		echo '<option value="-1">' . esc_html__('Bulk actions', 'all-in-one-wp-security-and-firewall') . "</option>\n";
+		if (empty($this->_args['custom_bulk_action_selector'])) {
+			echo '<label for="bulk-action-selector-'.esc_attr($which).'" class="screen-reader-text">'.esc_html__('Select bulk action', 'all-in-one-wp-security-and-firewall').'</label>';
+			echo '<select name="action' . esc_attr($two) . '" id="bulk-action-selector-' . esc_attr($which) . "\">\n";
+			echo '<option value="-1">' . esc_html__('Bulk actions', 'all-in-one-wp-security-and-firewall') . "</option>\n";
 
-		foreach ($this->_actions as $name => $title) {
-			$class = 'edit' === $name ? 'hide-if-no-js' : '';
-			echo "\t" . '<option value="' . esc_attr($name) . '" class="' . esc_attr($class) . '">' . esc_html($title) . "</option>\n";
+			foreach ($this->_actions as $name => $title) {
+				$class = 'edit' === $name ? 'hide-if-no-js' : '';
+				echo "\t" . '<option value="' . esc_attr($name) . '" class="' . esc_attr($class) . '">' . esc_html($title) . "</option>\n";
+			}
+
+			echo "</select>\n";
+		} else {
+			?>
+			<div class="aios-selector">
+				<div id="bulk-action-selector-<?php echo esc_attr($which); ?>" class="aios-selector-selected" value="-1" name="action<?php echo esc_attr($two); ?>" aria-label="<?php esc_html_e('Select bulk action', 'all-in-one-wp-security-and-firewall'); ?>">
+					<div class="aios-selector-selected-title"><?php esc_html_e('Bulk actions', 'all-in-one-wp-security-and-firewall'); ?></div>
+					<div class="dashicons dashicons-arrow-down-alt2"></div>
+				</div>
+				<div class="aios-selector-items">
+					<?php
+					$is_premium_installed = AIOWPSecurity_Utility_Permissions::is_premium_installed();
+					$any_locked = false;
+
+					foreach ($this->_actions as $name => $action) {
+						if (is_array($action)) {
+							$title = $action['title'];
+							$locked = $action['premium'] && !$is_premium_installed;
+						} else {
+							$title = $action;
+							$locked = false;
+						}
+
+						if ($locked) {
+							$any_locked = true;
+							$premium_item_bubble_link = add_query_arg(
+								array(
+									'utm_source'  => 'aios',
+									'utm_medium'  => 'referral',
+									'utm_content'  => 'locked-premium-actions',
+									'utm_campaign' => 'paac-free-malware-scanner',
+									'utm_creative_format'  => 'tag',
+								),
+								'https://teamupdraft.com/all-in-one-security/pricing/'
+							);
+
+							echo '<div class="aios-selector-premium-item" value="'.esc_attr($name).'" aria-disabled="true">';
+							echo esc_html($title);
+							echo '<a class="aios-selector-premium-item-bubble" href="'.esc_url($premium_item_bubble_link).'">'.esc_html__('Premium', 'all-in-one-wp-security-and-firewall').'</a>';
+							echo '</div>';
+						} else {
+							echo '<div value="'.esc_attr($name).'">'.esc_html($title).'</div>';
+						}
+					}
+
+					if ($any_locked) {
+						$premium_upsell_link = add_query_arg(
+							array(
+								'utm_source'  => 'aios',
+								'utm_medium'  => 'referral',
+								'utm_content'  => 'locked-premium-actions',
+								'utm_campaign' => 'paac-free-malware-scanner',
+								'utm_creative_format'  => 'text',
+							),
+							'https://teamupdraft.com/all-in-one-security/pricing/'
+						);
+
+						echo '<div class="aios-selector-premium-item aios-selector-premium-upsell">';
+						echo '<p>';
+						/* translators: 1: Opening strong tag 2: Closing strong tag  */
+						printf(esc_html__('Quarantine, repair and delete are available in %1$sAIOS Premium%2$s.', 'all-in-one-wp-security-and-firewall'), '<strong>', '</strong>');
+						echo '</p>';
+						echo '<a target="_blank" href="'.esc_url($premium_upsell_link).'">'.esc_html__('Upgrade to unlock', 'all-in-one-wp-security-and-firewall').'</a>';
+						echo '</div>';
+					}
+					?>
+				</div>
+			</div>
+			<?php
 		}
-
-		echo "</select>\n";
 
 		$submit_attributes = array('id' => "doaction$two");
 
@@ -626,7 +704,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 		 * @param bool   $disable     - Whether to disable the drop-down. Default false.
 		 * @param string $post_type   - The post type.
 		 */
-		if (apply_filters('disable_months_dropdown', false, $post_type)) {
+		if (apply_filters('disable_months_dropdown', false, $post_type)) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 			return;
 		}
 
@@ -637,7 +715,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 			$extra_checks = $wpdb->prepare(' AND post_status = %s', $this->_args['data']['post_status']);
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The $extra_checks variable, although prepared above, cannot be added to the prepare args in this statement.
+		// phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The $extra_checks variable, although prepared above, cannot be added to the prepare args in this statement.
 		$months = $wpdb->get_results($wpdb->prepare("SELECT DISTINCT YEAR(post_date) AS year, MONTH(post_date) AS month FROM $wpdb->posts WHERE post_type = %s $extra_checks ORDER BY post_date DESC", $post_type));
 
 		/**
@@ -648,7 +726,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 		 * @param object $months    The months drop-down query results.
 		 * @param string $post_type The post type.
 		 */
-		$months = apply_filters('months_dropdown_results', $months, $post_type);
+		$months = apply_filters('months_dropdown_results', $months, $post_type); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		$month_count = count($months);
 
@@ -826,10 +904,20 @@ class AIOWPSecurity_Ajax_Data_Table {
 		 *
 		 * @param int $per_page     - Number of items to be displayed. Default 20.
 		 */
-		return (int) apply_filters("{$option}", $per_page);
+		return (int) apply_filters("{$option}", $per_page); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- WordPress core hook.
 	}
 
-
+	/**
+	 * Get the pagination item count text.
+	 *
+	 * @param int $total_items Total items.
+	 *
+	 * @return string
+	 */
+	protected function get_displaying_num_text($total_items) {
+		/* translators: %s: Total items */
+		return sprintf(_n('%s item', '%s items', esc_html($total_items), 'all-in-one-wp-security-and-firewall'), number_format_i18n($total_items));
+	}
 
 	/**
 	 * Display the pagination.
@@ -854,8 +942,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 			$this->screen->render_screen_reader_content('heading_pagination');
 		}
 
-		/* translators: %s: Total items */
-		$output = '<span class="displaying-num">' . sprintf(_n('%s item', '%s items', esc_html($total_items), 'all-in-one-wp-security-and-firewall'), number_format_i18n($total_items)) . '</span>';
+		$output = '<span class="displaying-num">' . $this->get_displaying_num_text($total_items) . '</span>';
 
 		$current = $this->get_pagenum();
 
@@ -1058,7 +1145,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 		 * @param string $default Column name default for the specific list table, e.g. 'name'.
 		 * @param string $context Screen ID for specific list table, e.g. 'plugins'.
 		 */
-		$column = apply_filters('list_table_primary_column', $default, $this->screen->id);
+		$column = apply_filters('list_table_primary_column', $default, $this->screen->id); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		if (empty($column) || !isset($columns[$column])) {
 			$column = $default;
@@ -1101,7 +1188,7 @@ class AIOWPSecurity_Ajax_Data_Table {
 		 *
 		 * @param array $sortable_columns     - An array of sortable columns.
 		 */
-		$_sortable = apply_filters("manage_{$this->screen->id}_sortable_columns", $sortable_columns);
+		$_sortable = apply_filters("manage_{$this->screen->id}_sortable_columns", $sortable_columns); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		$sortable = array();
 		foreach ($_sortable as $id => $data) {
@@ -1321,6 +1408,33 @@ class AIOWPSecurity_Ajax_Data_Table {
 	protected function extra_tablenav($which) {} // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable, Squiz.WhiteSpace.ScopeClosingBrace.ContentBefore, PEAR.WhiteSpace.ScopeClosingBrace.Line -- this is a protected function
 
 	/**
+	 * Generates the HTML for the per-page selection dropdown.
+	 *
+	 * @param string $meta_key The user meta key to store the per-page preference. Default 'aios_items_per_page'.
+	 * @param int    $default  The default number of items per page. Default 100.
+	 * @return void
+	 */
+	protected function get_per_page_select($meta_key = 'aios_items_per_page', $default = 100) {
+		$current_per_page = isset($this->_args['data']['per-page']) ? intval($this->_args['data']['per-page']) : (get_user_meta(get_current_user_id(), $meta_key, true) ?: $default);
+		?>
+		<div class="aios-per-page-selector">
+			<select id="aios-per-page" name="aios-per-page" class="aios-per-page" aria-label="<?php esc_attr_e('Rows per page', 'all-in-one-wp-security-and-firewall'); ?>">
+				<?php
+				foreach ($this->per_page_options as $option) {
+				?>
+				<option value="<?php echo esc_attr($option); ?>" <?php selected($current_per_page, $option); ?>>
+					<?php echo esc_html($option); ?>
+				</option>
+				<?php
+				}
+				?>
+			</select>
+			<label for="aios-per-page" class="aios-per-page-label"><?php esc_html_e('Rows per page', 'all-in-one-wp-security-and-firewall'); ?></label>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Generate the tbody element for the list table.
 	 *
 	 * @since 3.1.0
@@ -1456,13 +1570,31 @@ class AIOWPSecurity_Ajax_Data_Table {
 		$this->pagination('bottom');
 		$pagination_bottom = ob_get_clean();
 
+		ob_start();
+		$this->display_tablenav('top');
+		$tablenav_top = ob_get_clean();
+
+		ob_start();
+		$this->display_tablenav('bottom');
+		$tablenav_bottom = ob_get_clean();
+
+		ob_start();
+		$this->get_per_page_select();
+		$per_page_select = ob_get_clean();
+
 		$response = array(
 			'rows' => $rows,
 			'pagination' => array(
 				'top' => $pagination_top,
 				'bottom' => $pagination_bottom,
+				'per_page_select' => $per_page_select,
+			),
+			'tablenav' => array(
+				'top' => $tablenav_top,
+				'bottom' => $tablenav_bottom,
 			),
 			'column_headers' => $headers,
+			'show_search_box' => !empty($this->_args['data']['s']) || $this->has_items(),
 		);
 
 		if (isset($this->_pagination_args['total_items'])) {

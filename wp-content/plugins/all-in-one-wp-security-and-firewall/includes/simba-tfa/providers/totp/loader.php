@@ -130,23 +130,26 @@ class Simba_TFA_Provider_totp {
 		$this->check_possible_reset();
 		
 		global $current_user;
-		
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Not needed for nonce.
 		if (!empty($_REQUEST['_tfa_activate_nonce']) && !empty($_POST['tfa_enable_tfa']) && wp_verify_nonce($_REQUEST['_tfa_activate_nonce'], 'tfa_activate') && !empty($_GET['settings-updated'])) {
-			$this->tfa->change_tfa_enabled_status($current_user->ID, $_POST['tfa_enable_tfa']);
+			$this->tfa->change_tfa_enabled_status($current_user->ID, sanitize_text_field(wp_unslash($_POST['tfa_enable_tfa'])));
 			$this->settings_saved = true;
 		}
-		
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Not needed for nonce.
 		if (!empty($_REQUEST['_tfa_algorithm_nonce']) && !empty($_POST['tfa_algorithm_type']) && !empty($_GET['settings-updated']) && wp_verify_nonce($_REQUEST['_tfa_algorithm_nonce'], 'tfa_algorithm')) {
 			
 			$old_algorithm = $this->get_user_otp_algorithm($current_user->ID);
 			
 			if ($old_algorithm != $_POST['tfa_algorithm_type']) {
-				$this->changeUserAlgorithmTo($current_user->ID, $_POST['tfa_algorithm_type']);
+				$this->changeUserAlgorithmTo($current_user->ID, sanitize_text_field(wp_unslash($_POST['tfa_algorithm_type'])));
 			}
 			
 			$this->settings_saved = true;
 		}
-		
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Not needed for nonce.
 		if (!empty($_GET['warning_button_clicked']) && !empty($_REQUEST['resyncnonce']) && wp_verify_nonce($_REQUEST['resyncnonce'], 'tfaresync')) {
 			delete_user_meta($current_user->ID, 'tfa_hotp_off_sync');
 		}
@@ -166,12 +169,12 @@ class Simba_TFA_Provider_totp {
 		
 		$qr_script_ver = (defined('WP_DEBUG') && WP_DEBUG) ? time() : filemtime($this->tfa->includes_dir()."/jquery-qrcode/$qr_script_file");
 		
-		wp_register_script('jquery-qrcode', $this->tfa->includes_url()."/jquery-qrcode/$qr_script_file", array('jquery'), $qr_script_ver);
+		wp_register_script('jquery-qrcode', $this->tfa->includes_url()."/jquery-qrcode/$qr_script_file", array('jquery'), $qr_script_ver, false);
 		
 		$script_ver = (defined('WP_DEBUG') && WP_DEBUG) ? time() : filemtime($this->tfa->includes_dir()."/totp.js");
 		
 		// Adds the necessary JavaScript for rendering and updating QR codes, and handling trusted devices removal in the admin area
-		wp_enqueue_script('simba-tfa-totp', $this->tfa->includes_url()."/totp.js", array('jquery-qrcode'), $script_ver);
+		wp_enqueue_script('simba-tfa-totp', $this->tfa->includes_url()."/totp.js", array('jquery-qrcode'), $script_ver, false);
 		
 		wp_localize_script('simba-tfa-totp', 'simbatfa_totp', $this->translation_strings());
 
@@ -201,12 +204,12 @@ class Simba_TFA_Provider_totp {
 	}
 	
 	/**
-	 * Return a link to refresh the current OTP code
+	 * Echo a link to refresh the current OTP code
 	 *
-	 * @return String
+	 * @return void
 	 */
 	public function refresh_current_otp_link() {
-		return '<a href="#" class="simbaotp_refresh">'.__('(update)', 'all-in-one-wp-security-and-firewall').'</a>';
+		echo '<a href="#" class="simbaotp_refresh">'.esc_html__('(update)', 'all-in-one-wp-security-and-firewall').'</a>';
 	}
 	
 	/**
@@ -227,7 +230,7 @@ class Simba_TFA_Provider_totp {
 		$setting = $this->get_user_otp_algorithm($user_id);
 		
 		foreach ($types as $id => $name) {
-			print '<input type="radio" id="tfa_algorithm_type_'.esc_attr($id).'" name="tfa_algorithm_type" value="'.$id.'" '.($setting == $id ? 'checked="checked"' :'').'> <label for="tfa_algorithm_type_'.esc_attr($id).'">'.$name."</label><br>\n";
+			print '<input type="radio" id="tfa_algorithm_type_'.esc_attr($id).'" name="tfa_algorithm_type" value="' . esc_attr($id) . '" ' . ($setting == $id ? 'checked="checked"' :'') . '> <label for="tfa_algorithm_type_'.esc_attr($id).'">' . esc_html($name) . "</label><br>\n";
 		}
 	}
 	
@@ -242,22 +245,23 @@ class Simba_TFA_Provider_totp {
 		$algorithm_type = $this->get_user_otp_algorithm($current_user->ID);
 		
 		?>
-		<h2 id="tfa_advanced_heading" style="clear:both;"><?php _e('Advanced settings', 'all-in-one-wp-security-and-firewall'); ?></h2>
+		<h2 id="tfa_advanced_heading" style="clear:both;"><?php esc_html_e('Advanced settings', 'all-in-one-wp-security-and-firewall'); ?></h2>
 		
 		<div id="tfa_advanced_box" class="tfa_settings_form" style="margin-top: 20px;">
 		
 		<?php if (false === $submit_button_callback) { ?>
-			<form method="post" action="<?php print esc_url(add_query_arg('settings-updated', 'true', $_SERVER['REQUEST_URI'])); ?>">
+		<?php $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_url(wp_unslash($_SERVER['REQUEST_URI'])) : '' ?>
+			<form method="post" action="<?php print esc_url(add_query_arg('settings-updated', 'true', $request_uri)); ?>">
 			<?php wp_nonce_field('tfa_algorithm', '_tfa_algorithm_nonce', false, true); ?>
 		<?php } ?>
 			
-		<?php _e('Choose which algorithm for One Time Passwords you want to use.', 'all-in-one-wp-security-and-firewall'); ?>
+		<?php esc_html_e('Choose which algorithm for One Time Passwords you want to use.', 'all-in-one-wp-security-and-firewall'); ?>
 		<p>
 		<?php
 		$this->print_algorithm_choice_radios($current_user->ID);
 		if ('hotp' == $algorithm_type) {
 			$counter = $this->getUserCounter($current_user->ID);
-			print '<br>'.__('Your counter on the server is currently on', 'all-in-one-wp-security-and-firewall').': '.$counter;
+			print '<br>' . esc_html__('Your counter on the server is currently on', 'all-in-one-wp-security-and-firewall') . ': ' . esc_html($counter);
 		}
 		?>
 		
@@ -282,13 +286,14 @@ class Simba_TFA_Provider_totp {
 		if (!$tfa_priv_key_64) $tfa_priv_key_64 = $this->addPrivateKey($user_id);
 		$time_now = time();
 		$refresh_after = 30 - ($time_now % 30);
-		return '<span class="simba_current_otp" data-refresh_after="'.$refresh_after.'">'.$this->generateOTP($user_id, $tfa_priv_key_64).'</span>';
+		return '<span class="simba_current_otp" data-refresh_after="' . esc_attr($refresh_after) . '">' . esc_html($this->generateOTP($user_id, $tfa_priv_key_64)) . '</span>';
 	}
 	
 	/**
 	 * Runs upon the WP 'init' action - check for possible private key reset request from the user
 	 */
 	public function check_possible_reset() {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Not needed for nonce.
 		if (!empty($_GET['simbatfa_priv_key_reset']) && !empty($_REQUEST['nonce']) && wp_verify_nonce($_REQUEST['nonce'], 'simbatfa_reset_private_key')) {
 			$this->reset_private_key_and_emergency_codes();
 			exit;
@@ -302,6 +307,7 @@ class Simba_TFA_Provider_totp {
 	 * @param Boolean		  $redirect - if this is not false, then a redirection will occur - where to depends upon the value of $_REQUEST['noredirect']
 	 */
 	public function reset_private_key_and_emergency_codes($user_id = false, $redirect = true) {
+		global $simba_two_factor_authentication;
 		
 		if (!$user_id) {
 			global $current_user;
@@ -312,35 +318,56 @@ class Simba_TFA_Provider_totp {
 		delete_user_meta($user_id, 'simba_tfa_emergency_codes_64');
 		
 		if (!$redirect) return;
-		
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- No nonce.
 		if (empty($_REQUEST['noredirect'])) {
 			// TODO: Re-factoring
 			wp_safe_redirect(admin_url('admin.php').'?page='. $this->tfa->get_user_settings_page_slug() .'&settings-updated=1');
 		} else {
-			$url = (is_ssl() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . remove_query_arg(array('simbatfa_priv_key_reset', 'noredirect', 'nonce'));
-			wp_redirect(esc_url_raw($url));
+			$url = remove_query_arg(
+				array(
+					'simbatfa_priv_key_reset',
+					'noredirect',
+					'nonce',
+				),
+				$simba_two_factor_authentication->get_current_url()
+			);
+
+			wp_safe_redirect($url);
+			exit;
 		}
 	}
 	
 	/**
-	 * Return HTML for a link to reset the current user's private key
+	 * Echo HTML for a link to reset the current user's private key
 	 *
-	 * @return String
+	 * @return void
 	 */
 	public function reset_link() {
+		global $simba_two_factor_authentication;
 		
-		// TODO: Refactoring
-		$url_base = is_admin() ? admin_url('admin.php').'?page='. $this->tfa->get_user_settings_page_slug() .'&settings-updated=1' : (( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST']);
+		$url_base = $simba_two_factor_authentication->get_current_url();
+
+		if (!$url_base) {
+			$url_base = home_url('/');
+		}
 		
-		$add_query_args = array('simbatfa_priv_key_reset' => 1);
+		$args = array(
+			'simbatfa_priv_key_reset' => 1,
+		);
 		
-		if (!is_admin()) $add_query_args['noredirect'] = 1;
+		if (is_admin()) {
+			$url_base = admin_url('admin.php');
+			$args['page'] = $this->tfa->get_user_settings_page_slug();
+			$args['settings-updated'] = 1;
+		} else {
+			$args['noredirect'] = 1;
+		}
 		
-		$url = $url_base.add_query_arg($add_query_args);
-		
+		$url = add_query_arg($args, $url_base);
 		$url = wp_nonce_url($url, 'simbatfa_reset_private_key', 'nonce');
 		
-		return '<a href="javascript:if(confirm(\''.__('Warning: if you reset this key you will have to update your apps with the new one. Are you sure you want this?', 'all-in-one-wp-security-and-firewall').'\')) { window.location = \''.esc_js($url).'\'; }">'.__('Reset private key', 'all-in-one-wp-security-and-firewall').'</a>';
+		echo '<a href="' . esc_url($url) . '" onclick="return confirm(\'' . esc_js(__( 'Warning: if you reset this key you will have to update your apps with the new one. Are you sure you want this?', 'all-in-one-wp-security-and-firewall')) . '\');">' . esc_html__('Reset private key', 'all-in-one-wp-security-and-firewall') . '</a>';
 		
 	}
 	
@@ -372,8 +399,8 @@ class Simba_TFA_Provider_totp {
 		
 		if ($admin && $current_user->ID != $user_id) {
 			$user = get_user_by('id', $user_id);
-			$user_descrip = htmlspecialchars($user->user_nicename.' - '.$user->user_email);
-			echo '<h2>'.sprintf(__('Current codes (login: %s)', 'all-in-one-wp-security-and-firewall'), $user_descrip).'</h2>';
+			/* translators: %s: User description. */
+			echo '<h2>'.sprintf(esc_html__('Current codes (login: %s)', 'all-in-one-wp-security-and-firewall'), esc_html($user->user_nicename . ' - ' . $user->user_email)).'</h2>';
 		}
 		
 		?>
@@ -381,10 +408,11 @@ class Simba_TFA_Provider_totp {
 		
 		<?php if ($admin) { ?>
 			<h3 style="padding: 10px 6px 0px; margin:4px 0 0; cursor: default;">
-			<span style="cursor: default;"><?php echo __('Current one-time password', 'all-in-one-wp-security-and-firewall').' ';
-			if ($current_user->ID == $user_id) { echo $this->refresh_current_otp_link(); } ?>
+			<span style="cursor: default;"><?php echo esc_html__('Current one-time password', 'all-in-one-wp-security-and-firewall').' ';
+			if ($current_user->ID == $user_id) { $this->refresh_current_otp_link(); } ?>
 				</span>
 				<div class="inside">
+					<?php // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaping done in function. ?>
 					<p><strong style="font-size: 3em;"><?php echo $this->current_otp_code($user_id); ?></strong></p>
 				</div>
 				</h3>
@@ -392,13 +420,14 @@ class Simba_TFA_Provider_totp {
 			
 			<div class="inside">
 			<p class="simbatfa-frontend-current-otp" style="font-size: 1.5em; margin-top:6px;">
-				<strong><?php echo __('Current one-time password', 'all-in-one-wp-security-and-firewall').' '.$this->refresh_current_otp_link(); ?></strong> :
+				<strong><?php echo esc_html__('Current one-time password', 'all-in-one-wp-security-and-firewall'); ?>
+				<?php $this->refresh_current_otp_link(); ?></strong> :
 				
 				<?php
 				// TODO: Compare this with what's in current_otp_code() - why are we not using that?
 				$time_now = time();
 				$refresh_after = 30 - ($time_now % 30);
-				?><span class="simba_current_otp" data-refresh_after="<?php echo $refresh_after; ?>"><?php print $this->generateOTP($user_id, $tfa_priv_key_64); ?></span>
+				?><span class="simba_current_otp" data-refresh_after="<?php echo esc_attr($refresh_after); ?>"><?php print esc_html($this->generateOTP($user_id, $tfa_priv_key_64)); ?></span>
 			
 			</p>
 			</div>
@@ -407,21 +436,22 @@ class Simba_TFA_Provider_totp {
 			
 			<?php if ($admin) { ?>
 				<h3 style="padding-left: 10px; cursor: default;">
-				<span style="cursor: default;"><?php _e('Setting up - either scan the code, or type in the private key', 'all-in-one-wp-security-and-firewall'); ?></span>
+				<span style="cursor: default;"><?php esc_html_e('Setting up - either scan the code, or type in the private key', 'all-in-one-wp-security-and-firewall'); ?></span>
 				</h3>
 			<?php } else { ?>
-				<h2><?php _e('Setting up', 'all-in-one-wp-security-and-firewall'); ?></h2>
+				<h2><?php esc_html_e('Setting up', 'all-in-one-wp-security-and-firewall'); ?></h2>
 			<?php } ?>
 			
 			<div class="inside">
 			<p>
 			<?php
-			_e('For OTP apps that support using a camera to scan a setup code (below), that is the quickest way to set the app up (e.g. with Duo Mobile, Google Authenticator).', 'all-in-one-wp-security-and-firewall');
+			esc_html_e('For OTP apps that support using a camera to scan a setup code (below), that is the quickest way to set the app up (e.g. with Duo Mobile, Google Authenticator).', 'all-in-one-wp-security-and-firewall');
 			echo ' ';
-			_e('Otherwise, you can type the textual private key (shown below) into your app. Always keep private keys secret.', 'all-in-one-wp-security-and-firewall');
+			esc_html_e('Otherwise, you can type the textual private key (shown below) into your app. Always keep private keys secret.', 'all-in-one-wp-security-and-firewall');
 			?>
-			
-			<?php printf(__('You are currently using %s, %s', 'all-in-one-wp-security-and-firewall'), strtoupper($algorithm_type), ($algorithm_type == 'totp') ? __('a time based algorithm', 'all-in-one-wp-security-and-firewall') : __('an event based algorithm', 'all-in-one-wp-security-and-firewall')); ?>.
+
+			<?php /* translators: 1. Algorithm type. 2. Algorithm type. */ ?>
+			<?php printf(esc_html__('You are currently using %1$s, %2$s', 'all-in-one-wp-security-and-firewall'), esc_html(strtoupper($algorithm_type)), ($algorithm_type == 'totp') ? esc_html__('a time based algorithm', 'all-in-one-wp-security-and-firewall') : esc_html__('an event based algorithm', 'all-in-one-wp-security-and-firewall')); ?>.
 			</p>
 			
 			<?php $qr_url = $this->tfa_qr_code_url($algorithm_type, $url, $tfa_priv_key, $user_id); ?>
@@ -431,9 +461,9 @@ class Simba_TFA_Provider_totp {
 			<?php
 			$this->print_private_keys('full', $user_id);
 			if ($current_user->ID == $user_id) {
-				echo $this->reset_link($admin);
+				$this->reset_link();
 			} else {
-				echo '<a id="tfa-reset-privkey-for-user" data-user_id="'.$user_id.'" href="#">'.__('Reset private key', 'all-in-one-wp-security-and-firewall').'</a>';
+				echo '<a id="tfa-reset-privkey-for-user" data-user_id="' . esc_attr($user_id) . '" href="#">' . esc_html__('Reset private key', 'all-in-one-wp-security-and-firewall').'</a>';
 			}
 			?>
 			</p>
@@ -443,16 +473,16 @@ class Simba_TFA_Provider_totp {
 				?>
 				
 				<div style="min-height: 100px;">
-				<h3 class="normal" style="cursor: default"><?php _e('Emergency codes', 'all-in-one-wp-security-and-firewall'); ?></h3>
+				<h3 class="normal" style="cursor: default"><?php esc_html_e('Emergency codes', 'all-in-one-wp-security-and-firewall'); ?></h3>
 				<?php
 				$default_text = '<a href="'.esc_url($this->tfa->get_premium_version_url()).'">'.__('One-time emergency codes are a feature of the Premium version of this plugin.', 'all-in-one-wp-security-and-firewall').'</a>';
-				echo apply_filters('simba_tfa_emergency_codes_user_settings', $default_text, $user_id);
+				echo wp_kses_post(apply_filters('simba_tfa_emergency_codes_user_settings', $default_text, $user_id));
 				?>
 				</div>
 				
 			<?php } ?>
 			</div>
-		
+			<div style="clear:left; height:10px;" ></div>
 		</div>
 		<?php
 	}
@@ -479,14 +509,14 @@ class Simba_TFA_Provider_totp {
 		//<strong>Private key:</strong> htmlspecialchars($tfa_priv_key)
 		if ('full' == $type) {
 			?>
-			<strong><?php echo __('Private key:', 'two-factor-authentication').' </strong>'.htmlspecialchars($tfa_priv_key_32); ?><br>
+			<strong><?php echo esc_html__('Private key:', 'two-factor-authentication') . ' </strong>' . esc_html($tfa_priv_key_32); ?><br>
 			<?php
 		} elseif ('plain' == $type) {
-			echo htmlspecialchars($tfa_priv_key);
+			echo esc_html($tfa_priv_key);
 		} elseif ('base32' == $type) {
-			echo htmlspecialchars($tfa_priv_key_32);
+			echo esc_html($tfa_priv_key_32);
 		} elseif ('base64' == $type) {
-			echo htmlspecialchars($tfa_priv_key_64);
+			echo esc_html($tfa_priv_key_64);
 		}
 	}
 	
@@ -521,13 +551,13 @@ class Simba_TFA_Provider_totp {
 		
 		?>
 		<div class="error">
-			<h3><?php _e('Two Factor Authentication re-sync needed', 'all-in-one-wp-security-and-firewall');?></h3>
+			<h3><?php esc_html_e('Two Factor Authentication re-sync needed', 'all-in-one-wp-security-and-firewall');?></h3>
 			<p>
-				<?php _e('You need to resync your device for Two Factor Authentication since the OTP you last used is many steps ahead of the server.', 'all-in-one-wp-security-and-firewall'); ?>
+				<?php esc_html_e('You need to resync your device for Two Factor Authentication since the OTP you last used is many steps ahead of the server.', 'all-in-one-wp-security-and-firewall'); ?>
 				<br>
-				<?php _e('Please re-sync or you might not be able to log in if you generate more OTPs without logging in.', 'all-in-one-wp-security-and-firewall');?>
+				<?php esc_html_e('Please re-sync or you might not be able to log in if you generate more OTPs without logging in.', 'all-in-one-wp-security-and-firewall');?>
 				<br><br>
-				<a href="<?php echo esc_url(wp_nonce_url('admin.php?page='. $this->tfa->get_user_settings_page_slug() .'&warning_button_clicked=1', 'tfaresync', 'resyncnonce')); ?>" class="button"><?php _e('Click here and re-scan the QR-Code', 'all-in-one-wp-security-and-firewall');?></a>
+				<a href="<?php echo esc_url(wp_nonce_url('admin.php?page='. $this->tfa->get_user_settings_page_slug() .'&warning_button_clicked=1', 'tfaresync', 'resyncnonce')); ?>" class="button"><?php esc_html_e('Click here and re-scan the QR-Code', 'all-in-one-wp-security-and-firewall');?></a>
 			</p>
 		</div>
 		
@@ -573,7 +603,7 @@ class Simba_TFA_Provider_totp {
 		$types = array('totp' => __('TOTP (time based - most common algorithm; used by Google Authenticator)', 'all-in-one-wp-security-and-firewall'), 'hotp' => __('HOTP (event based)', 'all-in-one-wp-security-and-firewall'));
 		
 		foreach ($types as $id => $name) {
-			print '<input type="radio" id="tfa_default_hmac_'.esc_attr($id).'" name="tfa_default_hmac" value="'.$id.'" '.($setting == $id ? 'checked="checked"' :'').'> '.'<label for="tfa_default_hmac_'.esc_attr($id).'">'."$name</label><br>\n";
+			print '<input type="radio" id="tfa_default_hmac_' . esc_attr($id) . '" name="tfa_default_hmac" value="' . esc_attr($id) . '" ' . ($setting == $id ? 'checked="checked"' :'') . '> ' . '<label for="tfa_default_hmac_'.esc_attr($id) . '">' . esc_html($name) . '</label><br>';
 		}
 	}
 	
@@ -668,13 +698,10 @@ class Simba_TFA_Provider_totp {
 		$attempts = 0;
 		$successes = 0;
 		
-		error_log("TFA: Beginning attempt to port private key encryption over to openssl");
-		
 		global $wpdb;
 		
-		$sql = "SELECT user_id, meta_value FROM ".$wpdb->usermeta." WHERE meta_key = 'tfa_priv_key_64'";
-		
-		$user_results = $wpdb->get_results($sql);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Direct query required.
+		$user_results = $wpdb->get_results("SELECT user_id, meta_value FROM ".$wpdb->usermeta." WHERE meta_key = 'tfa_priv_key_64'");
 		
 		foreach ($user_results as $u) {
 			$dec_openssl = $this->decryptString($u->meta_value, $u->user_id, true);
@@ -701,8 +728,10 @@ class Simba_TFA_Provider_totp {
 			}
 			
 			if ($ported) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Needed for debugging.
 				error_log("TFA: Successfully ported the key for user with ID ".$u->user_id." over to openssl");
 			} else {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Needed for debugging.
 				error_log("TFA: Failed to port the key for user with ID ".$u->user_id." over to openssl");
 			}
 		}
@@ -717,14 +746,14 @@ class Simba_TFA_Provider_totp {
 	 * @return boolean|WP_Error - true on success or WP_Error on failure
 	 */
 	public function potentially_encrypt_private_keys() {
-		
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Needed for debugging.
 		error_log("TFA: Beginning attempt to encrypt private keys");
 		
 		global $wpdb;
-		
-		$sql = "SELECT user_id, meta_value FROM ".$wpdb->usermeta." WHERE meta_key = 'tfa_priv_key_64' AND meta_value != ''";
-		
-		$user_results = $wpdb->get_results($sql);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Direct query required.
+		$user_results = $wpdb->get_results("SELECT user_id, meta_value FROM ".$wpdb->usermeta." WHERE meta_key = 'tfa_priv_key_64' AND meta_value != ''");
 
 		if (null === $user_results) {
 			return new WP_Error(
@@ -762,10 +791,12 @@ class Simba_TFA_Provider_totp {
 				$number_ported++;
 			} else {
 				$number_failed++;
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Needed for debugging.
 				error_log("TFA: Failed to encrypt the key for user with ID ".$u->user_id);
 			}
 		}
 
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Needed for debugging.
 		error_log("TFA: Number of user keys successfully encrypted: ".$number_ported.", number which failed to encrypt: ".$number_failed);
 
 		return true;
@@ -905,7 +936,7 @@ class Simba_TFA_Provider_totp {
 		update_user_meta($user_id, 'tfa_algorithm_type', $new_algorithm);
 		delete_user_meta($user_id, 'tfa_hotp_off_sync');
 		
-		$counter_start = rand(13, 999999999);
+		$counter_start = wp_rand(13, 999999999);
 		$enc_counter_start = $this->encryptString($counter_start, $user_id);
 		
 		if ('hotp' == $new_algorithm) {
@@ -959,7 +990,9 @@ class Simba_TFA_Provider_totp {
 		} elseif (function_exists('openssl_decrypt')) {
 			$decrypted = openssl_decrypt($enc, 'AES-128-CBC', $key, OPENSSL_RAW_DATA, $iv);
 			if (false === $decrypted && !$force_openssl) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_wp_debug_backtrace_summary -- Needed for debugging.
 				$extra = function_exists('wp_debug_backtrace_summary') ? " backtrace: ".wp_debug_backtrace_summary() : '';
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Needed for debugging.
 				error_log("TFA decryption failure: was your site migrated to a server without mcrypt? You may need to install mcrypt, or disable TFA, in order to successfully decrypt data that was previously encrypted with mcrypt.$extra");
 			}
 			return $decrypted;

@@ -1,21 +1,20 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <div class="postbox aio_hidden" data-template="php-file-editing">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Disable PHP file editing', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Disable PHP file editing', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
-		<div class="aio_blue_box">
-		<?php
-			echo '<p>'.esc_html__('The WordPress Dashboard by default allows administrators to edit PHP files, such as plugin and theme files.', 'all-in-one-wp-security-and-firewall').'<br>'.esc_html__('This is often the first tool an attacker will use if able to login, since it allows code execution.', 'all-in-one-wp-security-and-firewall').'<br>'.esc_html__('This feature will disable the ability for people to edit PHP files via the dashboard.', 'all-in-one-wp-security-and-firewall').'</p>';
-		?>
-		</div>
 		<div id="filesystem-file-editing-badge">
 			<?php
-				// Display security info badge
 				$aiowps_feature_mgr->output_feature_details_badge("filesystem-file-editing");
 
 				if ($show_disallow_file_edit_warning) {
 					echo '<div class="aio_red_box"><p>' . esc_html__('The DISALLOW_FILE_EDIT constant has already been defined, please remove it before enabling this feature.', 'all-in-one-wp-security-and-firewall') . '<br />' . esc_html__('The constant is likely already defined in your wp-config.php file.', 'all-in-one-wp-security-and-firewall') . '</p></div>';
 				}
 			?>
+		</div>
+		<div class="aio_blue_box">
+		<?php
+			echo '<p>'.esc_html__('By default, the WordPress Dashboard allows administrators to edit PHP files, such as plugin and theme files.', 'all-in-one-wp-security-and-firewall').'<br>'.esc_html__('Attackers often use this tool if they are able to log in, because it allows them to execute code.', 'all-in-one-wp-security-and-firewall').'<br>'.esc_html__('This feature disables PHP file editing in the dashboard.', 'all-in-one-wp-security-and-firewall').'</p>';
+		?>
 		</div>
 		<table class="form-table">
 			<tr valign="top">

@@ -96,7 +96,7 @@ class AIOWPSecurity_Comment {
 				$return = true;
 			}
 		}
-		return apply_filters('aiowps_is_comment_spam_detected', $return);
+		return apply_filters('aios_is_comment_spam_detected', $return);
 	}
 	
 	/**

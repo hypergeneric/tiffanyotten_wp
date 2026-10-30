@@ -16,13 +16,10 @@
 	} else {
 ?>
 	<div class="postbox">
-		<h3 class="hndle"><label for="title"><?php esc_html_e('WP directory and file permissions scan results', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+		<h3 class="hndle"><?php esc_html_e('WP directory and file permissions scan results', 'all-in-one-wp-security-and-firewall'); ?></h3>
 		<div class="inside" id="aios-file-permissions-container" >
 			<div id="filesystem-file-permissions-badge">
-				<?php
-					// Display security info badge
-					$aiowps_feature_mgr->output_feature_details_badge("filesystem-file-permissions");
-				?>
+				<?php $aiowps_feature_mgr->output_feature_details_badge("filesystem-file-permissions"); ?>
 			</div>
 			<form action="" method="POST" id="aios-file-permissions-form" >
 				<input type="hidden" name="aiowps_permission_chg_file" id="aiowps_permission_chg_file" value="">

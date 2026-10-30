@@ -15,14 +15,14 @@ class AIOWPSecurity_Cronjob_Handler {
 		add_filter('cron_schedules', array('AIOWPSecurity_Cronjob_Handler', 'cron_schedules'));
 
 		add_action('aios_15_minutes_cron_event', array($this, 'aios_15_minutes_cron_event'));
-		add_action('aiowps_hourly_cron_event', array($this, 'aiowps_hourly_cron_event_handler'));
-		add_action('aiowps_daily_cron_event', array($this, 'aiowps_daily_cron_event_handler'));
+		add_action('aios_hourly_cron_event', array($this, 'aios_hourly_cron_event_handler'));
+		add_action('aios_daily_cron_event', array($this, 'aios_daily_cron_event_handler'));
 		add_action('aios_change_auth_keys_and_salt', 'AIOWPSecurity_Utility::change_salt_postfixes');
-		add_action('aiowps_purge_old_debug_logs', array($this, 'purge_old_debug_logs'));
-		add_action('aiowps_send_lockout_email', array($this, 'send_lockout_email'));
+		add_action('aios_send_lockout_email', array($this, 'send_lockout_email'));
 		add_action('aios_update_googlebot_ip_ranges', array($this, 'aios_update_googlebot_ip_ranges'));
 		add_action('aios_update_bingbot_ip_ranges', array($this, 'aios_update_bingbot_ip_ranges'));
-		add_action('aiowps_perform_fcd_scan_tasks', array($this, 'aiowps_scheduled_fcd_scan_handler'));
+		add_action('aios_perform_fcd_scan_tasks', array($this, 'aios_scheduled_fcd_scan_handler'));
+		add_action('aios_firewall_session_prune', array($this, 'do_firewall_session_prune'));
 	}
 
 	/**
@@ -71,55 +71,28 @@ class AIOWPSecurity_Cronjob_Handler {
 		}
 	}
 
-	public function aiowps_hourly_cron_event_handler() {
+	public function aios_hourly_cron_event_handler() {
 		//Do stuff that needs checking hourly
 		AIOWPSecurity_Comment::trash_spam_comments();
-		do_action('aiowps_perform_fcd_scan_tasks');
-		do_action('delete_expired_logged_in_users_event');
+		do_action('aios_perform_fcd_scan_tasks');
+		do_action('aios_delete_expired_logged_in_users_event');
 	}
-	
+
 	/**
 	 * Run daily cron event
 	 *
 	 * @return void
 	 */
-	public function aiowps_daily_cron_event_handler() {
-		do_action('aiowps_perform_db_cleanup_tasks');
-		do_action('aiowps_purge_old_debug_logs');
-		do_action('aiowps_send_lockout_email');
+	public function aios_daily_cron_event_handler() {
+		do_action('aios_perform_db_cleanup_tasks');
+		do_action('aios_send_lockout_email');
 		do_action('aios_perform_update_antibot_keys');
 		do_action('aios_update_googlebot_ip_ranges');
 		do_action('aios_update_bingbot_ip_ranges');
-		do_action('aiowps_clean_up_old_tasks');
+		do_action('aios_clean_up_old_tasks');
+		do_action('aios_firewall_session_prune');
 	}
 
-	/**
-	 * Purges debug logs older than 90 days
-	 * The 90 days can be modified using the constant AIOWPSEC_PURGE_DEBUG_LOGS_AFTER_DAYS
-	 *
-	 * @return void
-	 */
-	public function purge_old_debug_logs() {
-
-		global $wpdb, $aio_wp_security;
-
-		$debug_tbl_name = AIOWPSEC_TBL_DEBUG_LOG;
-		$after_days = 90;
-
-		if (defined('AIOWPSEC_PURGE_DEBUG_LOGS_AFTER_DAYS')) {
-			$after_days = abs(AIOWPSEC_PURGE_DEBUG_LOGS_AFTER_DAYS);
-		}
-
-		$after_days = empty($after_days) ? 90 : $after_days;
-		$older_than_date_time = strtotime('-' . $after_days . ' days', time());
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore
-		$ret = $wpdb->query($wpdb->prepare('DELETE FROM ' . $debug_tbl_name . ' WHERE logtime < %s', $older_than_date_time));
-		if (false === $ret) {
-			$error_msg = empty($wpdb->last_error) ? 'Could not receive the reason for the failure' : $wpdb->last_error;
-			$aio_wp_security->debug_logger->log_debug_cron("Failed to purge older debug logs : {$error_msg}", 4);
-		}
-	}
 	/**
 	 * Send email notification to an user who has flag is_lockout_email_sent is 0.
 	 *
@@ -150,6 +123,7 @@ class AIOWPSecurity_Cronjob_Handler {
 
 		if (is_wp_error($validated_ip_list_array)) {
 			$aio_wp_security->debug_logger->log_debug('The attempt to save the IP addresses failed, because it was not possible to validate the Googlebot IP addresses: ' . $validated_ip_list_array->get_error_message(), 4);
+			return;
 		}
 
 		$aiowps_firewall_config->set_value('aiowps_googlebot_ip_ranges', $validated_ip_list_array);
@@ -176,17 +150,18 @@ class AIOWPSecurity_Cronjob_Handler {
 
 		if (is_wp_error($validated_ip_list_array)) {
 			$aio_wp_security->debug_logger->log_debug('The attempt to save the IP addresses failed, because it was not possible to validate the Bingbot IP addresses: ' . $validated_ip_list_array->get_error_message(), 4);
+			return;
 		}
 
 		$aiowps_firewall_config->set_value('aiowps_bingbot_ip_ranges', $validated_ip_list_array);
 	}
 
 	/**
-	 * This function is called via the following filter 'aiowps_perform_fcd_scan_tasks' and will start the file scan
+	 * This function is called via the following filter 'aios_perform_fcd_scan_tasks' and will start the file scan
 	 *
 	 * @return void
 	 */
-	public function aiowps_scheduled_fcd_scan_handler() {
+	public function aios_scheduled_fcd_scan_handler() {
 		global $aio_wp_security;
 		$task_manager = AIOWPSecurity_Task_Manager::get_instance();
 
@@ -206,11 +181,23 @@ class AIOWPSecurity_Cronjob_Handler {
 				return;
 			}
 
-			if (!wp_next_scheduled('aiowps_process_file_scan_tasks')) {
-				wp_schedule_single_event(time() + 3, 'aiowps_process_file_scan_tasks');
+			if (!wp_next_scheduled('aios_process_file_scan_tasks')) {
+				wp_schedule_single_event(time() - 1, 'aios_process_file_scan_tasks');
 			}
+			AIOWPSecurity_Utility::spawn_cron();
 
 			$aio_wp_security->configs->set_value('aiowps_last_fcd_scan_time', $current_time, true);
 		}
+	}
+
+	/**
+	 * Prune any session files
+	 *
+	 * @return void
+	 */
+	public function do_firewall_session_prune() {
+		global $aiowps_firewall_session;
+
+		if (isset($aiowps_firewall_session)) $aiowps_firewall_session->prune();
 	}
 }

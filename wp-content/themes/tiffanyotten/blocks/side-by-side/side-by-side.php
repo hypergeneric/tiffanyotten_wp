@@ -26,6 +26,7 @@ $logos_title       = tiffanyotten_block_value('logos_title', $args);
 $logos             = tiffanyotten_block_value('logos', $args);
 $media_link        = tiffanyotten_block_value('media_link', $args);
 
+$hero_image            = $hero_image ? $hero_image : [];
 $hero_image['mobile']  = $hero_image_mobile ? $hero_image_mobile : false;
 
 list($blockid, $blockslug) = tiffanyotten_get_block_meta($block, [ 'image-'.$image_sizing, 'orient-'.$orientation, 'media-'.$media_type, ( $hero_icon ? 'hero-icon' : '' ), ( $hero_mobile_top ? 'hero-top' : '' ) ], $args, $context);

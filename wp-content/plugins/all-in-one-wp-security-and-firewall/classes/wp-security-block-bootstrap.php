@@ -36,7 +36,7 @@ class AIOWPSecurity_Block_Bootstrap extends AIOWPSecurity_Block_File {
 		if (!is_writable($info['dirname'])) {
 			return new WP_Error(
 				'file_directory_not_writable',
-				'The directory has incorrect write permissions. Please double check its permissions and try again.',
+				'The directory has incorrect write permissions. Check the directory permissions and try again.',
 				$info['dirname']
 			);
 		}

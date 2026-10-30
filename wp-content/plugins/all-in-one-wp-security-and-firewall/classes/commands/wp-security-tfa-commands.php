@@ -17,7 +17,7 @@ trait AIOWPSecurity_Tfa_Commands_Trait {
 		$tfa = new AIO_WP_Security_Simba_Two_Factor_Authentication_Plugin();
 
 		/* Needed to run hook-dependent code in TFA, or there are Divide by Zero errors. */
-		do_action('plugins_loaded');
+		do_action('plugins_loaded'); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		return $tfa;
 	}

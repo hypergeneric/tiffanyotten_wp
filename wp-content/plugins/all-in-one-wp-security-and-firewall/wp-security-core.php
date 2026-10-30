@@ -8,9 +8,9 @@ if (!class_exists('AIO_WP_Security')) {
 
 	class AIO_WP_Security {
 
-		public $version = '5.4.10';
+		public $version = '5.5.1';
 
-		public $db_version = '2.1.4';
+		public $db_version = '2.1.5';
 
 		public $firewall_version = '1.0.10';
 
@@ -69,11 +69,11 @@ if (!class_exists('AIO_WP_Security')) {
 		public $is_aiowps_admin_page;
 
 		/**
-		 * Whether the page is AIOS Login reCAPTCHA page.
+		 * Whether we are currently on the `CAPTCHA settings` tab.
 		 *
 		 * @var boolean
 		 */
-		public $is_aiowps_google_recaptcha_tab_page;
+		public $is_aiowps_captcha_settings_tab;
 
 		/**
 		 * Defines constants, loads configs, includes required files and adds actions.
@@ -90,7 +90,6 @@ if (!class_exists('AIO_WP_Security')) {
 			$this->loader_operations();
 
 			add_action('init', array($this, 'wp_security_plugin_init'), 0);
-			add_action('init', array($this, 'load_plugin_textdomain'));
 			add_action('wp_loaded', array($this, 'aiowps_wp_loaded_handler'));
 
 			$add_update_action_prefixes = array(
@@ -104,9 +103,6 @@ if (!class_exists('AIO_WP_Security')) {
 			if ('1' == $this->configs->get_site_value('aiowps_enable_salt_postfix')) {
 				add_filter('salt', array($this, 'salt'), 10, 2);
 			}
-
-			do_action('aiowpsecurity_loaded');
-
 		}
 
 		/**
@@ -160,7 +156,7 @@ if (!class_exists('AIO_WP_Security')) {
 			define('AIOWPSEC_TOOLS_MENU_SLUG', 'aiowpsec_tools');
 			define('AIOWPSEC_CAPTCHA_SHORTCODE', 'aios_captcha');
 			
-			if (!defined('AIOS_TFA_PREMIUM_LATEST_INCOMPATIBLE_VERSION')) define('AIOS_TFA_PREMIUM_LATEST_INCOMPATIBLE_VERSION', '1.14.7');
+			if (!defined('AIOS_TFA_PREMIUM_LATEST_INCOMPATIBLE_VERSION')) define('AIOS_TFA_PREMIUM_LATEST_INCOMPATIBLE_VERSION', '1.17.0');
 			
 			if (!defined('AIOWPSEC_PURGE_FAILED_LOGIN_RECORDS_AFTER_DAYS')) define('AIOWPSEC_PURGE_FAILED_LOGIN_RECORDS_AFTER_DAYS', 90);
 			if (!defined('AIOS_PURGE_EVENTS_RECORDS_AFTER_DAYS')) define('AIOS_PURGE_EVENTS_RECORDS_AFTER_DAYS', 90);
@@ -170,6 +166,8 @@ if (!class_exists('AIO_WP_Security')) {
 			if (!defined('AIOS_DEFAULT_BRUTE_FORCE_FEATURE_SECRET_WORD')) define('AIOS_DEFAULT_BRUTE_FORCE_FEATURE_SECRET_WORD', 'aiossecret');
 			if (!defined('AIOS_FIREWALL_MAX_FILE_UPLOAD_LIMIT_MB')) define('AIOS_FIREWALL_MAX_FILE_UPLOAD_LIMIT_MB', 100);
 			if (!defined('AIOS_UPDATE_ANTIBOT_KEYS_AFTER_DAYS')) define('AIOS_UPDATE_ANTIBOT_KEYS_AFTER_DAYS', 5);
+			// Default number of days to retain audit log events.
+			if (!defined('AIOWPS_AUDIT_LOG_DEFAULT_RETENTION')) define('AIOWPS_AUDIT_LOG_DEFAULT_RETENTION', 30);
 
 			global $wpdb;
 			define('AIOWPSEC_TBL_LOGIN_LOCKOUT', $wpdb->prefix . 'aiowps_login_lockdown');
@@ -183,7 +181,8 @@ if (!class_exists('AIO_WP_Security')) {
 			define('AIOWPSEC_TBL_AUDIT_LOG', $base_prefix . 'aiowps_audit_log');
 			define('AIOWPSEC_TBL_DEBUG_LOG', $base_prefix . 'aiowps_debug_log');
 			define('AIOWPSEC_TBL_LOGGED_IN_USERS', $base_prefix . 'aiowps_logged_in_users');
-			define('AIOWPSEC_TBL_MESSAGE_STORE', $base_prefix . 'aiowps_message_store');
+
+			if (!defined('AIOWPS_UPDRAFT_CONNECT_URL')) define('AIOWPS_UPDRAFT_CONNECT_URL', 'https://teamupdraft.com');
 		}
 
 		/**
@@ -225,8 +224,6 @@ if (!class_exists('AIO_WP_Security')) {
 			include_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-utility-api.php');
 			include_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-general-init-tasks.php');
 			include_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-wp-loaded-tasks.php');
-			include_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-task-manager.php');
-			include_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-heartbeat.php');
 			include_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-task-manager.php');
 
 			include_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-user-login.php');
@@ -279,7 +276,6 @@ if (!class_exists('AIO_WP_Security')) {
 			$this->debug_logger = new AIOWPSecurity_Logger($debug_enabled);
 
 			$this->load_ajax_handler();
-			AIOWPSecurity_Heartbeat::get_instance();
 		}
 
 		/**
@@ -367,9 +363,9 @@ if (!class_exists('AIO_WP_Security')) {
 
 			if (!isset($template_file)) $template_file = AIO_WP_SECURITY_PATH.'/templates/'.$path;
 
-			$template_file = apply_filters('aio_wp_security_template', $template_file, $path);
+			$template_file = apply_filters('aios_template', $template_file, $path);
 
-			do_action('aio_wp_security_before_template', $path, $template_file, $return_instead_of_echo, $extract_these);
+			do_action('aios_before_template', $path, $template_file, $return_instead_of_echo, $extract_these);
 
 			if (!file_exists($template_file)) {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Notification for devs so they know they made a mistake..
@@ -384,7 +380,7 @@ if (!class_exists('AIO_WP_Security')) {
 				include $template_file;
 			}
 
-			do_action('aio_wp_security_after_template', $path, $template_file, $return_instead_of_echo, $extract_these);
+			do_action('aios_after_template', $path, $template_file, $return_instead_of_echo, $extract_these);
 
 			if ($return_instead_of_echo) return ob_get_clean();
 		}
@@ -397,7 +393,7 @@ if (!class_exists('AIO_WP_Security')) {
 		public static function deactivation_handler() {
 			require_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-deactivation-tasks.php');
 			AIOWPSecurity_Deactivation_Tasks::run();
-			do_action('aiowps_deactivation_complete');
+			do_action('aios_deactivation_complete');
 		}
 
 		/**
@@ -408,7 +404,7 @@ if (!class_exists('AIO_WP_Security')) {
 		public static function uninstall_handler() {
 			require_once(AIO_WP_SECURITY_PATH.'/classes/wp-security-uninstallation-tasks.php');
 			AIOWPSecurity_Uninstallation_Tasks::run();
-			do_action('aiowps_uninstallation_complete');
+			do_action('aios_uninstallation_complete');
 		}
 
 		/**
@@ -509,15 +505,6 @@ if (!class_exists('AIO_WP_Security')) {
 		}
 
 		/**
-		 * Load plugin text domain
-		 *
-		 * @return void
-		 */
-		public function load_plugin_textdomain() {
-			load_plugin_textdomain('all-in-one-wp-security-and-firewall', false, dirname(plugin_basename(__FILE__)) . '/languages/');
-		}
-
-		/**
 		 * Initializes the plugin. This is hooked into the inbuilt 'init' action.
 		 *
 		 * @return Void
@@ -541,9 +528,9 @@ if (!class_exists('AIO_WP_Security')) {
 			// For admin side force log out.
 			add_action('admin_init', array($this, 'do_action_force_logout_check'));
 			// For front side force log out.
-			add_action('template_redirect', array($this, 'do_action_force_logout_check'));
+			add_action('template_redirect', array($this, 'do_action_force_logout_check')); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
-			add_filter('udrpc_action', array($this, 'validate_udrpc_format'), 0);
+			add_filter('udrpc_action', array($this, 'validate_udrpc_format'), 0, 2);
 
 			new AIOWPSecurity_General_Init_Tasks();
 			new AIOWPSecurity_Comment();
@@ -672,20 +659,20 @@ if (!class_exists('AIO_WP_Security')) {
 		}
 
 		/**
-		 * Check whether current admin page is Google reCAPTCHA tab page or not.
+		 * Check whether we are currently on the `CAPTCHA settings` tab.
 		 *
-		 * @return boolean True if Google reCAPTCHA tab page, Otherwise false.
+		 * @return boolean
 		 */
-		public function is_aiowps_google_recaptcha_tab_page() {
-			if (isset($this->is_aiowps_google_recaptcha_tab_page)) {
-				return $this->is_aiowps_google_recaptcha_tab_page;
+		public function is_aiowps_captcha_settings_tab() {
+			if (isset($this->is_aiowps_captcha_settings_tab)) {
+				return $this->is_aiowps_captcha_settings_tab;
 			}
 			global $pagenow;
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce available.
-			$this->is_aiowps_google_recaptcha_tab_page = ('admin.php' == $pagenow && isset($_GET['page']) && 'aiowpsec_brute_force' == $_GET['page'] && isset($_GET['tab']) && 'captcha-settings' == $_GET['tab']);
-			return $this->is_aiowps_google_recaptcha_tab_page;
+			$this->is_aiowps_captcha_settings_tab = ('admin.php' == $pagenow && isset($_GET['page']) && AIOWPSEC_BRUTE_FORCE_MENU_SLUG == $_GET['page'] && isset($_GET['tab']) && 'captcha-settings' == $_GET['tab']);
+			return $this->is_aiowps_captcha_settings_tab;
 		}
-		
+
 		/**
 		 * Set pagenow global variable to wp-login.php for renamed login page
 		 *
@@ -704,21 +691,31 @@ if (!class_exists('AIO_WP_Security')) {
 		}
 
 		/**
-		 * Invokes all functions attached to action hook aiowps_force_logout_check
+		 * Invokes all functions attached to action hook aios_force_logout_check
 		 *
 		 * @return void
 		 */
 		public function do_action_force_logout_check() {
-			do_action('aiowps_force_logout_check');
+			do_action('aios_force_logout_check');
 		}
 
 		/**
-		 * This function will die if a invalid UDRPC action is passed
+		 * Validates that the specified UDRPC command is permitted for legacy format requests.
 		 *
-		 * @return void
+		 * Terminates execution if an unsupported command is received when the
+		 * request format version is less than 2.
+		 *
+		 * @param mixed  $response The response data passed through the filter.
+		 * @param string $command  The UDRPC command being processed.
+		 *
+		 * @return mixed The unmodified response data.
 		 */
-		public function validate_udrpc_format() {
-			if ($_POST['format'] < 2) die('Not permitted.');
+		public function validate_udrpc_format($response, $command) {
+			if ($_POST['format'] < 2 && (!in_array($command, array('ping', 'get_file_status', 'send_chunk', 'upload_complete')))) {
+				die('Not permitted.');
+			}
+			
+			return $response;
 		}
 
 		/**
@@ -764,14 +761,16 @@ if (!class_exists('AIO_WP_Security')) {
 		 *
 		 * @global string $wp_version
 		 *
-		 * @return bool
+		 * @return bool False if requirements aren't met, or if disabled via AIOS_DISABLE_SETUP_WIZARD constant.
 		 */
 		private static function onboarding_wizard_requirements_met() {
 			static $requirements_met = null;
 
 			if (null === $requirements_met) {
 				global $wp_version;
-				$requirements_met = (version_compare(PHP_VERSION, '7.4', '>=') && version_compare($wp_version, '6.2', '>='));
+				$version_met = (version_compare(PHP_VERSION, '7.4', '>=') && version_compare($wp_version, '6.2', '>='));
+				$wizard_disabled = defined('AIOS_DISABLE_SETUP_WIZARD') && AIOS_DISABLE_SETUP_WIZARD;
+				$requirements_met = $version_met && !$wizard_disabled;
 			}
 
 			return $requirements_met;

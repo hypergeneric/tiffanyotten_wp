@@ -35,13 +35,16 @@ trait AIOWPSecurity_Files_Commands_Trait {
 				$rec_perm_dec = octdec($rec_perm_oct_string); // Convert the octal string to dec so the chmod func will accept it
 				$perm_result = @chmod($folder_or_file, $rec_perm_dec);
 				if (true === $perm_result) {
-					$message = sprintf(__('The permissions for %s were successfully changed to %s', 'all-in-one-wp-security-and-firewall'), htmlspecialchars($folder_or_file), htmlspecialchars($rec_perm_oct_string));
+					/* Translators: 1: File or directory path. 2: New permissions (e.g. 0755). */
+					$message = sprintf(esc_html__('The permissions for %1$s were successfully changed to %2$s', 'all-in-one-wp-security-and-firewall'), esc_html($folder_or_file), esc_html($rec_perm_oct_string));
 				} elseif (false === $perm_result) {
-					$message = sprintf(__('Unable to change permissions for %s', 'all-in-one-wp-security-and-firewall'), htmlspecialchars($folder_or_file));
+					/* Translators: File or directory path. */
+					$message = sprintf(esc_html__('Unable to change permissions for %s', 'all-in-one-wp-security-and-firewall'), esc_html($folder_or_file));
 					$success = false;
 				}
 			} else {
-				$message = sprintf(__('Unable to change permissions for %s : not in list of valid files', 'all-in-one-wp-security-and-firewall'), htmlspecialchars($folder_or_file));
+				/* Translators: File or directory path. */
+				$message = sprintf(esc_html__('Unable to change permissions for %s : not in list of valid files', 'all-in-one-wp-security-and-firewall'), esc_html($folder_or_file));
 				$success = false;
 			}
 		}
@@ -129,7 +132,13 @@ trait AIOWPSecurity_Files_Commands_Trait {
 
 		if (!empty($result['error'])) {
 			$success = false;
-			$message = sprintf(__('Failed to delete the %s file(s).', 'all-in-one-wp-security-and-firewall'), $result['error']) . '<br>' . __('Please try to delete them manually.', 'all-in-one-wp-security-and-firewall');
+			$message = sprintf(
+				/* Translators: File names e.g. wp-config-sample.php . */
+				__('Failed to delete the %s file(s).', 'all-in-one-wp-security-and-firewall'),
+				$result['error']
+			);
+			
+			$message .= "\n" . __('Please try to delete them manually.', 'all-in-one-wp-security-and-firewall');
 		}
 
 		return $this->handle_response($success, $message, array('info' => $result['info']));

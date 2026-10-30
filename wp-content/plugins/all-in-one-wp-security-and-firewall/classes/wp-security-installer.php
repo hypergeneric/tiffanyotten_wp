@@ -15,25 +15,32 @@ class AIOWPSecurity_Installer {
 		'2.0.10' => array(
 			'delete_aiowps_temp_configs_option',
 		),
-		'2.1.4' => array(
+		'2.1.5' => array(
+			'remove_message_store',
+			'drop_redundant_index_logged_in_users_table',
+			'update_scheduled_cron_tasks',
 			'update_tables_to_innodb',
-		)
+		),
 	);
 
 	/**
 	 * Run installer function.
+	 *
+	 * @global wpdb            $wpdb
+	 * @global AIO_WP_Security $aio_wp_security
 	 *
 	 * @param boolean $is_activating - Plugin activation run_installer called
 	 *
 	 * @return void
 	 */
 	public static function run_installer($is_activating = false) {
-		global $wpdb;
+		global $wpdb, $aio_wp_security;
 		if (function_exists('is_multisite') && is_multisite() && is_main_site()) {
 			// check if it is a network activation - if so, run the activation function for each blog id
 			$blogids = $wpdb->get_col("SELECT blog_id FROM $wpdb->blogs"); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- There doesn't seem to be a documented alternative. Possible alternative get_sites(array('fields' => 'ids', 'number' => 0) but 'number' => 0 is not documented.
 			foreach ($blogids as $blog_id) {
 				switch_to_blog($blog_id);
+				$aio_wp_security->configs->load_config();
 				AIOWPSecurity_Installer::create_db_tables();
 				AIOWPSecurity_Installer::migrate_db_tables();
 				AIOWPSecurity_Installer::check_tasks();
@@ -41,6 +48,7 @@ class AIOWPSecurity_Installer {
 				AIOWPSecurity_Configure_Settings::update_aiowpsec_db_version();
 				restore_current_blog();
 			}
+			$aio_wp_security->configs->load_config();
 		} else {
 			AIOWPSecurity_Installer::create_db_tables();
 			AIOWPSecurity_Installer::migrate_db_tables();
@@ -56,6 +64,7 @@ class AIOWPSecurity_Installer {
 		Updraft_Tasks_Activation::reinstall_if_needed();
 
 		AIOWPSecurity_Installer::create_db_backup_dir(); // Create a backup dir in the WP uploads directory.
+		AIOWPSecurity_Installer::remove_legacy_security_log_files(); // Remove the legacy logs directory from the plugin folder, if it still exists.
 	}
 
 	/**
@@ -104,7 +113,6 @@ class AIOWPSecurity_Installer {
 			$perm_block_tbl_name = AIOWPSEC_TBL_PERM_BLOCK;
 		}
 
-		$message_store_log_tbl_name = AIOWPSEC_TBL_MESSAGE_STORE;
 		$audit_log_tbl_name = AIOWPSEC_TBL_AUDIT_LOG;
 		$debug_log_tbl_name = AIOWPSEC_TBL_DEBUG_LOG;
 		$logged_in_users_tbl_name = AIOWPSEC_TBL_LOGGED_IN_USERS;
@@ -232,19 +240,9 @@ class AIOWPSecurity_Installer {
 			UNIQUE KEY unique_user_id (user_id),
 			INDEX created (created),
 			INDEX expires (expires),
-			INDEX user_id (user_id),
 			INDEX site_id (site_id)
 			) ENGINE=InnoDB " . $charset_collate . ";";
 		dbDelta($liu_tbl_sql);
-
-		$message_store_log_tbl_sql = "CREATE TABLE " . $message_store_log_tbl_name . " (
-			id bigint(20) NOT NULL AUTO_INCREMENT,
-			message_key text NOT NULL,
-			message_value text NOT NULL,
-			created INTEGER UNSIGNED,
-			PRIMARY KEY  (id)
-			) ENGINE=InnoDB " . $charset_collate . ";";
-		dbDelta($message_store_log_tbl_sql);
 	}
 
 	/**
@@ -293,9 +291,9 @@ class AIOWPSecurity_Installer {
 
 			if (false === $wpdb->query($wpdb->prepare("INSERT INTO $audit_log_tbl_name (network_id, site_id, username, ip, level, event_type, details, stacktrace, created) SELECT %d AS network_id, %d AS site_id, fl.user_login AS username, fl.login_attempt_ip AS ip, 'warning' AS level, 'Failed login' AS event_type, %s AS details, '' AS stacktrace, UNIX_TIMESTAMP(fl.failed_login_date) AS created FROM $failed_login_tbl_name fl", $network_id, $site_id, $import_details))) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- We can't use %i because our plugin supports wordpress < 6.2.
 				$table_migration_details['table_migration']['success'] = false;
-				do_action('aiowps_record_event', 'table_migration', $table_migration_details, 'error');
+				do_action('aios_record_event', 'table_migration', $table_migration_details, 'error');
 			} else {
-				do_action('aiowps_record_event', 'table_migration', $table_migration_details, 'info');
+				do_action('aios_record_event', 'table_migration', $table_migration_details, 'info');
 				$wpdb->query("DROP TABLE IF EXISTS `$failed_login_tbl_name`"); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- We can't use %i because our plugin supports wordpress < 6.2.
 			}
 		}
@@ -380,14 +378,55 @@ class AIOWPSecurity_Installer {
 	}
 
 	/**
-	 * Alters all of the AIOS tables to use InnoDB.
+	 * Removes the message store DB if it exists
+	 *
+	 * @global wpdb $wpdb
+	 * @return void
+	 */
+	public static function remove_message_store() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix.'aiowps_message_store';
+		
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Table names can't be prepared.
+		$wpdb->query("DROP TABLE IF EXISTS `$table_name`");
+	}
+
+	/**
+	 * Drops the redundant non-unique user_id index from the logged in users table.
+	 *
+	 * The UNIQUE KEY unique_user_id (user_id) already indexes the same column and satisfies the same lookups.
 	 *
 	 * @global wpdb $wpdb
 	 *
 	 * @return void
 	 */
-	public static function update_tables_to_innodb() {
+	public static function drop_redundant_index_logged_in_users_table() {
 		global $wpdb;
+
+		$logged_in_users_tbl_name = AIOWPSEC_TBL_LOGGED_IN_USERS;
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, PluginCheck.Security.DirectDB.UnescapedDBParameter -- We can't use $wpdb->prepare with %i because our plugin supports WordPress < 6.2.
+		// On multisite this table is network-wide, so this task runs once per blog against the same table. Check the index still exists so repeat runs are a no-op rather than an error.
+		// Non_unique = 1 restricts this to the redundant non-unique index, so we can never drop a unique key that happens to be named user_id.
+		$index_exists = $wpdb->get_results("SHOW INDEX FROM `$logged_in_users_tbl_name` WHERE Key_name = 'user_id' AND Non_unique = 1");
+
+		if (!empty($index_exists)) {
+			$wpdb->query("ALTER TABLE `$logged_in_users_tbl_name` DROP INDEX `user_id`");
+		}
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, PluginCheck.Security.DirectDB.UnescapedDBParameter
+	}
+
+	/**
+	 * Alters all of the AIOS tables to use InnoDB if they are not already using InnoDB and are not too large.
+	 *
+	 * @global wpdb $wpdb
+	 * @global AIO_WP_Security $aio_wp_security
+	 *
+	 * @return void
+	 */
+	public static function update_tables_to_innodb() {
+		global $wpdb, $aio_wp_security;
 
 		if (function_exists('is_multisite') && is_multisite()) {
 			/*
@@ -408,21 +447,60 @@ class AIOWPSecurity_Installer {
 			$perm_block_tbl_name = AIOWPSEC_TBL_PERM_BLOCK;
 		}
 
-		$message_store_log_tbl_name = AIOWPSEC_TBL_MESSAGE_STORE;
 		$audit_log_tbl_name = AIOWPSEC_TBL_AUDIT_LOG;
 		$debug_log_tbl_name = AIOWPSEC_TBL_DEBUG_LOG;
 		$logged_in_users_tbl_name = AIOWPSEC_TBL_LOGGED_IN_USERS;
 
-		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery -- No alternative.
-		$wpdb->query('ALTER TABLE ' . $lockout_tbl_name . ' ENGINE=InnoDB');
-		$wpdb->query('ALTER TABLE ' . $aiowps_global_meta_tbl_name . ' ENGINE=InnoDB');
-		$wpdb->query('ALTER TABLE ' . $aiowps_event_tbl_name . ' ENGINE=InnoDB');
-		$wpdb->query('ALTER TABLE ' . $perm_block_tbl_name . ' ENGINE=InnoDB');
-		$wpdb->query('ALTER TABLE ' . $audit_log_tbl_name . ' ENGINE=InnoDB');
-		$wpdb->query('ALTER TABLE ' . $debug_log_tbl_name . ' ENGINE=InnoDB');
-		$wpdb->query('ALTER TABLE ' . $logged_in_users_tbl_name . ' ENGINE=InnoDB');
-		$wpdb->query('ALTER TABLE ' . $message_store_log_tbl_name . ' ENGINE=InnoDB');
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery
+		$table_names = array(
+			$lockout_tbl_name,
+			$aiowps_global_meta_tbl_name,
+			$aiowps_event_tbl_name,
+			$perm_block_tbl_name,
+			$audit_log_tbl_name,
+			$debug_log_tbl_name,
+			$logged_in_users_tbl_name,
+		);
+
+		$skipped_table_names = array();
+
+		foreach ($table_names as $table_name) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery -- No alternative.
+			$result = $wpdb->get_row($wpdb->prepare("SELECT DATA_LENGTH, INDEX_LENGTH, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s", $table_name), ARRAY_A);
+
+			if (isset($result['DATA_LENGTH']) && isset($result['INDEX_LENGTH']) && isset($result['ENGINE']) && 'InnoDB' !== $result['ENGINE']) {
+				$table_size = (int) $result['DATA_LENGTH'] + (int) $result['INDEX_LENGTH'];
+
+				if ($table_size < 10 * MB_IN_BYTES) { // Only update the table if its size is less than 10MB
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- We can't use %i because our plugin supports wordpress < 6.2.
+					$wpdb->query("ALTER TABLE $table_name ENGINE=InnoDB");
+				} else {
+					$skipped_table_names[] = $table_name;
+				}
+			}
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery
+		}
+
+		$aio_wp_security->configs->set_value('aios_innodb_skipped_tables', $skipped_table_names, true);
+	}
+	
+	/**
+	 * Clear existing scheduled cron tasks and re-register them.
+	 *
+	 * Useful when cron intervals/hooks may have changed (e.g. after a
+	 * settings update or plugin upgrade) and need to be reset cleanly.
+	 *
+	 * @return void
+	 */
+	public static function update_scheduled_cron_tasks() {
+		wp_clear_scheduled_hook('aiowps_hourly_cron_event');
+		wp_clear_scheduled_hook('aiowps_daily_cron_event');
+		wp_clear_scheduled_hook('aiowps_clean_old_events');
+		wp_clear_scheduled_hook('aiowps_weekly_cron_event');
+		if (did_action('init')) {
+			self::set_cron_tasks_upon_activation();
+		} else {
+			add_action('init', array(__CLASS__, 'set_cron_tasks_upon_activation')); // The cron schedule uses translation, so the init hook is required.
+		}
 	}
 
 	public static function create_db_backup_dir() {
@@ -457,6 +535,22 @@ class AIOWPSecurity_Installer {
 	}
 
 	/**
+	 * Removes the legacy security log directory and its files from the plugin folder, if they still exist.
+	 *
+	 * Not a $db_tasks entry because this isn't a database migration - it's called directly from
+	 * run_installer(), alongside create_db_backup_dir(), and is idempotent via the is_dir() guard.
+	 *
+	 * @return void
+	 */
+	public static function remove_legacy_security_log_files() {
+		$legacy_logs_dir = AIO_WP_SECURITY_PATH . '/logs';
+
+		if (is_dir($legacy_logs_dir)) {
+			AIOWPSecurity_Utility_File::remove_local_directory($legacy_logs_dir);
+		}
+	}
+
+	/**
 	 * Setup AIOS cron tasks.
 	 * Handles both single and multi-site (NW activation) cases.
 	 *
@@ -475,12 +569,12 @@ class AIOWPSecurity_Installer {
 			foreach ($blogids as $blog_id) {
 				switch_to_blog($blog_id);
 				AIOWPSecurity_Installer::schedule_cron_events();
-				do_action('aiowps_activation_complete');
+				do_action('aios_activation_complete');
 				restore_current_blog();
 			}
 		} else {
 			AIOWPSecurity_Installer::schedule_cron_events();
-			do_action('aiowps_activation_complete');
+			do_action('aios_activation_complete');
 		}
 	}
 
@@ -491,16 +585,13 @@ class AIOWPSecurity_Installer {
 	 */
 	public static function schedule_cron_events() {
 		if (!wp_next_scheduled('aios_15_minutes_cron_event')) {
-			wp_schedule_event(time(), 'aios-every-15-minutes', 'aios_15_minutes_cron_event'); //schedule a 15 minutes cron event
+			wp_schedule_event(time(), 'aios-every-15-minutes', 'aios_15_minutes_cron_event'); // schedule a 15 minutes cron event.
 		}
-		if (!wp_next_scheduled('aiowps_hourly_cron_event')) {
-			wp_schedule_event(time(), 'hourly', 'aiowps_hourly_cron_event'); //schedule an hourly cron event
+		if (!wp_next_scheduled('aios_hourly_cron_event')) {
+			wp_schedule_event(time(), 'hourly', 'aios_hourly_cron_event'); // schedule an hourly cron event.
 		}
-		if (!wp_next_scheduled('aiowps_daily_cron_event')) {
-			wp_schedule_event(time(), 'daily', 'aiowps_daily_cron_event'); //schedule an daily cron event
-		}
-		if (!wp_next_scheduled('aiowps_weekly_cron_event')) {
-			wp_schedule_event(time(), 'weekly', 'aiowps_weekly_cron_event'); //schedule an daily cron event
+		if (!wp_next_scheduled('aios_daily_cron_event')) {
+			wp_schedule_event(time(), 'daily', 'aios_daily_cron_event'); // schedule an daily cron event.
 		}
 	}
 }

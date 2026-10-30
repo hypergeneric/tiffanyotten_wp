@@ -1,3 +1,4 @@
+<?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head profile="http://gmpg.org/xfn/11">
@@ -9,7 +10,7 @@ $display_form = true;
 //Make this page look like the WP login page
 wp_admin_css('login', true);
 wp_admin_css('colors-fresh', true);
-do_action('login_head');
+do_action('login_head'); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 $login_header_url   = 'http://wordpress.org/';
 $login_header_title = __('Powered by WordPress', 'all-in-one-wp-security-and-firewall');
 ?>
@@ -36,7 +37,7 @@ if (isset($_POST['aiowps_unlock_request'])) {
 		echo '<div id="login_error">'.esc_html__('ERROR: Unable to process your request!', 'all-in-one-wp-security-and-firewall').'</div>';
 		die();
 	} elseif ($display_form) {
-		echo display_unlock_form(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pcp check ignore this
+		aios_display_unlock_form();
 	}
 } //End if block
 
@@ -51,14 +52,14 @@ if (isset($_POST['aiowps_wp_submit_unlock_request'])) {
 
 	$email = isset($_POST['aiowps_unlock_request_email']) ? sanitize_email(wp_unslash($_POST['aiowps_unlock_request_email'])) : '';
 	if (empty($email) || !is_email($email)) {
-		$errors .= __('Please enter a valid email address', 'all-in-one-wp-security-and-firewall');
+		$errors .= __('Enter a valid email address', 'all-in-one-wp-security-and-firewall');
 	}
 	
 	if ($errors) {
 		$display_form = true;
 		echo '<div id="login_error"><p>'.esc_html($errors).'</p></div>';
 		$sanitized_email = sanitize_email($email);
-		echo display_unlock_form($sanitized_email); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pcp check ignore this
+		aios_display_unlock_form($sanitized_email);
 	} else {
 		$locked_user = get_user_by('email', $email);
 		if (!$locked_user) {
@@ -95,19 +96,16 @@ if (isset($_POST['aiowps_wp_submit_unlock_request'])) {
 </body>
 </html>
 <?php
-
-function display_unlock_form($email = '') {
-	ob_start();
-	// Display the unlock request form
+function aios_display_unlock_form($email = '') {
 ?>
 <div class="message">
 	<p><?php esc_html_e('You are here because you have been locked out due to too many incorrect login attempts.', 'all-in-one-wp-security-and-firewall');?></p>
-	<p><?php esc_html_e('Please enter your email address and you will receive an email with instructions on how to unlock yourself.', 'all-in-one-wp-security-and-firewall');?></p>
+	<p><?php esc_html_e('Enter your email address and you will receive an email with instructions on how to unlock yourself.', 'all-in-one-wp-security-and-firewall');?></p>
 </div>
 <form name="loginform" id="loginform" action="<?php echo esc_url(wp_login_url()); ?>" method="post">
 	<?php wp_nonce_field('aios-unlock-request-nonce'); ?>
 	<?php
-	if (isset($_POST['aiowps-woo-login'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- pcp check ignore this
+	if (isset($_POST['aiowps-woo-login'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- not processing anything
 		echo '<input type="hidden" name="aiowps-woo-login" id="aiowps-woo-login" value="1" />';
 	}
 	?>
@@ -115,12 +113,9 @@ function display_unlock_form($email = '') {
 		<label for="aiowps_unlock_request_email"><?php esc_html_e('Email Address', 'all-in-one-wp-security-and-firewall'); ?><br>
 		<input type="text" name="aiowps_unlock_request_email" id="aiowps_unlock_request_email" class="input" value="<?php echo esc_attr($email); ?>" size="20"></label>
 	</p>
-		<p class="submit">
-			<input type="submit" name="aiowps_wp_submit_unlock_request" id="aiowps_wp_submit_unlock_request" class="button button-primary button-large" value="<?php esc_attr_e('Send unlock request', 'all-in-one-wp-security-and-firewall'); ?>">
+	<p class="submit">
+		<input type="submit" name="aiowps_wp_submit_unlock_request" id="aiowps_wp_submit_unlock_request" class="button button-primary button-large" value="<?php esc_attr_e('Send unlock request', 'all-in-one-wp-security-and-firewall'); ?>">
 	</p>
 </form>
 <?php
-	$output = ob_get_contents();
-	ob_end_clean();
-	return $output;
 }

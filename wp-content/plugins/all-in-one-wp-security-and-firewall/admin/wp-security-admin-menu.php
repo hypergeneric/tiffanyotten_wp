@@ -140,14 +140,14 @@ abstract class AIOWPSecurity_Admin_Menu {
 		// Always send string with translation markers in it
 		?>
 		<div class="postbox">
-			<h3 class="hndle"><label for="title"><?php echo esc_html($title); ?></label></h3>
+			<h3 class="hndle"><?php echo esc_html($title); ?></h3>
 			<div class="inside">
 				<?php echo wp_kses_post($content); ?>
 			</div>
 		</div>
 		<?php
 	}
-	
+
 	/**
 	 * Render settings successfully updated message
 	 *
@@ -156,12 +156,12 @@ abstract class AIOWPSecurity_Admin_Menu {
 	 * @return string|void
 	 */
 	public function show_msg_settings_updated($return_instead_of_echo = false) {
-		$message = '<div id="aios_message" class="updated fade"><p><strong>';
-		$message .= esc_html__('The settings have been successfully updated.', 'all-in-one-wp-security-and-firewall');
-		$message .= '</strong></p></div>';
-		if ($return_instead_of_echo) return $message;
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variable contains escaped HTML.
-		echo $message;
+		ob_start();
+		echo '<div id="aios_message" class="updated fade"><p><strong>';
+		esc_html_e('The settings have been successfully updated.', 'all-in-one-wp-security-and-firewall');
+		echo '</strong></p></div>';
+		if ($return_instead_of_echo) return ob_get_clean();
+		ob_end_flush();
 	}
 
 	/**
@@ -172,12 +172,12 @@ abstract class AIOWPSecurity_Admin_Menu {
 	 * @return string|void
 	 */
 	public static function show_msg_settings_updated_st($return_instead_of_echo = false) {
-		$message = '<div id="aios_message" class="updated fade"><p><strong>';
-		$message .= esc_html__('The settings have been successfully updated.', 'all-in-one-wp-security-and-firewall');
-		$message .= '</strong></p></div>';
-		if ($return_instead_of_echo) return $message;
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variable contains escaped HTML.
-		echo $message;
+		ob_start();
+		echo '<div id="aios_message" class="updated fade"><p><strong>';
+		esc_html_e('The settings have been successfully updated.', 'all-in-one-wp-security-and-firewall');
+		echo '</strong></p></div>';
+		if ($return_instead_of_echo) return ob_get_clean();
+		ob_end_flush();
 	}
 
 	/**
@@ -186,17 +186,17 @@ abstract class AIOWPSecurity_Admin_Menu {
 	 * @param bool $return_instead_of_echo - This is used for when the function needs to return the message.
 	 * @param bool $only_text              - Whether to only echo/return the text without div.
 	 *
-	 * @return mixed
+	 * @return string|void
 	 */
 	public static function show_msg_record_deleted_st($return_instead_of_echo = false, $only_text = false) {
-		$message = esc_html__('The selected record(s) has been deleted successfully.', 'all-in-one-wp-security-and-firewall');
+		ob_start();
+		esc_html_e('The selected record(s) has been deleted successfully.', 'all-in-one-wp-security-and-firewall');
 
-		if ($only_text) {
-			if ($return_instead_of_echo) return $message;
-			echo $message;
-		} else {
-			return AIOWPSecurity_Admin_Menu::show_msg_updated_st($message, $return_instead_of_echo);
-		}
+		if (!$only_text) return AIOWPSecurity_Admin_Menu::show_msg_updated_st(ob_get_clean(), $return_instead_of_echo);
+
+		if ($return_instead_of_echo) return ob_get_clean();
+
+		ob_end_flush();
 	}
 
 	/**
@@ -205,17 +205,17 @@ abstract class AIOWPSecurity_Admin_Menu {
 	 * @param bool $return_instead_of_echo - This is used for when the function needs to return the message.
 	 * @param bool $only_text              - Whether to only echo/return the text without div.
 	 *
-	 * @return mixed
+	 * @return string|void
 	 */
 	public static function show_msg_record_not_deleted_st($return_instead_of_echo = false, $only_text = false) {
-		$message = esc_html__('The selected record(s) have failed to delete.', 'all-in-one-wp-security-and-firewall');
+		ob_start();
+		esc_html_e('The selected record(s) have failed to delete.', 'all-in-one-wp-security-and-firewall');
 
-		if ($only_text) {
-			if ($return_instead_of_echo) return $message;
-			echo $message;
-		} else {
-			return AIOWPSecurity_Admin_Menu::show_msg_error_st($message, $return_instead_of_echo);
-		}
+		if (!$only_text) return AIOWPSecurity_Admin_Menu::show_msg_error_st(ob_get_clean(), $return_instead_of_echo);
+
+		if ($return_instead_of_echo) return ob_get_clean();
+
+		ob_end_flush();
 	}
 
 	/**
@@ -227,14 +227,14 @@ abstract class AIOWPSecurity_Admin_Menu {
 	 * @return string|void
 	 */
 	public function show_msg_updated($msg, $return_instead_of_echo = false) {
-		$message = '<div id="aios_message" class="updated fade"><p><strong>';
-		$message .= wp_kses_post($msg);
-		$message .= '</strong></p></div>';
-		if ($return_instead_of_echo) return $message;
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variable contains escaped HTML.
-		echo $message;
+		ob_start();
+		echo '<div id="aios_message" class="updated fade"><p><strong>';
+		echo nl2br(esc_html($msg));
+		echo '</strong></p></div>';
+		if ($return_instead_of_echo) return ob_get_clean();
+		ob_end_flush();
 	}
-	
+
 	/**
 	 * Render successfully updated message
 	 *
@@ -244,14 +244,14 @@ abstract class AIOWPSecurity_Admin_Menu {
 	 * @return string|void
 	 */
 	public static function show_msg_updated_st($msg, $return_instead_of_echo = false) {
-		$message = '<div id="aios_message" class="updated fade"><p><strong>';
-		$message .= wp_kses_post($msg);
-		$message .= '</strong></p></div>';
-		if ($return_instead_of_echo) return $message;
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variable contains escaped HTML.
-		echo $message;
+		ob_start();
+		echo '<div id="aios_message" class="updated fade"><p><strong>';
+		echo nl2br(esc_html($msg));
+		echo '</strong></p></div>';
+		if ($return_instead_of_echo) return ob_get_clean();
+		ob_end_flush();
 	}
-	
+
 	/**
 	 * Render error message
 	 *
@@ -261,12 +261,12 @@ abstract class AIOWPSecurity_Admin_Menu {
 	 * @return string|void
 	 */
 	public function show_msg_error($error_msg, $return_instead_of_echo = false) {
-		$message = '<div id="aios_message" class="error"><p><strong>';
-		$message .= wp_kses_post($error_msg);
-		$message .= '</strong></p></div>';
-		if ($return_instead_of_echo) return $message;
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variable contains escaped HTML.
-		echo $message;
+		ob_start();
+		echo '<div id="aios_message" class="error"><p><strong>';
+		echo nl2br(esc_html($error_msg));
+		echo '</strong></p></div>';
+		if ($return_instead_of_echo) return ob_get_clean();
+		ob_end_flush();
 	}
 
 	/**
@@ -278,21 +278,11 @@ abstract class AIOWPSecurity_Admin_Menu {
 	 * @return string|void
 	 */
 	public static function show_msg_error_st($error_msg, $return_instead_of_echo = false) {
-		$message = '<div id="aios_message" class="error"><p><strong>';
-		$message .= wp_kses_post($error_msg);
-		$message .= '</strong></p></div>';
-		if ($return_instead_of_echo) return $message;
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variable contains escaped HTML.
-		echo $message;
-	}
-	
-	protected function start_buffer() {
 		ob_start();
-	}
-	
-	protected function end_buffer_and_collect() {
-		$output = ob_get_contents();
-		ob_end_clean();
-		return $output;
+		echo '<div id="aios_message" class="error"><p><strong>';
+		echo nl2br(esc_html($error_msg));
+		echo '</strong></p></div>';
+		if ($return_instead_of_echo) return ob_get_clean();
+		ob_end_flush();
 	}
 }

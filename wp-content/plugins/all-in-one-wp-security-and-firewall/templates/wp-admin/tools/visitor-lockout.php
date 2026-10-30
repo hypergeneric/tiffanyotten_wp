@@ -1,6 +1,6 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('General visitor lockout', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('General visitor lockout', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form action="" method="POST" id="aiowpsec-site-lockout-form">
 			<div class="aio_blue_box">

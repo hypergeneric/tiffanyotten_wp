@@ -23,6 +23,8 @@ class AIOWPSecurity_Audit_Events {
 
 	private static $removed_theme_info = array();
 
+	private static $user_data_before_deleted = null;
+
 	/**
 	 * This function adds all the event actions we want to capture and record in the audit log
 	 *
@@ -63,12 +65,10 @@ class AIOWPSecurity_Audit_Events {
 
 		// User events
 		add_action('password_reset', 'AIOWPSecurity_Audit_Events::password_reset', 10, 1);
+		add_action('delete_user', 'AIOWPSecurity_Audit_Events::user_before_deleted', 10, 1);
 		add_action('deleted_user', 'AIOWPSecurity_Audit_Events::user_deleted', 10, 3);
 		add_action('remove_user_from_blog', 'AIOWPSecurity_Audit_Events::user_removed_from_blog', 10, 3);
-
-		// Rule events
-		add_action('plugins_loaded', 'AIOWPSecurity_Audit_Events::rule_event', 10, 2);
-
+		
 		// Attach an URL to the details to show as a link for configuring rules
 		add_filter('aios_audit_filter_details', function($details, $event_type) {
 
@@ -151,7 +151,7 @@ class AIOWPSecurity_Audit_Events {
 				'new_version' => $new_version
 			)
 		);
-		do_action('aiowps_record_event', 'core_updated', $details, 'info');
+		do_action('aios_record_event', 'core_updated', $details, 'info');
 	}
 
 	/**
@@ -281,7 +281,7 @@ class AIOWPSecurity_Audit_Events {
 				'network' => $network
 			)
 		);
-		do_action('aiowps_record_event', 'plugin_' . $action, $details, $level);
+		do_action('aios_record_event', 'plugin_' . $action, $details, $level);
 	}
 
 	/**
@@ -316,7 +316,7 @@ class AIOWPSecurity_Audit_Events {
 				'action' => 'activated',
 			)
 		);
-		do_action('aiowps_record_event', 'theme_activated', $details);
+		do_action('aios_record_event', 'theme_activated', $details);
 	}
 
 	/**
@@ -403,7 +403,7 @@ class AIOWPSecurity_Audit_Events {
 				'network' => $network
 			)
 		);
-		do_action('aiowps_record_event', 'theme_' . $action, $details, $level);
+		do_action('aios_record_event', 'theme_' . $action, $details, $level);
 	}
 
 	/**
@@ -427,7 +427,7 @@ class AIOWPSecurity_Audit_Events {
 			$details = array(
 				'translation_updated' => $info
 			);
-			do_action('aiowps_record_event', 'translation_updated', $details, 'info');
+			do_action('aios_record_event', 'translation_updated', $details, 'info');
 		}
 	}
 
@@ -447,53 +447,7 @@ class AIOWPSecurity_Audit_Events {
 				'entity' => $entity,
 			)
 		);
-		do_action('aiowps_record_event', 'entity_changed', $details, 'warning');
-	}
-
-	/**
-	 * Adds all the firewall rule events to the audit log
-	 *
-	 * @return void
-	 */
-	public static function rule_event() {
-		$aiowps_firewall_message_store = AIOS_Firewall_Resource::request(AIOS_Firewall_Resource::MESSAGE_STORE);
-		$events = array();
-		foreach (array('active', 'not_active', 'triggered', 'not_triggered') as $event) {
-			$data = $aiowps_firewall_message_store->get('rule_'.$event);
-
-			if (empty($data)) continue;
-
-			foreach ($data as $rule) {
-
-				$details = array(
-					'firewall_event' => array(
-						'event'       => $event,
-						'rule_name'   => $rule['name'],
-						'rule_family' => $rule['family'],
-					)
-				);
-
-				$blog_id = AIOWPSecurity_Utility::get_blog_id_from_request($rule['request']);
-
-				$rule['request'] = apply_filters('aios_audit_filter_request', $rule['request'], $event);
-
-				$events[] = array(
-					'network_id' => get_current_network_id(),
-					'site_id' => $blog_id,
-					'username' => (isset($rule['potential_user']) ? AIOWPSecurity_Utility::verify_username($rule['potential_user']) : false),
-					'ip' => $rule['ip'],
-					'level' => 'triggered' === $event ? 'warning' : 'info',
-					'event_type' => 'rule_'.$event,
-					'details' => wp_json_encode($details, true),
-					'stacktrace' => (isset($rule['request']) ? print_r($rule['request'], true) : ''), // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- PCP warning. Part of AOIS error reporting system.
-					'created' => $rule['time']
-				);
-			}
-		}
-
-		if (empty($events)) return;
-
-		do_action('aiowps_bulk_record_events', $events);
+		do_action('aios_record_event', 'entity_changed', $details, 'warning');
 	}
 
 	/**
@@ -510,43 +464,57 @@ class AIOWPSecurity_Audit_Events {
 				'user_login' => $user_login
 			)
 		);
-		do_action('aiowps_record_event', 'password_reset', $details, 'warning');
+		do_action('aios_record_event', 'password_reset', $details, 'warning');
+	}
+
+	/**
+	 * Stores user data before the user is deleted.
+	 *
+	 * @param int $user_id The ID of the user being deleted.
+	 *
+	 * @return void
+	 */
+	public static function user_before_deleted($user_id) {
+		self::$user_data_before_deleted = get_userdata($user_id);
 	}
 
 	/**
 	 * Adds a user deleted event to the audit log
 	 *
-	 * @param int      $user_id   - the id of the deleted user
-	 * @param int|null $reassign  - the id of the user to reassign data to or null
-	 * @param object   $user_data - Object containing user's data
+	 * @param int          $user_id   - the id of the deleted user
+	 * @param int|null     $reassign  - the id of the user to reassign data to or null
+	 * @param object|false $user_data - Object containing user's data, if available.
 	 *
 	 * @return void
 	 */
-	public static function user_deleted($user_id, $reassign, $user_data) {
+	public static function user_deleted($user_id, $reassign, $user_data = false) {
 
-		$user_login = (false === $user_data) ? 'unknown' : $user_data->user_login;
+		if (!is_a($user_data, 'WP_User')) $user_data = self::$user_data_before_deleted;
+
+		$user_login = is_a($user_data, 'WP_User') ? $user_data->user_login : 'unknown';
 
 		$details = array(
 			'user_deleted' => array(
 				'user_id' => $user_id,
 				'reassign' => $reassign,
-				'user_login' => $user_login
-
+				'user_login' => $user_login,
 			)
 		);
-		do_action('aiowps_record_event', 'user_deleted', $details, 'warning');
+		do_action('aios_record_event', 'user_deleted', $details, 'warning');
+
+		self::$user_data_before_deleted = null;
 	}
 
 	/**
 	 * Adds a user removed event to the audit log
 	 *
-	 * @param int $user_id  - the id of the removed user
-	 * @param int $blog_id  - the id of the blog the user was removed from
-	 * @param int $reassign - the id of the user to reassign data to or null
+	 * @param int      $user_id  - the id of the removed user
+	 * @param int      $blog_id  - the id of the blog the user was removed from
+	 * @param int|null $reassign - the id of the user to reassign data to or null
 	 *
 	 * @return void
 	 */
-	public static function user_removed_from_blog($user_id, $blog_id, $reassign) {
+	public static function user_removed_from_blog($user_id, $blog_id, $reassign = null) {
 		$user_data = get_user_by('ID', $user_id);
 		$user_login = is_a($user_data, 'WP_User') && 0 !== $user_data->ID ? $user_data->user_login : 'unknown';
 
@@ -559,7 +527,7 @@ class AIOWPSecurity_Audit_Events {
 
 			)
 		);
-		do_action('aiowps_record_event', 'user_removed', $details, 'warning');
+		do_action('aios_record_event', 'user_removed', $details, 'warning');
 	}
 
 	/**
@@ -579,10 +547,10 @@ class AIOWPSecurity_Audit_Events {
 			)
 		);
 		if (is_a($user, 'WP_User')) {
-			do_action('aiowps_record_event', 'failed_login', $details, 'warning', $username);
+			do_action('aios_record_event', 'failed_login', $details, 'warning', $username);
 		} else {
 			$details['failed_login']['known'] = false;
-			do_action('aiowps_record_event', 'failed_login', $details, 'warning', $username);
+			do_action('aios_record_event', 'failed_login', $details, 'warning', $username);
 		}
 	}
 
@@ -609,11 +577,11 @@ class AIOWPSecurity_Audit_Events {
 			$admin_user = wp_get_current_user();
 			$admin_username = is_a($admin_user, 'WP_User') ? $admin_user->user_login : '';
 			$details['user_registration']['admin_username'] = $admin_username;
-			do_action('aiowps_record_event', 'user_registration', $details, 'info');
+			do_action('aios_record_event', 'user_registration', $details, 'info');
 		} elseif ('pending' == $type) {
-			do_action('aiowps_record_event', 'user_registration', $details, 'info', $registered_username);
+			do_action('aios_record_event', 'user_registration', $details, 'info', $registered_username);
 		} elseif ('registered' == $type) {
-			do_action('aiowps_record_event', 'user_registration', $details, 'info', $registered_username);
+			do_action('aios_record_event', 'user_registration', $details, 'info', $registered_username);
 		}
 	}
 
@@ -630,7 +598,7 @@ class AIOWPSecurity_Audit_Events {
 				'username' => $username,
 			)
 		);
-		do_action('aiowps_record_event', 'successful_login', $details, 'info', $username);
+		do_action('aios_record_event', 'successful_login', $details, 'info', $username);
 	}
 
 	/**
@@ -648,7 +616,7 @@ class AIOWPSecurity_Audit_Events {
 				'force_logout' => $force_logout ? __('(force logout)', 'all-in-one-wp-security-and-firewall') : ''
 			)
 		);
-		do_action('aiowps_record_event', 'successful_logout', $details, 'info', $username);
+		do_action('aios_record_event', 'successful_logout', $details, 'info', $username);
 	}
 	
 	/**
@@ -664,7 +632,7 @@ class AIOWPSecurity_Audit_Events {
 				'command' => $command,
 			)
 		);
-		do_action('aiowps_record_event', 'wpcli_command', $details, 'info');
+		do_action('aios_record_event', 'wpcli_command', $details, 'info');
 	}
 
 	/**

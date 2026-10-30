@@ -25,16 +25,11 @@ class AIOWPSecurity_Audit_Event_Handler {
 	 * Constructor for the class.
 	 */
 	private function __construct() {
-		add_action('aiowps_record_event', array($this, 'record_event'), 10, 4);
-		add_action('aiowps_bulk_record_events', function($events) {
+		add_action('aios_record_event', array($this, 'record_event'), 10, 4);
+		add_action('aios_bulk_record_events', function($events) {
 			$this->add_bulk_events($events);
 		}, 10, 4);
-		add_action('aiowps_clean_old_events', array($this, 'delete_old_events'), 10);
-
-		if (!wp_next_scheduled('aiowps_clean_old_events')) {
-			wp_schedule_event(time(), 'daily', 'aiowps_clean_old_events');
-		}
-
+		
 		AIOWPSecurity_Audit_Events::add_event_actions();
 	}
 
@@ -135,25 +130,5 @@ class AIOWPSecurity_Audit_Event_Handler {
 		$sql = rtrim($sql, ',');
 
 		$wpdb->query($wpdb->prepare($sql, $values)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- The sql query is being dynamically built.
-	}
-
-	/**
-	 * This method will try to delete all audit logs older than 3 months from the database.
-	 *
-	 * @return void
-	 */
-	public function delete_old_events() {
-		global $wpdb;
-
-		$after_days = 90;
-
-		if (defined('AIOWPSEC_PURGE_AUDIT_LOGS_AFTER_DAYS')) {
-			$after_days = abs(AIOWPSEC_PURGE_AUDIT_LOGS_AFTER_DAYS);
-		}
-
-		$after_days = empty($after_days) ? 90 : $after_days;
-		$older_than_date = strtotime("-{$after_days} days", time());
-
-		$wpdb->query($wpdb->prepare("DELETE FROM ".AIOWPSEC_TBL_AUDIT_LOG." WHERE created < %s", $older_than_date)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- We can't use %i because our plugin supports wordpress < 6.2.
 	}
 }

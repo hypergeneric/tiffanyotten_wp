@@ -66,8 +66,8 @@
 						<?php
 						$premium_url = admin_url('admin.php?page=' . AIOWPSEC_MAIN_MENU_SLUG . '&tab=premium-upgrade');
 
-						/* translators: %1$s and %2$s are the opening and closing tags of a link to the Premium upgrade page. */
 						printf(
+							/* translators: 1: Opening link tag 2 closing link tag. */
 							esc_html__('Unlock more features with %1$sPremium%2$s', 'all-in-one-wp-security-and-firewall'),
 							'<strong><a href="' . esc_url($premium_url) . '" target="_blank">',
 							'</a></strong>'

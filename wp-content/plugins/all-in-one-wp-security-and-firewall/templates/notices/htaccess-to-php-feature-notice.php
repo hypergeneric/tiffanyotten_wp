@@ -1,4 +1,4 @@
-<?php if (!defined('AIO_WP_SECURITY_PATH')) die('No direct access allowed'); ?>
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 
 <div class="aiowps_ad_container error">
 	<div class="aiowps_notice_container">

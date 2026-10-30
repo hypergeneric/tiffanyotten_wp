@@ -27,8 +27,8 @@ class AIOWPSecurity_Task_Manager extends Updraft_Task_Manager_1_4 {
 	public function __construct() {
 		parent::__construct();
 
-		add_action('aiowps_process_file_scan_tasks', array($this, 'process_file_scan_tasks'));
-		add_action('aiowps_clean_up_old_tasks', array($this, 'clean_up_tasks'));
+		add_action('aios_process_file_scan_tasks', array($this, 'process_file_scan_tasks'));
+		add_action('aios_clean_up_old_tasks', array($this, 'clean_up_tasks'));
 	}
 
 	/**
@@ -48,12 +48,12 @@ class AIOWPSecurity_Task_Manager extends Updraft_Task_Manager_1_4 {
 	 * Retrieves an array of task types that need periodic cleanup.
 	 *
 	 * By default, it includes 'file_scan' as a task type. Allows for customization
-	 * via the 'aiowps_task_types' filter.
+	 * via the 'aios_task_types' filter.
 	 *
 	 * @return array An array of task type strings.
 	 */
 	public function get_task_types() {
-		return apply_filters('aiowps_task_types', $this->task_types);
+		return apply_filters('aios_task_types', $this->task_types);
 	}
 
 	/**
@@ -67,8 +67,8 @@ class AIOWPSecurity_Task_Manager extends Updraft_Task_Manager_1_4 {
 		// If there are no pending tasks, nothing to process.
 		if (!$this->fetch_active_task('file_scan')) return;
 
-		if (!wp_next_scheduled('aiowps_process_file_scan_tasks')) {
-			wp_schedule_single_event(time() + 10, 'aiowps_process_file_scan_tasks');
+		if (!wp_next_scheduled('aios_process_file_scan_tasks')) {
+			wp_schedule_single_event(time() + 10, 'aios_process_file_scan_tasks');
 		}
 
 		$this->process_queue('file_scan');

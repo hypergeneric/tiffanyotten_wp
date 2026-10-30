@@ -38,7 +38,7 @@ class AIOWPSecurity_Brute_Force_Menu extends AIOWPSecurity_Admin_Menu {
 			'cookie-based-brute-force-prevention' => array(
 				'title' => __('Cookie based brute force prevention', 'all-in-one-wp-security-and-firewall'),
 				'render_callback' => array($this, 'render_cookie_based_brute_force_prevention'),
-				'display_condition_callback' => 'is_main_site',
+				'display_condition_callback' => array('AIOWPSecurity_Utility_Permissions', 'is_main_site_and_super_admin'),
 			),
 			'captcha-settings' => array(
 				'title' => __('CAPTCHA settings', 'all-in-one-wp-security-and-firewall'),
@@ -108,13 +108,13 @@ class AIOWPSecurity_Brute_Force_Menu extends AIOWPSecurity_Admin_Menu {
 
 		$captcha_settings_data = $aios_commands->get_captcha_settings_data();
 
-		if ('cloudflare-turnstile' == $captcha_settings_data['aiowps_default_captcha'] && false === $captcha_settings_data['aios_google_recaptcha_invalid_configuration']) {
-			echo '<div class="notice notice-warning aio_red_box"><p>' . esc_html__('Your Cloudflare Turnstile configuration is invalid.', 'all-in-one-wp-security-and-firewall').' ' . esc_html__('Please enter the correct Cloudflare Turnstile keys below to use the Turnstile feature.', 'all-in-one-wp-security-and-firewall').'</p></div>';
+		echo '<div id="aios-invalid-captcha-config-notice">';
+		if (!$aio_wp_security->captcha_obj->verify_captcha_configuration($captcha_settings_data['aiowps_default_captcha'])) {
+			echo '<div class="aio_red_box"><p>';
+			AIOWPSecurity_Captcha::display_invalid_config_message($captcha_settings_data['aiowps_default_captcha'], 'below');
+			echo '</p></div>';
 		}
-
-		if ('1' == $captcha_settings_data['aios_google_recaptcha_invalid_configuration']) {
-			echo '<div class="notice notice-warning aio_red_box"><p>' . esc_html__('Your Google reCAPTCHA configuration is invalid.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('Please enter the correct reCAPTCHA keys below to use the reCAPTCHA feature.', 'all-in-one-wp-security-and-firewall').'</p></div>';
-		}
+		echo '</div>';
 
 		$aio_wp_security->include_template('wp-admin/brute-force/captcha-settings.php', false, compact('captcha_settings_data'));
 	}
