@@ -7,7 +7,7 @@
 ?>
 <div class="aio_blue_box">
 	<?php
-		echo '<p>' . esc_html__('If given an opportunity, hackers can insert their code or files into your system which they can then use to carry out malicious acts on your site.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('Being informed of any changes in your files can be a good way to quickly prevent a hacker from causing damage to your website.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('In general, WordPress core and plugin files and file types such as ".php" or ".js" should not change often, and when they do, it is important that you are made aware when a change occurs and which file was affected.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('The "File Change Detection Feature" will notify you of any file change which occurs on your system, including the addition and deletion of files by performing a regular automated or manual scan of your system\'s files.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('This feature also allows you to exclude certain files or folders from the scan in cases where you know that they change often as part of their normal operation (For example log files and certain caching plugin files may change often and hence you may choose to exclude such files from the file change detection scan).', 'all-in-one-wp-security-and-firewall') . '</p>';
+		echo '<p>' . esc_html__('If given an opportunity, hackers can insert their code or files into your system which they can then use to carry out malicious acts on your site.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('Knowing about file changes can help you prevent hackers from damaging your website.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('WordPress core files, plugin files, and files with extensions such as ".php" and ".js" should not change often.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('If a change occurs, the scan identifies the affected file.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('The "File Change Detection Feature" will notify you of any file change which occurs on your system, including the addition and deletion of files by performing a regular automated or manual scan of your system\'s files.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('You can exclude files or folders that change often during normal operation.', 'all-in-one-wp-security-and-firewall') .'<br>' . esc_html__('For example, log files and cache files may change frequently.', 'all-in-one-wp-security-and-firewall') . '</p>';
 	?>
 </div>
 <div class="postbox aiowps_next_scheduled_scan_wrapper">
@@ -64,12 +64,10 @@
 	</div>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('File change detection settings', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('File change detection settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div id="scan-file-change-detection-badge">
-			<?php
-				$aiowps_feature_mgr->output_feature_details_badge('scan-file-change-detection');
-			?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge('scan-file-change-detection'); ?>
 		</div>
 		<div id="aios-file-change-info-box"></div>
 		<form action="" method="POST" id="aiowpsec-scheduled-fcd-scan-form">
@@ -78,19 +76,19 @@
 					<th scope="row"><?php esc_html_e('Enable automated file change detection scan', 'all-in-one-wp-security-and-firewall'); ?>:</th>
 					<td>
 						<div class="aiowps_switch_container">
-							<?php AIOWPSecurity_Utility_UI::setting_checkbox(esc_html__('Enable this if you want the system to automatically and periodically scan your files to check for file changes based on the settings below', 'all-in-one-wp-security-and-firewall'), 'aiowps_enable_automated_fcd_scan', '1' == $aiowps_enable_automated_fcd_scan); ?>
+							<?php AIOWPSecurity_Utility_UI::setting_checkbox(esc_html__('Enable this to scan your files automatically at the interval you set below.', 'all-in-one-wp-security-and-firewall'), 'aiowps_enable_automated_fcd_scan', '1' == $aiowps_enable_automated_fcd_scan); ?>
 						</div>
 					</td>
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="aiowps_fcd_scan_frequency"><?php esc_html_e('Scan time interval', 'all-in-one-wp-security-and-firewall'); ?>:</label></th>
-					<td><input id="aiowps_fcd_scan_frequency" type="text" size="5" name="aiowps_fcd_scan_frequency" value="<?php echo esc_attr($aiowps_fcd_scan_frequency); ?>" />
+					<td><input id="aiowps_fcd_scan_frequency" type="number" min="1" name="aiowps_fcd_scan_frequency" value="<?php echo esc_attr($aiowps_fcd_scan_frequency); ?>" />
 						<select id="backup_interval" name="aiowps_fcd_scan_interval">
 							<option value="0" <?php selected($aiowps_fcd_scan_interval, '0'); ?>><?php esc_html_e('Hours', 'all-in-one-wp-security-and-firewall'); ?></option>
 							<option value="1" <?php selected($aiowps_fcd_scan_interval, '1'); ?>><?php esc_html_e('Days', 'all-in-one-wp-security-and-firewall'); ?></option>
 							<option value="2" <?php selected($aiowps_fcd_scan_interval, '2'); ?>><?php esc_html_e('Weeks', 'all-in-one-wp-security-and-firewall'); ?></option>
 						</select>
-					<span class="description"><?php esc_html_e('Set the value for how often you would like a scan to occur', 'all-in-one-wp-security-and-firewall'); ?></span>
+					<span class="description"><?php esc_html_e('Set how often you want a scan to run.', 'all-in-one-wp-security-and-firewall'); ?></span>
 					</td> 
 				</tr>
 				<tr valign="top">
@@ -98,18 +96,20 @@
 					<td>
 						<textarea id="aiowps_fcd_exclude_filetypes" name="aiowps_fcd_exclude_filetypes" rows="5" cols="50"><?php echo esc_textarea($aiowps_fcd_exclude_filetypes); ?></textarea>
 						<br>
-						<span class="description"><?php esc_html_e('Enter each file type or extension on a new line which you wish to exclude from the file change detection scan.', 'all-in-one-wp-security-and-firewall'); ?></span>
-						<span class="aiowps_more_info_anchor"><span class="aiowps_more_info_toggle_char">+</span><span class="aiowps_more_info_toggle_text"><?php esc_html_e('More info', 'all-in-one-wp-security-and-firewall'); ?></span></span>
-						<div class="aiowps_more_info_body">
-							<?php
-								echo '<p class="description">' . esc_html__('You can exclude file types from the scan which would not normally pose any security threat if they were changed.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('These can include things such as image files.', 'all-in-one-wp-security-and-firewall') . '</p>';
-								/* translators: 1. JPG, 2. PNG, 3. BMP. */
-								echo '<p class="description">' . sprintf(esc_html__('Example: If you want the scanner to ignore files of type %1$s, %2$s, and %3$s, then you would enter the following:', 'all-in-one-wp-security-and-firewall'), 'jpg', 'png', 'bmp'). '</p>';
-								echo '<p class="description">' . 'jpg' . '</p>';
-								echo '<p class="description">' . 'png' . '</p>';
-								echo '<p class="description">' . 'bmp' . '</p>';
-							?>
-						</div>
+						<span class="description"><?php esc_html_e('Enter each file type or extension on a new line to exclude it from the file change detection scan.', 'all-in-one-wp-security-and-firewall'); ?></span>
+						<?php
+						AIOWPSecurity_Utility_UI::tooltip(array(
+							__('You can exclude file types from the scan which would not normally pose any security threat if they were changed.', 'all-in-one-wp-security-and-firewall'),
+							__('These can include things such as image files.', 'all-in-one-wp-security-and-firewall'),
+							'',
+							/* translators: 1. JPG, 2. PNG, 3. BMP. */
+							sprintf(__('Example: If you want the scanner to ignore files of type %1$s, %2$s, and %3$s, then you would enter the following:', 'all-in-one-wp-security-and-firewall'), 'jpg', 'png', 'bmp'),
+							'',
+							'jpg',
+							'png',
+							'bmp',
+						));
+						?>
 					</td> 
 				</tr>
 				<tr valign="top">
@@ -117,25 +117,27 @@
 					<td>
 						<textarea id="aiowps_fcd_exclude_files" name="aiowps_fcd_exclude_files" rows="5" cols="50"><?php echo esc_textarea($aiowps_fcd_exclude_files); ?></textarea>
 						<br>
-						<span class="description"><?php esc_html_e('Enter each file or directory on a new line which you wish to exclude from the file change detection scan.', 'all-in-one-wp-security-and-firewall'); ?></span>
-						<span class="aiowps_more_info_anchor"><span class="aiowps_more_info_toggle_char">+</span><span class="aiowps_more_info_toggle_text"><?php esc_html_e('More info', 'all-in-one-wp-security-and-firewall'); ?></span></span>
-						<div class="aiowps_more_info_body">
-							<?php
-								echo '<p class="description">' . esc_html__('You can exclude specific files/directories from the scan which would not normally pose any security threat if they were changed.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('These can include things such as log files.', 'all-in-one-wp-security-and-firewall') . '</p>';
-								echo '<p class="description">' . esc_html__('Example: If you want the scanner to ignore certain files in different directories or whole directories, then you would enter the following:', 'all-in-one-wp-security-and-firewall') . '</p>';
-								echo '<p class="description">' . 'cache/config/master.php' . '</p>';
-								echo '<p class="description">' . esc_html__('somedirectory', 'all-in-one-wp-security-and-firewall') . '</p>';
-							?>
-						</div>
+						<span class="description"><?php esc_html_e('Enter each file or directory on a new line to exclude it from the file change detection scan.', 'all-in-one-wp-security-and-firewall'); ?></span>
+						<?php
+						AIOWPSecurity_Utility_UI::tooltip(array(
+							__('You can exclude specific files/directories from the scan which would not normally pose any security threat if they were changed.', 'all-in-one-wp-security-and-firewall'),
+							__('These can include things such as log files.', 'all-in-one-wp-security-and-firewall'),
+							'',
+							__('Example: If you want the scanner to ignore certain files in different directories or whole directories, then you would enter the following:', 'all-in-one-wp-security-and-firewall'),
+							'',
+							'cache/config/master.php',
+							__('somedirectory', 'all-in-one-wp-security-and-firewall'),
+						));
+						?>
 					</td> 
 				</tr>
 				<tr valign="top">
 					<th scope="row">
-						<label for="aiowps_fcd_scan_email_address"><?php esc_html_e('Send email when change detected', 'all-in-one-wp-security-and-firewall'); ?>:</label>
+						<label for="aiowps_fcd_scan_email_address"><?php esc_html_e('Send an email when a file change is detected', 'all-in-one-wp-security-and-firewall'); ?>:</label>
 					</th>
 					<td>
 						<div class="aiowps_switch_container">
-							<?php AIOWPSecurity_Utility_UI::setting_checkbox(esc_html__('Enable this if you want the system to email you if a file change was detected', 'all-in-one-wp-security-and-firewall'), 'aiowps_send_fcd_scan_email', '1' == $aiowps_send_fcd_scan_email); ?>
+							<?php AIOWPSecurity_Utility_UI::setting_checkbox(esc_html__('Enable this to receive an email when a file change is detected.', 'all-in-one-wp-security-and-firewall'), 'aiowps_send_fcd_scan_email', '1' == $aiowps_send_fcd_scan_email); ?>
 						</div>
 						<br>
 							<textarea name="aiowps_fcd_scan_email_address" id="aiowps_fcd_scan_email_address" rows="5" cols="50"><?php echo esc_textarea(wp_unslash(AIOWPSecurity_Utility::get_textarea_str_val($aiowps_fcd_scan_email_address))); ?></textarea>

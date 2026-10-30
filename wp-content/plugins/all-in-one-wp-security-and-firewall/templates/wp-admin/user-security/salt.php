@@ -1,13 +1,10 @@
-<?php if (!defined('AIO_WP_SECURITY_PATH')) die('No direct access allowed'); ?>
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Add salt postfix', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Add salt postfix', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div id="enable-salt-postfix-badge">
-			<?php
-			//Display security info badge
-			$aiowps_feature_mgr->output_feature_details_badge("enable-salt-postfix");
-			?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge("enable-salt-postfix"); ?>
 		</div>
 		<form action="" method="POST" id="aios-enable-salt-postfix-form">
 			<div class="aio_blue_box">
@@ -32,13 +29,15 @@
 					</th>
 					<td>
 						<div class="aiowps_switch_container">
-							<?php AIOWPSecurity_Utility_UI::setting_checkbox(esc_html__('Enable this if you want to activate the salt postfix feature.', 'all-in-one-wp-security-and-firewall'), 'aiowps_enable_salt_postfix', '1' == $aio_wp_security->configs->get_value('aiowps_enable_salt_postfix')); ?>
-							<span class="aiowps_more_info_anchor"><span class="aiowps_more_info_toggle_char">+</span><span class="aiowps_more_info_toggle_text"><?php esc_html_e('More info', 'all-in-one-wp-security-and-firewall'); ?></span></span>
-							<div class="aiowps_more_info_body">
-								<?php
-								echo '<p class="description">'.esc_html__('This setting will suffix the salt with an additional 64 characters.', 'all-in-one-wp-security-and-firewall').' '.esc_html__("It improves your WordPress site's cryptographic mechanism.", 'all-in-one-wp-security-and-firewall').'</p>';
-								?>
-							</div>
+							<?php
+							AIOWPSecurity_Utility_UI::setting_checkbox(esc_html__('Enable this if you want to activate the salt postfix feature.', 'all-in-one-wp-security-and-firewall'), 'aiowps_enable_salt_postfix', '1' == $aio_wp_security->configs->get_value('aiowps_enable_salt_postfix'));
+							
+							AIOWPSecurity_Utility_UI::tooltip(array(
+								__('This setting will suffix the salt with an additional 64 characters.', 'all-in-one-wp-security-and-firewall'),
+								'',
+								__("It improves your WordPress site's cryptographic mechanism.", 'all-in-one-wp-security-and-firewall'),
+							));
+							?>
 						</div>
 					</td>
 				</tr>

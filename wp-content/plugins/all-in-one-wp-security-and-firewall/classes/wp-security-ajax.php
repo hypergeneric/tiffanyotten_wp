@@ -17,13 +17,6 @@ if (!class_exists('AIOWPSecurity_Ajax')) :
 		private $results;
 
 		/**
-		 * Seconds for AIOS heartbeat interval
-		 *
-		 * @var int
-		 */
-		const HEARTBEAT_INTERVAL = 10; // in seconds
-
-		/**
 		 * Constructor
 		 */
 		private function __construct() {
@@ -59,10 +52,9 @@ if (!class_exists('AIOWPSecurity_Ajax')) :
 
 			$result = AIOWPSecurity_Utility_Permissions::check_nonce_and_user_cap($this->nonce, 'wp-security-ajax-nonce');
 			if (is_wp_error($result)) {
-				wp_send_json(array(
-					'result' => false,
-					'error_code' => $result->get_error_code(),
-					'error_message' => $result->get_error_message(),
+				wp_send_json($this->commands_object->handle_response(
+					false,
+					$result->get_error_message()
 				));
 			}
 
@@ -78,7 +70,7 @@ if (!class_exists('AIOWPSecurity_Ajax')) :
 			} else {
 				$this->execute_command();
 				$this->set_error_response_on_wp_error();
-				$this->maybe_set_results_as_null();
+				$this->maybe_set_empty_success_response();
 			}
 
 			$this->json_encode_results();
@@ -123,29 +115,94 @@ if (!class_exists('AIOWPSecurity_Ajax')) :
 		}
 
 		/**
-		 * Checks whether it is multisite setup and command is valid multisite command
+		 * Checks whether the requested command may be run by a multisite user who cannot manage network options
 		 *
-		 * @return bool
+		 * @return bool True if the command is in the (filtered) list of commands allowed for site admins, otherwise false
 		 */
 		private function is_valid_multisite_command() {
 			/**
 			 * Filters the commands allowed to the sub site admins. Other commands are only available to network admin. Only used in a multisite context.
 			 */
-			$allowed_commands = apply_filters('aios_multisite_allowed_commands', array(
+			$allowed_commands = apply_filters('aios_multisite_allowed_commands', $this->get_multisite_allowed_commands());
+
+			return in_array($this->subaction, $allowed_commands, true);
+		}
+
+		/**
+		 * Gets the commands that a multisite user who cannot manage network options may run
+		 *
+		 * These commands only read or change data belonging to the current site. Commands that change network-wide data (firewall rules, .htaccess, wp-config.php, network users or premium settings) are left out so that only a network admin can run them.
+		 *
+		 * @return array Command names. On the main site, commands whose settings are also used network-wide are left out.
+		 */
+		private function get_multisite_allowed_commands() {
+			$allowed_commands = array(
+				// Logs, locked and blocked IP addresses.
 				'delete_audit_log',
 				'render_audit_log_tab',
+				'export_audit_logs',
 				'delete_404_log',
 				'perform_delete_all_404_event_records',
 				'render_404_log_tab',
+				'export_404_detection_logs',
 				'delete_locked_ip_record',
+				'render_locked_ip_tab',
 				'clear_debug_logs',
+				'render_debug_log_tab',
+				'send_report_email',
 				'unlock_ip',
 				'blocked_ip_list_unblock_ip',
+				'render_permanent_block_list_tab',
+				'render_smart_404_blocked_ips_table',
+				'unblock_smart404_ip',
 				'lock_ip',
 				'dismiss_notice',
-			));
+				// Brute force.
+				'perform_rename_login_page',
+				'perform_captcha_settings',
+				'perform_login_whitelist_settings',
+				'perform_404_settings',
+				'perform_honeypot_settings',
+				// User security.
+				'perform_save_login_lockout_settings',
+				'perform_save_login_lockout_whitelist_settings',
+				'perform_save_force_logout_settings',
+				'render_logged_in_users_tab',
+				'perform_force_user_logout',
+				'perform_save_http_authentication_settings',
+				'perform_disable_application_password',
+				// Spam prevention.
+				'render_comment_spammer_ip_table',
+				'perform_comment_spam_prevention',
+				'perform_auto_block_spam_ip',
+				'perform_ip_spam_search',
+				'perform_block_spam_ip',
+				// Firewall.
+				'perform_save_rest_api_settings',
+				// File security.
+				'perform_save_copy_protection',
+				'perform_save_frame_display_prevent',
+				// Tools.
+				'hibp_check_password',
+				'perform_whois_lookup',
+				'perform_general_visitor_lockout',
+				'perform_general_visitor_lockout_dashboard_widget',
+				// Settings.
+				'perform_save_debug_settings',
+				'perform_remove_wp_version_info_settings',
+			);
 
-			return in_array($this->subaction, $allowed_commands);
+			// The main site's copy of these settings is also used network-wide, so only a network admin may change or export it.
+			if (!is_main_site()) {
+				$allowed_commands = array_merge($allowed_commands, array(
+					'perform_save_user_account_settings',
+					'perform_restore_aiowps_settings',
+					'perform_export_aios_settings',
+					'perform_delete_plugin_settings',
+				));
+			}
+
+			return $allowed_commands;
 		}
 
 		/**
@@ -154,10 +211,9 @@ if (!class_exists('AIOWPSecurity_Ajax')) :
 		 * @return void
 		 */
 		private function send_invalid_multisite_command_error_response() {
-			wp_send_json(array(
-				'result' => false,
-				'error_code' => 'update_failed',
-				'error_message' => __('Options can only be saved by network admin', 'all-in-one-wp-security-and-firewall')
+			wp_send_json($this->commands_object->handle_response(
+				false,
+				__('Only a network administrator can perform this action.', 'all-in-one-wp-security-and-firewall')
 			));
 		}
 
@@ -186,11 +242,10 @@ if (!class_exists('AIOWPSecurity_Ajax')) :
 		 * @return void
 		 */
 		private function set_invalid_command_error_response() {
-			$this->results = array(
-				'result' => false,
-				'error_code' => 'command_not_found',
+			$this->results = $this->commands_object->handle_response(
+				false,
 				/* translators: %s: Subaction */
-				'error_message' => sprintf(__('The command "%s" was not found', 'all-in-one-wp-security-and-firewall'), $this->subaction)
+				sprintf(__('The command "%s" was not found', 'all-in-one-wp-security-and-firewall'), $this->subaction)
 			);
 		}
 
@@ -210,26 +265,21 @@ if (!class_exists('AIOWPSecurity_Ajax')) :
 		 */
 		private function set_error_response_on_wp_error() {
 			if (is_wp_error($this->results)) {
-				$this->results = array(
-					'result' => false,
-					'error_code' => $this->results->get_error_code(),
-					'error_message' => $this->results->get_error_message(),
-					'error_data' => $this->results->get_error_data(),
+				$this->results = $this->commands_object->handle_response(
+					false,
+					$this->results->get_error_message()
 				);
 			}
 		}
 
 		/**
-		 * Set `results` property to null, if it is not yet set
+		 * Sets the `results` property to an empty success response, if it is not yet set.
 		 *
 		 * @return void
 		 */
-		private function maybe_set_results_as_null() {
-			// if nothing was returned for some reason, set as result null.
+		private function maybe_set_empty_success_response() {
 			if (empty($this->results)) {
-				$this->results = array(
-					'result' => null
-				);
+				$this->results = $this->commands_object->handle_response(true, false);
 			}
 		}
 
@@ -241,11 +291,9 @@ if (!class_exists('AIOWPSecurity_Ajax')) :
 		 * @return void
 		 */
 		private function set_error_response_on_json_encode_error($json_last_error) {
-			$this->results = array(
-				'result' => false,
-				'error_code' => $json_last_error,
-				'error_message' => 'json_encode error : ' . $json_last_error,
-				'error_data' => '',
+			$this->results = $this->commands_object->handle_response(
+				false,
+				'json_encode error : ' . $json_last_error
 			);
 
 			$this->results = wp_json_encode($this->results);

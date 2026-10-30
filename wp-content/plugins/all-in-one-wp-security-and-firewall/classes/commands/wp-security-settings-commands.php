@@ -133,7 +133,9 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 			$aiowps_backup_dir = WP_CONTENT_DIR.'/'.AIO_WP_SECURITY_BACKUPS_DIR_NAME;
 			$success = true;
 			$message = __('Your .htaccess file was successfully backed up.', 'all-in-one-wp-security-and-firewall');
-			$extra_args['data'] = file_get_contents($aiowps_backup_dir.'/'. $result .'.txt');
+			$file_content = trim(file_get_contents($aiowps_backup_dir.'/'. $result .'.txt'));
+			AIOWPSecurity_Utility_File::save_file_hash($file_content, 'htaccess');
+			$extra_args['data'] = $file_content;
 			$extra_args['title'] = $result;
 		} else {
 			$aio_wp_security->debug_logger->log_debug("htaccess - Backup operation failed!", 4);
@@ -167,13 +169,14 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 		$htaccess_path = $home_path . '.htaccess';
 
 		if (empty($data['aiowps_htaccess_file']) && empty($data['aiowps_htaccess_file_contents'])) {
-			$message = __('Please choose a valid .htaccess to restore from.', 'all-in-one-wp-security-and-firewall');
+			$message = __('Choose a valid .htaccess to restore from.', 'all-in-one-wp-security-and-firewall');
 			$success = false;
 		} else {
 			$htaccess_file_contents = trim($data['aiowps_htaccess_file_contents']); // stripslashes not required wp_unslash applied already AIOWPSecurity_Ajax::set_data
 			//Verify that file chosen has contents which are relevant to .htaccess file
 			$is_htaccess = AIOWPSecurity_Utility_Htaccess::check_if_htaccess_contents($htaccess_file_contents);
-			if (1 == $is_htaccess) {
+			$hash_matches = AIOWPSecurity_Utility_File::verify_file_hash($htaccess_file_contents, 'htaccess');
+			if (1 == $is_htaccess && $hash_matches) {
 				if (!file_put_contents($htaccess_path, $htaccess_file_contents)) {
 					//Failed to make a backup copy
 					$aio_wp_security->debug_logger->log_debug("htaccess - Restore from .htaccess operation failed.", 4);
@@ -182,10 +185,14 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 				} else {
 					$message = __('Your .htaccess file has successfully been restored.', 'all-in-one-wp-security-and-firewall');
 				}
+			} elseif (!$hash_matches) {
+				$aio_wp_security->debug_logger->log_debug("htaccess restore failed - Hash could not be verified.", 4);
+				$success = false;
+				$message = __('The restoration of the .htaccess file has failed; the file\'s hash could not be verified.', 'all-in-one-wp-security-and-firewall');
 			} else {
 				$aio_wp_security->debug_logger->log_debug("htaccess restore failed - Contents of restore file appear invalid.", 4);
 				$success = false;
-				$message = __('The restoration .htaccess file has failed, please check the contents of the file you are trying to restore from.', 'all-in-one-wp-security-and-firewall');
+				$message = __('The restoration of the .htaccess file has failed, please check the contents of the file you are trying to restore from.', 'all-in-one-wp-security-and-firewall');
 			}
 		}
 
@@ -212,14 +219,15 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 		$success = true;
 
 		if (empty($data['aiowps_wp_config_file']) && empty($data['aiowps_wp_config_file_contents'])) {
-			$message = __('Please choose a wp-config.php file to restore from.', 'all-in-one-wp-security-and-firewall');
+			$message = __('Choose a wp-config.php file to restore from.', 'all-in-one-wp-security-and-firewall');
 			$success = false;
 		} else {
 			$wp_config_file_contents = trim($data['aiowps_wp_config_file_contents']); // stripslashes not required wp_unslash applied already AIOWPSecurity_Ajax::set_data
 
 			//Verify that file chosen is a wp-config.file
 			$is_wp_config = AIOWPSecurity_Utility_File::check_if_wp_config_contents($wp_config_file_contents);
-			if ($is_wp_config) {
+			$hash_matches = AIOWPSecurity_Utility_File::verify_file_hash($wp_config_file_contents, 'wp_config');
+			if ($is_wp_config && $hash_matches) {
 				$active_root_wp_config = AIOWPSecurity_Utility_File::get_wp_config_file_path();
 				if (!file_put_contents($active_root_wp_config, $wp_config_file_contents)) {
 					//Failed to make a backup copy
@@ -229,6 +237,10 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 				} else {
 					$message =__('Your wp-config.php file has successfully been restored.', 'all-in-one-wp-security-and-firewall');
 				}
+			} elseif (!$hash_matches) {
+				$aio_wp_security->debug_logger->log_debug("wp-config.php restore failed - Hash could not be verified.", 4);
+				$message = __('The restoration of the wp-config.php file has failed; the file\'s hash could not be verified.', 'all-in-one-wp-security-and-firewall');
+				$success = false;
 			} else {
 				$aio_wp_security->debug_logger->log_debug("wp-config.php restore failed - Contents of restore file appear invalid.", 4);
 				$message = __('The restoration of the wp-config.php file failed, please check the contents of the file you are trying to restore from.', 'all-in-one-wp-security-and-firewall');
@@ -305,11 +317,11 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 
 		$msg_updated = __('Your AIOS settings were successfully imported.', 'all-in-one-wp-security-and-firewall');
 		/* translators: %s: Htaccess file path */
-		$msg_error = sprintf(__('Could not write to the %s file.', 'all-in-one-wp-security-and-firewall'), AIOWPSecurity_Utility_File::get_home_path().'.htaccess') . ' ' . __('Please check the file permissions.', 'all-in-one-wp-security-and-firewall');
+		$msg_error = sprintf(__('Could not write to the %s file.', 'all-in-one-wp-security-and-firewall'), AIOWPSecurity_Utility_File::get_home_path().'.htaccess') . ' ' . __('Check the file permissions.', 'all-in-one-wp-security-and-firewall');
 
 		if (empty($data['aiowps_import_settings_file']) && empty($data['aiowps_import_settings_file_contents'])) {
 			$success = false;
-			$message = __('Please choose a file to import your settings from.', 'all-in-one-wp-security-and-firewall');
+			$message = __('Choose a file to import your settings from.', 'all-in-one-wp-security-and-firewall');
 		} else {
 			// Let's get the uploaded import file contents
 			$import_file_contents = trim($data['aiowps_import_settings_file_contents']); // stripslashes not required wp_unslash applied already AIOWPSecurity_Ajax::set_data
@@ -321,8 +333,36 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 				$is_enabled_cookie_bruteforce_before_import = $aio_wp_security->configs->get_value('aiowps_enable_brute_force_attack_prevention');
 				// Apply the settings
 				$settings_array = json_decode($import_file_contents, true);
+				
+				// if imported from other site and settings updated apply it.
+				if (array_key_exists('general', $settings_array) && !empty($data['aios_import_settings_confirm']) && "1" == $data['aios_import_settings_confirm']) {
+					if (!empty($data['aios_import_settings_email'])) {
+						$settings_array['general']['aiowps_email_address'] = $data['aios_import_settings_email'];
+						$settings_array['general']['aiowps_fcd_scan_email_address'] = $data['aios_import_settings_email'];
+					}
+					
+					if (!empty($data['aios_import_settings_brute_force_secret_word'])) {
+						$settings_array['general']['aiowps_brute_force_secret_word'] = $data['aios_import_settings_brute_force_secret_word'];
+						$settings_array['firewall']['aios_brute_force_secret_word'] = $data['aios_import_settings_brute_force_secret_word'];
+					}
+					
+					if (!empty($data['aios_import_settings_renamed_login_page'])) {
+						$settings_array['general']['aiowps_login_page_slug'] = $data['aios_import_settings_renamed_login_page'];
+					}
+					
+					if ("google-recaptcha-v2" == $settings_array['general']['aiowps_default_captcha'] && !empty($data['aios_import_settings_site_key']) && !empty($data['aios_import_settings_secret_key'])) {
+						$settings_array['general']['aiowps_recaptcha_site_key'] = $data['aios_import_settings_site_key'];
+						$settings_array['general']['aiowps_recaptcha_secret_key'] = $data['aios_import_settings_secret_key'];
+					}
+					
+					if ("cloudflare-turnstile" == $settings_array['general']['aiowps_default_captcha'] && !empty($data['aios_import_settings_site_key']) && !empty($data['aios_import_settings_secret_key'])) {
+						$settings_array['general']['aiowps_turnstile_site_key'] = $data['aios_import_settings_site_key'];
+						$settings_array['general']['aiowps_turnstile_secret_key'] = $data['aios_import_settings_secret_key'];
+					}
+				}
+				 
 				if (array_key_exists('general', $settings_array)) {
-					$aiowps_settings_applied = update_option('aio_wp_security_configs', $settings_array['general']);
+					$aiowps_settings_applied = update_option('aio_wp_security_configs', AIOWPSecurity_Configure_Settings::sanitize_setting_values($settings_array['general']));
 
 					if (!$aiowps_settings_applied && get_option('aio_wp_security_configs') === $settings_array['general']) {
 						$aiowps_settings_applied = true;
@@ -338,11 +378,20 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 						}
 
 						if (array_key_exists('firewall', $settings_array)) {
-							$aiowps_settings_applied = $aiowps_settings_applied && $aiowps_firewall_config->set_contents($settings_array['firewall']);
+							$settings_array['firewall']['aios_brute_force_secret_cookie_name'] = AIOWPSecurity_Utility::get_brute_force_secret_cookie_name(); // import from another site does not have the correct cookie name due to a separate COOKIEHASH.
+							$aiowps_settings_applied = $aiowps_settings_applied && $aiowps_firewall_config->set_contents(AIOWPSecurity_Configure_Settings::sanitize_firewall_setting_values($settings_array['firewall']));
 						}
+						
+						if (array_key_exists('allow_list', $settings_array)) {
+							$aiowps_firewall_allow_list = AIOS_Firewall_Resource::request(AIOS_Firewall_Resource::ALLOW_LIST);
+							$aiowps_settings_applied = $aiowps_settings_applied && $aiowps_firewall_allow_list::add_ips(sanitize_textarea_field($settings_array['allow_list']));
+						}
+						
+						// AIOS premium related configs are imported using below filter
+						apply_filters('aios_import_config_settings', $settings_array);
 					}
 				} else {
-					$aiowps_settings_applied = update_option('aio_wp_security_configs', $settings_array);
+					$aiowps_settings_applied = update_option('aio_wp_security_configs', AIOWPSecurity_Configure_Settings::sanitize_setting_values($settings_array));
 
 					if (!$aiowps_settings_applied && get_option('aio_wp_security_configs') === $settings_array) {
 						$aiowps_settings_applied = true;
@@ -374,6 +423,10 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 						$url .= empty($aio_wp_security->configs->get_value('aiowps_brute_force_secret_word')) ? '' : '&'.$aio_wp_security->configs->get_value('aiowps_brute_force_secret_word').'=1';
 						$url .= $res ? '' : '&error=write_htaccess';
 						$extra_args['redirect_url'] = admin_url(esc_url_raw($url));
+					}
+					
+					if ('1' == $aio_wp_security->configs->get_value('aiowps_enable_salt_postfix')) {
+						AIOWPSecurity_Utility::change_salt_postfixes();
 					}
 
 					$message = $msg_updated;
@@ -448,8 +501,8 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 		$wp_config_path = AIOWPSecurity_Utility_File::get_wp_config_file_path();
 		AIOWPSecurity_Utility_File::backup_and_rename_wp_config($wp_config_path); // Backup the wp_config.php file
 		$title = "wp-config-backup.txt";
-		$file_content = file_get_contents($wp_config_path);
-
+		$file_content = trim(file_get_contents($wp_config_path));
+		AIOWPSecurity_Utility_File::save_file_hash($file_content, 'wp_config');
 		$extra_args = array(
 			'data' => $file_content,
 			'title' => $title
@@ -471,16 +524,22 @@ trait AIOWPSecurity_Settings_Commands_Trait {
 		$aiowps_firewall_config = AIOS_Firewall_Resource::request(AIOS_Firewall_Resource::CONFIG);
 
 		$config_data = array();
+		$config_data['sitedetails'] = array('site_url' => site_url(), 'admin_email' => get_bloginfo('admin_email'));
 		$config_data['general'] = get_option('aio_wp_security_configs');
 
 		if (is_main_site() && is_super_admin()) {
 			$config_data['firewall'] = $aiowps_firewall_config->get_contents();
+			
+			$aiowps_firewall_allow_list = AIOS_Firewall_Resource::request(AIOS_Firewall_Resource::ALLOW_LIST);
+			$config_data['allow_list'] = $aiowps_firewall_allow_list::get_ips();
 
 			if (true == $simba_two_factor_authentication->is_tfa_integrated) {
 				$config_data['tfa'] = $simba_two_factor_authentication->get_configs();
 			}
 		}
 
+		// AIOS premium related configs are exported using below filter
+		$config_data = apply_filters('aios_export_config_settings', $config_data);
 		$output = wp_json_encode($config_data);
 
 		$extra_args = array(

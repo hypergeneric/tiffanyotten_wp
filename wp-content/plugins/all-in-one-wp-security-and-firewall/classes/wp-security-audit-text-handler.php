@@ -162,19 +162,19 @@ class AIOWPSecurity_Audit_Text_Handler {
 		switch ($info['event']) {
 			case 'triggered':
 				/* translators: 1: Rule name, 2: Rule family */
-				$output = sprintf(__('"%1$s [%2$s]" rule has been triggered.', 'all-in-one-wp-security-and-firewall'),  $info['rule_name'], $info['rule_family']);
+				$output = sprintf(esc_html__('"%1$s [%2$s]" rule has been triggered.', 'all-in-one-wp-security-and-firewall'),  $info['rule_name'], $info['rule_family']);
 				break;
 			case 'not_triggered':
 				/* translators: 1: Rule name, 2: Rule family */
-				$output = sprintf(__('"%1$s [%2$s]" rule was not triggered.', 'all-in-one-wp-security-and-firewall'),  $info['rule_name'], $info['rule_family']);
+				$output = sprintf(esc_html__('"%1$s [%2$s]" rule was not triggered.', 'all-in-one-wp-security-and-firewall'),  $info['rule_name'], $info['rule_family']);
 				break;
 			case 'active':
 				/* translators: 1: Rule name, 2: Rule family */
-				$output = sprintf(__('"%1$s [%2$s]" rule is active.', 'all-in-one-wp-security-and-firewall'),  $info['rule_name'], $info['rule_family']);
+				$output = sprintf(esc_html__('"%1$s [%2$s]" rule is active.', 'all-in-one-wp-security-and-firewall'),  $info['rule_name'], $info['rule_family']);
 				break;
 			case 'not_active':
 				/* translators: 1: Rule name, 2: Rule family */
-				$output = sprintf(__('"%1$s [%2$s]" rule is not active.', 'all-in-one-wp-security-and-firewall'),  $info['rule_name'], $info['rule_family']);
+				$output = sprintf(esc_html__('"%1$s [%2$s]" rule is not active.', 'all-in-one-wp-security-and-firewall'),  $info['rule_name'], $info['rule_family']);
 				break;
 			default:
 				$output = array(
@@ -186,8 +186,8 @@ class AIOWPSecurity_Audit_Text_Handler {
 		}
 
 		// Add a link to the rule, if present
-		if (isset($info['location'])) {
-			$output .= "<br><br><a href='{$info['location']}'target='_blank'>".__('Configure this rule', 'all-in-one-wp-security-and-firewall').'</a>';
+		if (!is_array($output) && isset($info['location'])) {
+			$output .= "<br><a href='" . esc_url($info['location']) . "' target='_blank'>" . esc_html__('Configure this rule', 'all-in-one-wp-security-and-firewall') . '</a>';
 		}
 
 		return is_array($output) ? wp_json_encode($output) : $output;

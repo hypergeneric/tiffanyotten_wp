@@ -522,7 +522,7 @@ class AIOWPSecurity_Firewall_Setup_Notice {
 		?>
 			<div class="notice notice-warning is-dismissible">
 			<p>
-				<strong><?php esc_html_e('All In OneSecurity', 'all-in-one-wp-security-and-firewall'); ?></strong>
+				<strong><?php esc_html_e('All In One Security', 'all-in-one-wp-security-and-firewall'); ?></strong>
 			</p>
 			<p>
 				<?php echo esc_html__('We were unable to set up your firewall with the highest level of protection.', 'all-in-one-wp-security-and-firewall').' '.

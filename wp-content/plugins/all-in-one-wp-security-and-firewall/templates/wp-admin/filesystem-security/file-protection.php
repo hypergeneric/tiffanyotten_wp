@@ -2,8 +2,8 @@
 <h2><?php esc_html_e('File protection', 'all-in-one-wp-security-and-firewall'); ?></h2>
 <div class="aio_blue_box">
 	<?php
-		$info_msg = __('These features allow you to protect your files and assets.', 'all-in-one-wp-security-and-firewall');
-		echo '<p>'.esc_html($info_msg) . ' ' . esc_html__('By protecting your files and assets, you can help prevent nefarious users gain key information and protect your server\'s resources.', 'all-in-one-wp-security-and-firewall').'</p>';
+		$aiowps_info_msg = __('These features help protect your files and assets.', 'all-in-one-wp-security-and-firewall');
+		echo '<p>'.esc_html($aiowps_info_msg) . ' ' . esc_html__('Protecting your files and assets can help prevent unauthorized users from accessing sensitive information and using server resources.', 'all-in-one-wp-security-and-firewall').'</p>';
 	?>
 </div>
 <div id="aios-file-protection-settings-message" ></div>
@@ -20,7 +20,7 @@
 			'title' => __('Disable PHP file editing', 'all-in-one-wp-security-and-firewall')
 		),
 	);
-	$templates = apply_filters('aiowps_modify_file_protection_template', $templates);
+	$templates = apply_filters('aios_modify_file_protection_template', $templates);
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
 	$subtab = isset($_GET['subtab']) ? sanitize_text_field(wp_unslash($_GET['subtab'])) : '';
 	?>
@@ -39,10 +39,9 @@
 				$first_title = $first_template['title'];
 				foreach ($templates as $key => $template) {
 					// Check if the current title is the first title
-					$is_active = ($key === $subtab || $template['title'] === $first_title) ? 'class="aiowps-active"' : '';
 					$title = $template['title'];
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- PCP error. $is_active has no user input to escape.
-					echo '<li data-template="' . esc_attr($key) . '" ' . $is_active . '><span class="aiowps-rule-title">' . esc_html($title) . '</span></li>';
+					$class = ($key === $subtab || (empty($subtab) && $title === $first_title)) ? 'aiowps-active' : '';
+					echo '<li data-template="'.esc_attr($key).'" class="'.esc_attr($class).'"><span class="aiowps-rule-title">'.esc_html($title).'</span></li>';
 				}
 				?>
 			</ul>

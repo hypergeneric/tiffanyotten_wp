@@ -1,7 +1,8 @@
 <?php if (!defined('ABSPATH')) die('Access denied.'); ?>
 
 <h2><?php esc_html_e('PHP firewall settings', 'all-in-one-wp-security-and-firewall'); ?></h2>
-<form action="" id="aios-php-firewall-settings-form">
+<?php // Only the WP REST API settings are shown outside the main site or to non-super admins, and they are saved with their own per-site command. ?>
+<form action="" id="aios-php-firewall-settings-form" data-command="<?php echo esc_attr(AIOWPSecurity_Utility_Permissions::is_main_site_and_super_admin() ? 'perform_php_firewall_settings' : 'perform_save_rest_api_settings'); ?>">
 	<?php
 
 	$templates = array(
@@ -38,7 +39,7 @@
 		)
 	);
 
-	$templates = apply_filters('aiowps_modify_php_firewall_rules_template', $templates);
+	$templates = apply_filters('aios_modify_php_firewall_rules_template', $templates);
 
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
 	$subtab = isset($_GET['subtab']) ? sanitize_text_field(wp_unslash($_GET['subtab'])) : '';
@@ -59,10 +60,9 @@
 				
 				foreach ($templates as $key => $template) {
 					// Check if the current title is the first title
-					$is_active = ($key === $subtab || $template['title'] === $first_title) ? 'class="aiowps-active"' : '';
 					$title = $template['title'];
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- PCP error. No user input to escape.
-					echo '<li data-template="' . esc_attr($key) . '" ' . $is_active . '><span class="aiowps-rule-title">' . esc_html($title) . '</span></li>';
+					$class = ($key === $subtab || (empty($subtab) && $title === $first_title)) ? 'aiowps-active' : '';
+					echo '<li data-template="'.esc_attr($key).'" class="'.esc_attr($class).'"><span class="aiowps-rule-title">'.esc_html($title).'</span></li>';
 				}
 				?>
 			</ul>

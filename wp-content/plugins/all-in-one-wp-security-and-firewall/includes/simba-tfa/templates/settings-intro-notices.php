@@ -1,3 +1,4 @@
+<?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <p class="simba_tfa_personal_settings_notice simba_tfa_intro_notice">
 <?php
 

@@ -1,19 +1,16 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <h2><?php esc_html_e('User registration settings', 'all-in-one-wp-security-and-firewall'); ?></h2>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Manually approve new registrations', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Manually approve new registrations', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
+		<div id="manually-approve-registrations-badge">
+			<?php $aiowps_feature_mgr->output_feature_details_badge("manually-approve-registrations"); ?>
+		</div>
 		<div class="aio_blue_box">
 			<?php
 			echo '<p>'.esc_html__('If your site allows people to create their own accounts via the WordPress registration form, then you can minimize spam or bogus registrations by manually approving each registration.', 'all-in-one-wp-security-and-firewall').
 			'<br>'.esc_html__('This feature will automatically set a newly registered account to "pending" until the administrator activates it.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('Therefore undesirable registrants will be unable to log in without your express approval.', 'all-in-one-wp-security-and-firewall').
 			'<br>'.esc_html__('You can view all accounts which have been newly registered via the handy table below and you can also perform bulk activation/deactivation/deletion tasks on each account.', 'all-in-one-wp-security-and-firewall').'</p>';
-			?>
-		</div>
-		<div id="manually-approve-registrations-badge">
-			<?php
-			// Display security info badge
-			$aiowps_feature_mgr->output_feature_details_badge("manually-approve-registrations");
 			?>
 		</div>
 		<form action="" method="POST" id="aios-manually-approve-registrations-form">
@@ -32,7 +29,7 @@
 	</div>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Refresh manual approval data', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Refresh manual approval data', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form action="" method="POST" id="aios-refresh-manual-approval-list-form">
 			<input type="submit" name="aiowps_refresh_manual_approval_list" value="<?php esc_html_e('Refresh data', 'all-in-one-wp-security-and-firewall'); ?>" class="button-primary" />
@@ -40,7 +37,7 @@
 	</div>
 </div>
 <div class="postbox" id="aios-manual-approval-table">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Approve registered users', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Approve registered users', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<?php
 		// Fetch, prepare, sort, and filter our data...

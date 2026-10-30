@@ -67,19 +67,20 @@ class AIOWPSecurity_Spam_Menu extends AIOWPSecurity_Admin_Menu {
 		include_once 'wp-security-list-comment-spammer-ip.php'; // For rendering the AIOWPSecurity_List_Table in tab2
 		$spammer_ip_list = new AIOWPSecurity_List_Comment_Spammer_IP();
 
-		$block_comments_output = '';
-
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
+		$page = isset($_REQUEST['page']) ? sanitize_text_field(wp_unslash($_REQUEST['page'])) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
+		$tab = isset($_REQUEST['tab']) ? sanitize_text_field(wp_unslash($_REQUEST['tab'])) : '';
+		
 		$min_block_comments = $aio_wp_security->configs->get_value('aiowps_spam_ip_min_comments_block');
+		$total_results_count = 0;
+		$todays_blocked_count = 0;
 		if (!empty($min_block_comments)) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP error. Ignore.
-			$total_res = $wpdb->get_results($wpdb->prepare('SELECT * FROM '.AIOWPSEC_TBL_PERM_BLOCK.' WHERE block_reason=%s', 'spam'));
-			$block_comments_output = '<div class="aio_yellow_box">';
-			if (empty($total_res)) {
-				$block_comments_output .= '<p><strong>'.esc_html__('You currently have no IP addresses permanently blocked due to spam.', 'all-in-one-wp-security-and-firewall').'</strong></p></div>';
-			} else {
-				$total_count = count($total_res);
-				$todays_blocked_count = 0;
-				foreach ($total_res as $blocked_item) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery -- We can't use $wpdb->prepare with %i because our plugin supports WordPress < 6.2.
+			$total_results = $wpdb->get_results($wpdb->prepare('SELECT * FROM '.AIOWPSEC_TBL_PERM_BLOCK.' WHERE block_reason=%s', 'spam'));
+			$total_results_count = count($total_results);
+			if (!empty($total_results)) {
+				foreach ($total_results as $blocked_item) {
 					$now_date_time = new DateTime('now', new DateTimeZone('UTC'));
 					$blocked_date = new DateTime('@'.$blocked_item->created); //@ with timestamp creates correct DateTime
 					if ($blocked_date->format('Y-m-d') == $now_date_time->format('Y-m-d')) {
@@ -87,15 +88,20 @@ class AIOWPSecurity_Spam_Menu extends AIOWPSecurity_Admin_Menu {
 						++$todays_blocked_count;
 					}
 				}
-				$block_comments_output .= '<p><strong>'.esc_html__('Spammer IPs added to permanent block list today:', 'all-in-one-wp-security-and-firewall'). ' ' . esc_html($todays_blocked_count).'</strong></p>'.'<hr><p><strong>'.esc_html__('All time total:', 'all-in-one-wp-security-and-firewall'). ' ' .esc_html($total_count).'</strong></p>'.'<p><a class="button" href="admin.php?page='.esc_attr(AIOWPSEC_MAIN_MENU_SLUG).'&tab=permanent-block" target="_blank">'.esc_html__('View blocked IPs', 'all-in-one-wp-security-and-firewall').'</a></p></div>';
 			}
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
-		$page = isset($_REQUEST['page']) ? sanitize_text_field(wp_unslash($_REQUEST['page'])) : '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
-		$tab = isset($_REQUEST['tab']) ? sanitize_text_field(wp_unslash($_REQUEST['tab'])) : '';
-
-		$aio_wp_security->include_template('wp-admin/spam-prevention/comment-spam-ip-monitoring.php', false, array('comment_spam_data' => $comment_spam_data, 'spammer_ip_list' => $spammer_ip_list, 'block_comments_output' => $block_comments_output, 'page' => $page, 'tab' => $tab));
+		$aio_wp_security->include_template('wp-admin/spam-prevention/comment-spam-ip-monitoring.php',
+			false,
+			array(
+				'comment_spam_data' => $comment_spam_data,
+				'spammer_ip_list' => $spammer_ip_list,
+				'page' => $page,
+				'tab' => $tab,
+				'min_block_comments' => $aio_wp_security->configs->get_value('aiowps_spam_ip_min_comments_block'),
+				'total_results_count' => $total_results_count,
+				'todays_blocked_count' => $todays_blocked_count,
+			)
+		);
 	}
 }

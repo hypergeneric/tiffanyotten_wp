@@ -9,7 +9,7 @@
 	?>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Save the current .htaccess file', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Save the current .htaccess file', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form action="" method="POST" id="aiowpsec-save-htaccess-form">
 			<p class="description"><?php esc_html_e('Press the button below to backup and save the currently active .htaccess file.', 'all-in-one-wp-security-and-firewall'); ?></p>
@@ -18,7 +18,7 @@
 	</div>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Restore from a backed up .htaccess file', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Restore from a backed up .htaccess file', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form id="aiowps_restore_htaccess_form" action="" method="POST">
 			<table class="form-table">

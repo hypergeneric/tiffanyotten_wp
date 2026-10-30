@@ -130,19 +130,20 @@ class AIOWPSecurity_Utility_IP {
 	 * @throws Exception If the IP library fails to load.
 	 */
 	public static function validate_ip_list($ip_list_array, $list_type = '') {
-		$errors = '';
-
-		$current_user_ip = AIOWPSecurity_Utility_IP::get_user_ip_address();
-
-		//validate list
-		$submitted_ips = $ip_list_array;
-		$list = array();
 		if (!(include_once AIO_WP_SECURITY_PATH.'/vendor/mlocati/ip-lib/ip-lib.php')) {
 			throw new \Exception("AIOWPSecurity_Utility_IP::validate_ip_list failed to load ip-lib.php");
 		}
 
-		if (!empty($submitted_ips)) {
-			foreach ($submitted_ips as $item) {
+		$user_ip = AIOWPSecurity_Utility_IP::get_user_ip_address();
+		$user_iplib_address = \IPLib\Factory::parseAddressString($user_ip);
+
+		$errors = '';
+
+		// Validated list
+		$list = array();
+
+		if (!empty($ip_list_array)) {
+			foreach ($ip_list_array as $item) {
 				$item = sanitize_text_field($item);
 
 				// Skip items that are comments (start with #)
@@ -152,15 +153,16 @@ class AIOWPSecurity_Utility_IP {
 				}
 
 				if (strlen($item) > 0) {
-					$ip_address = \IPLib\Factory::addressFromString($item);
-					$ip_address_range = \IPLib\Factory::rangeFromString($item);
-					if (null == $ip_address && null == $ip_address_range) {
+					$iplib_address_range = \IPLib\Factory::parseRangeString($item); // If the IP is not a range, this will be an instance of `\IPLib\Range\Single`.
+
+					if (null == $iplib_address_range) {
 						/* translators: %s: IP Address */
 						$errors .= "\n" . sprintf(__('%s is not a valid IP address format.', 'all-in-one-wp-security-and-firewall'), $item);
+						continue;
 					}
 
 					if (strlen($item) > 4 && !in_array($item, $list)) {
-						if ($item == $current_user_ip && 'blacklist' == $list_type) {
+						if ('blacklist' == $list_type && ($item == $user_ip || AIOS_Helper::range_contains_ip($iplib_address_range, $user_iplib_address) != AIOS_Helper::IP_NOT_IN_LIST)) {
 							// You can't blacklist your own IP
 							$errors .= "\n".__('You cannot blacklist your own IP address:', 'all-in-one-wp-security-and-firewall') . ' ' . $item;
 						} else {
@@ -207,8 +209,8 @@ class AIOWPSecurity_Utility_IP {
 		if ($is_whitelisted) {
 			return;
 		}
-
-		header('HTTP/1.1 403 Forbidden');
+		nocache_headers();
+		status_header(403);
 		exit();
 	}
 	

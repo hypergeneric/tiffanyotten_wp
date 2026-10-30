@@ -1,6 +1,8 @@
-<?php if (!defined('ABSPATH')) die('No direct access.'); ?>
+<?php if (!defined('ABSPATH')) die('No direct access.');
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Not a global context; templates are included within a method scope.
+?>
 <div>
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Latest file change scan results', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Latest file change scan results', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<?php
 			$last_scan_results = $fcd_data['last_scan_result'];
@@ -28,7 +30,17 @@
 					$output .= '<td>' . esc_html($key) . '</td>';
 					if ('files_changed' == $type) {
 						if ('checksum_mismatch' == $value['reason']) {
-							$output .= '<td>' . esc_html__('File contents has changed.', 'all-in-one-wp-security-and-firewall') . '<br>' .  esc_html__('Known checksum(s):', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html(implode(',', $value['checksums']['known_checksums'])) . '<br>' . esc_html__('File checksum(s):', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html(implode(',', $value['checksums']['file_checksums'])) . '</td>';
+							$known_checksums = AIOWPSecurity_Checksums::format_checksums_for_display($value['checksums']['known_checksums']);
+							$file_checksums = AIOWPSecurity_Checksums::format_checksums_for_display($value['checksums']['file_checksums']);
+							$output .= '<td>' . esc_html__('File contents has changed.', 'all-in-one-wp-security-and-firewall') . '<br>' . esc_html__('Known checksum(s):', 'all-in-one-wp-security-and-firewall');
+							foreach ($known_checksums as $checksum_line) {
+								$output .= '<br>' . esc_html($checksum_line);
+							}
+							$output .= '<br>' . esc_html__('File checksum(s):', 'all-in-one-wp-security-and-firewall');
+							foreach ($file_checksums as $checksum_line) {
+								$output .= '<br>' . esc_html($checksum_line);
+							}
+							$output .= '</td>';
 						} else {
 							$output .= '<td>' . esc_html__('File metadata has changed.', 'all-in-one-wp-security-and-firewall') . '</td>';
 						}

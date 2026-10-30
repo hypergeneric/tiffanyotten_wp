@@ -1,6 +1,6 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Refresh logged in user data', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Refresh logged in user data', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form action="" method="POST" id="aios-refresh-logged-in-user-list-form">
 			<input type="submit" name="aiowps_refresh_logged_in_user_list" value="<?php esc_html_e('Refresh data', 'all-in-one-wp-security-and-firewall'); ?>" class="button-primary" />
@@ -16,7 +16,7 @@
 	?>
 </div>
 <div class="postbox" id="aios-logged-in-users-table">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Currently logged in users', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Currently logged in users', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<?php
 			// Fetch, prepare, sort, and filter our data...

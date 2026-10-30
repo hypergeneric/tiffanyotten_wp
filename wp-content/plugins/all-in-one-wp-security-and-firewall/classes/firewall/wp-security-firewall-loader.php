@@ -20,6 +20,13 @@ class Loader {
 	protected static $instance = null;
 
 	/**
+	 * The directory where the firewall saves and loads its data
+	 *
+	 * @var string
+	 */
+	public static $workspace = '';
+
+	/**
 	 * Loads and builds all the necessary files
 	 *
 	 * @return void
@@ -52,9 +59,6 @@ class Loader {
 				$member->apply_all();
 			}
 			
-		} catch (Exit_Exception $e) {
-			$this->log_message($e->getMessage());
-			exit();
 		} catch (\Exception $e) {
 			$this->log_message($e->getMessage());
 		} catch (\Error $e) { // phpcs:ignore PHPCompatibility.Classes.NewClasses.errorFound -- this won't run on PHP 5.6 so we still want to catch it on other versions
@@ -72,7 +76,7 @@ class Loader {
 		$this->init_includes();
 		$this->init_services();
 
-		new Debug();
+		new Audit_Events();
 	}
 
 	/**
@@ -91,11 +95,11 @@ class Loader {
 	 * @return void
 	 */
 	private function log_message($message) {
-		if (function_exists('do_action')) {
-			do_action('aios_firewall_loader_log_error', $message, $this);
-		}
-		
-		error_log('AIOS firewall error: ' . $message);
+		global $aiowps_firewall_debug_log;
+
+		if (!isset($aiowps_firewall_debug_log)) return;
+
+		$aiowps_firewall_debug_log->log("Firewall: {$message}", Debug_Log::LEVEL_FAILURE);
 	}
 
 	/**
@@ -103,26 +107,30 @@ class Loader {
 	 *
 	 * @return void
 	 */
-	 private function init_services() {
+	private function init_services() {
 
-		$workspace = $this->get_firewall_workspace();
+		$GLOBALS['aiowps_firewall_debug_log'] = new Debug_Log();
 
-		if (empty($workspace)) {
+		self::$workspace = $this->get_firewall_workspace();
+		
+		if (empty(self::$workspace)) {
 			throw new \Exception('unable to locate workspace.');
 		}
 
-		$GLOBALS['aiowps_firewall_config'] = new Config($workspace . 'settings.php');
-		$GLOBALS['aiowps_firewall_message_store'] = Message_Store::instance();
+		$GLOBALS['aiowps_firewall_config'] = new Config(self::$workspace . 'settings.php');
 		$GLOBALS['aiowps_firewall_constants'] = new Constants();
-		Allow_List::set_path($workspace.'allowlist.php');
-	 }
+		$GLOBALS['aiowps_firewall_audit_log'] = new Audit_Log();
+		Allow_List::set_path(self::$workspace.'allowlist.php');
+
+		$GLOBALS['aiowps_firewall_session'] = Session_Storage_Factory::create(Session_Storage_Type::get());
+	}
 
 	 /**
 	  * Get our workspace directory, i.e., where we save and load data to and from.
 	  *
 	  * @return string
 	  */
-	 private function get_firewall_workspace() {
+	private function get_firewall_workspace() {
 		global $aiowps_firewall_rules_path;
 
 		$workspace = '';
@@ -134,7 +142,7 @@ class Loader {
 		}
 
 		return $workspace;
-	 }
+	}
 
 	/**
 	 * Registers the autoloader
@@ -166,6 +174,7 @@ class Loader {
 					AIOWPS_FIREWALL_DIR."/rule/rules/bots/{$rule}",
 					AIOWPS_FIREWALL_DIR."/libs/{$file}",
 					AIOWPS_FIREWALL_DIR."/libs/traits/{$classname}.php",
+					AIOWPS_FIREWALL_DIR."/session/{$file}",
 				);
 
 				clearstatcache();

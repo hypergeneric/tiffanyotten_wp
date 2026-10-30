@@ -1,7 +1,7 @@
-<?php if (!defined('AIO_WP_SECURITY_PATH')) die('No direct access allowed'); ?>
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('IP address detection settings', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('IP address detection settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div class="aio_blue_box">
 			<?php
@@ -63,14 +63,12 @@
 						<span class="description">
 							<?php esc_html_e("Choose a \$_SERVER variable you would like to detect visitors' IP address using.", 'all-in-one-wp-security-and-firewall'); ?>
 						</span>
-						<span class="aiowps_more_info_anchor"><span class="aiowps_more_info_toggle_char">+</span><span class="aiowps_more_info_toggle_text"><?php esc_html_e('More info', 'all-in-one-wp-security-and-firewall'); ?></span></span>
-						<div class="aiowps_more_info_body">
-							<p class="description">
-								<?php
-								esc_html_e('If your chosen server variable fails the plugin will automatically fall back to retrieving the IP address from $_SERVER["REMOTE_ADDR"]', 'all-in-one-wp-security-and-firewall');
-								?>
-							</p>
-						</div>
+						<?php
+						AIOWPSecurity_Utility_UI::tooltip(
+							__('If your chosen server variable fails the plugin will automatically fall back to retrieving the IP address from $_SERVER["REMOTE_ADDR"]', 'all-in-one-wp-security-and-firewall'),
+							4
+						);
+						?>
 						<div class="description">
 							<?php
 							echo esc_html__('Your IP address if using this setting:', 'all-in-one-wp-security-and-firewall') . ' ';

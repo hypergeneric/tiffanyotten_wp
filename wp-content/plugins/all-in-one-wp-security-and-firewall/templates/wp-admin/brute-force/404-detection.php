@@ -1,42 +1,57 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <h2><?php esc_html_e('404 detection configuration', 'all-in-one-wp-security-and-firewall'); ?></h2>
 <div class="aio_blue_box">
+	<p>
+	<?php esc_html_e('A 404 or Not Found error occurs when somebody tries to access a non-existent page on your website.', 'all-in-one-wp-security-and-firewall'); ?>
+	<br>
+	<?php esc_html_e('Typically, most 404 errors happen quite innocently when people have mistyped a URL or used an old link to page which doesn\'t exist anymore.', 'all-in-one-wp-security-and-firewall'); ?>
+	<br>
+	<?php esc_html_e('However, in some cases you may find many repeated 404 errors which occur in a relatively short space of time and from the same IP address which are all attempting to access a variety of non-existent page URLs.', 'all-in-one-wp-security-and-firewall'); ?>
+	<br>
+	<?php esc_html_e('Such behaviour can mean that a hacker might be trying to find a particular page or URL for sinister reasons.', 'all-in-one-wp-security-and-firewall'); ?>
+	<br>
 	<?php
-	echo '<p>'. esc_html__('A 404 or Not Found error occurs when somebody tries to access a non-existent page on your website.', 'all-in-one-wp-security-and-firewall') . '
-		<br />' . esc_html__('Typically, most 404 errors happen quite innocently when people have mistyped a URL or used an old link to page which doesn\'t exist anymore.', 'all-in-one-wp-security-and-firewall').'
-		<br />' . esc_html__('However, in some cases you may find many repeated 404 errors which occur in a relatively short space of time and from the same IP address which are all attempting to access a variety of non-existent page URLs.', 'all-in-one-wp-security-and-firewall').'
-		<br />' . esc_html__('Such behaviour can mean that a hacker might be trying to find a particular page or URL for sinister reasons.', 'all-in-one-wp-security-and-firewall');
-	// translators: %1$s - Open strong tag, %2$s - Close strong tag.
-	echo '<br/>' . wp_kses_post(apply_filters('aios_smart_404_notice', __('With this feature enabled, you can use the table below to manually temporarily block IP addresses.', 'all-in-one-wp-security-and-firewall') . '<br />' . sprintf(__('The %1$s Smart 404 %2$s feature in Premium automatically detects and blocks these IP addresses.', 'all-in-one-wp-security-and-firewall'), '<strong>', '</strong>')));
+	$aios_smart_404_notice  = __('With this feature enabled, you can use the table below to manually temporarily block IP addresses.', 'all-in-one-wp-security-and-firewall');
+	$aios_smart_404_notice .= '<br>';
+	$aios_smart_404_notice .= sprintf(
+		/* translators: 1: Open strong tag, 2: Close strong tag. */
+		__('The %1$sSmart 404%2$s feature in Premium automatically detects and blocks these IP addresses.', 'all-in-one-wp-security-and-firewall'),
+		'<strong>',
+		'</strong>'
+	);
+
+	$aios_smart_404_notice = apply_filters('aios_smart_404_notice', $aios_smart_404_notice);
+
+	echo wp_kses_post($aios_smart_404_notice);
 	?>
+	</p>
 </div>
-<?php
-if (!defined('AIOWPSECURITY_NOADS_B') || !AIOWPSECURITY_NOADS_B) {
-?>
+<?php if (!defined('AIOWPSECURITY_NOADS_B') || !AIOWPSECURITY_NOADS_B) { ?>
 	<div class="aio_grey_box">
+		<p>
 		<?php
-		$premium_plugin_link = '<strong><a href="https://teamupdraft.com/all-in-one-security/pricing/?utm_source=aios-plugin&utm_medium=referral&utm_campaign=paac&utm_content=premium-cta-on-brute-force-tab&utm_creative_format=text" target="_blank">'.esc_html__('All-In-One Security Premium', 'all-in-one-wp-security-and-firewall').'</a></strong>';
-		/* translators: %s: Premium upgrade link */
-		$info_msg = sprintf(esc_html__('You may also be interested in %s.', 'all-in-one-wp-security-and-firewall'), $premium_plugin_link);
-		/* translators: 1: open strong tag, 2: close strong tag. */
-		$info_msg2 = sprintf(esc_html__('This plugin adds a number of extra features including %1$s and %2$s.', 'all-in-one-wp-security-and-firewall'), '<strong>'.esc_html__('smart 404 blocking', 'all-in-one-wp-security-and-firewall').'</strong>', '<strong>'.esc_html__('country IP blocking', 'all-in-one-wp-security-and-firewall').'</strong>');
-
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variables already escaped.
-		echo '<p>'. $info_msg . '<br />' . $info_msg2 . '</p>';
+		printf(
+			/* translators: 1: Opening link tag 2: closing link tag */
+			esc_html__('You may also be interested in %1$sAll-In-One Security Premium%2$s.', 'all-in-one-wp-security-and-firewall'),
+			'<strong><a href="https://teamupdraft.com/all-in-one-security/pricing/?utm_source=aios-plugin&utm_medium=referral&utm_campaign=paac&utm_content=premium-cta-on-brute-force-tab&utm_creative_format=text" target="_blank">',
+			'</a></strong>'
+		);
+		echo '<br>';
+		printf(
+			/* translators: 1: open strong tag, 2: close strong tag. */
+			esc_html__('This plugin adds a number of extra features including %1$ssmart 404 blocking%2$s and %1$scountry IP blocking%2$s.', 'all-in-one-wp-security-and-firewall'),
+			'<strong>',
+			'</strong>'
+		);
 		?>
+		</p>
 	</div>
-<?php
-}
-?>
-
+<?php } ?>
 <div class="postbox">
-<h3 class="hndle"><label for="title"><?php esc_html_e('404 detection options', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+<h3 class="hndle"><?php esc_html_e('404 detection options', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div id="firewall-enable-404-blocking-badge">
-			<?php
-			// Display security info badge
-			$aiowps_feature_mgr->output_feature_details_badge("firewall-enable-404-blocking");
-			?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge("firewall-enable-404-blocking"); ?>
 		</div>
 		<form action="" id="aios-404-detection-settings-form">
 		<table class="form-table">
@@ -59,7 +74,7 @@ if (!defined('AIOWPSECURITY_NOADS_B') || !AIOWPSECURITY_NOADS_B) {
 			-->
 			<tr valign="top">
 				<th scope="row"><label for="aiowps_404_lockout_time_length"><?php esc_html_e('Time length of 404 lockout (minutes)', 'all-in-one-wp-security-and-firewall'); ?>:</label></th>
-				<td><input id="aiowps_404_lockout_time_length" type="text" size="5" name="aiowps_404_lockout_time_length" value="<?php echo esc_attr($aio_wp_security->configs->get_value('aiowps_404_lockout_time_length')); ?>" />
+				<td><input id="aiowps_404_lockout_time_length" type="number" min="1" name="aiowps_404_lockout_time_length" value="<?php echo esc_attr($aio_wp_security->configs->get_value('aiowps_404_lockout_time_length')); ?>" />
 				<span class="description"><?php esc_html_e('Set the length of time for which a locked IP address will be prevented from visiting your site.', 'all-in-one-wp-security-and-firewall'); ?></span>
 				</td>
 			</tr>
@@ -76,7 +91,7 @@ if (!defined('AIOWPSECURITY_NOADS_B') || !AIOWPSECURITY_NOADS_B) {
 </div>
 <div class="aios-404-detection-container <?php if ('1' !== $aio_wp_security->configs->get_value('aiowps_enable_404_IP_lockout')) echo 'aio_hidden'; ?>">
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('404 event logs', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('404 event logs', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside" id="404-log-list-table">
 		<?php
 		// translators: %1$d - Purge event records after number of days.
@@ -101,9 +116,9 @@ if (!defined('AIOWPSECURITY_NOADS_B') || !AIOWPSECURITY_NOADS_B) {
 	</div>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Export to CSV', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Export to CSV', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
-		<form method="POST" action="">
+		<form id="aios-export-404-csv-form" method="POST" action="">
 			<?php wp_nonce_field('aiowpsec-export-404-event-logs-to-csv-nonce'); ?>
 			<table class="form-table">
 				<tr valign="top">
@@ -115,7 +130,7 @@ if (!defined('AIOWPSECURITY_NOADS_B') || !AIOWPSECURITY_NOADS_B) {
 	</div>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Delete all 404 event logs', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Delete all 404 event logs', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form action="" id="aios-delete-404-form">
 			<table class="form-table">

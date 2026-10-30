@@ -39,7 +39,7 @@ abstract class AIOWPSecurity_Base_Tasks {
 	 */
 	protected static function run_for_a_site() {
 		throw new Exception(
-			sprintf('%s : Child classes must implement run_for_a_site() method.', get_called_class())
+			sprintf('%s : Child classes must implement run_for_a_site() method.', esc_html(get_called_class()))
 		);
 	}
 }

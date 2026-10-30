@@ -53,6 +53,23 @@ class Simba_TFA_Login_Form_Integrations {
 		add_filter('simba_tfa_login_enqueue_localize', array($this, 'simba_tfa_login_enqueue_localize'), 9);
 
 		add_filter('edd_errors', array($this, 'edd_errors'));
+		
+		add_action('woocommerce_customer_reset_password', array($this, 'woocommerce_customer_reset_password'), 5);
+	}
+	
+	/**
+	 * Runs upon the WP action after_password_reset
+	 *
+	 * Purpose: Do not allow WooCommerce to perform a login of a user with TFA enabled
+	 *
+	 * @param WP_User $user
+	 *
+	 */
+	public function woocommerce_customer_reset_password($user) {
+		// WooCommerce performs an auto-login presumably on the theory that, having just entered the password, it's pointless to make the user type it in again. However, this assumption does not hold if more than the password is meant to be required for login
+		if ($this->tfa->is_activated_for_user($user->ID) && ($this->tfa->is_activated_by_user($user->ID) || $this->tfa->is_required_for_user($user->ID))) {
+			wp_logout();
+		}
 	}
 	
 	/**

@@ -36,9 +36,11 @@ class AIOWPSecurity_File_Scan_Task extends Updraft_Task_1_2 {
 	 */
 	public function get_default_options() {
 		return array(
-			'current_stage'          => '',
-			'number_of_scanned_files' => 0,
-			'total_files'            => 0,
+			'current_stage'            => '',
+			'number_of_scanned_files'  => 0,
+			'total_files'              => 0,
+			'number_of_compared_files' => 0,
+			'total_kept_files'         => 0,
 		);
 	}
 
@@ -57,11 +59,23 @@ class AIOWPSecurity_File_Scan_Task extends Updraft_Task_1_2 {
 	 * Sets the current stage if it is an allowed stage.
 	 *
 	 * @param string $stage
+	 *
 	 * @return bool
 	 */
 	public function set_current_stage($stage) {
-		if (array_key_exists($stage, $this->get_allowed_stages())) {
-			return $this->update_option('current_stage', $stage);
+		$processing_stages = $this->get_allowed_stages('processing');
+		$end_stages = $this->get_allowed_stages('end');
+		if (array_key_exists($this->get_option('current_stage'), $end_stages)) {
+			return false; // If the task has already ended, do not allow changing the stage.
+		}
+		if (array_key_exists($stage, array_merge($processing_stages, $end_stages))) {
+			$result = $this->update_option('current_stage', $stage);
+			// Once the task has ended (however it ended), it will not run again, so any
+			// checksums cached on disk for a since-interrupted attempt are no longer needed.
+			if ($result && array_key_exists($stage, $end_stages)) {
+				AIOWPSecurity_File_Scanner::clear_cached_checksums_for_task($this->get_id());
+			}
+			return $result;
 		}
 		return false;
 	}
@@ -69,20 +83,33 @@ class AIOWPSecurity_File_Scan_Task extends Updraft_Task_1_2 {
 	/**
 	 * Returns the allowed stages for the file scan task.
 	 *
+	 * @param string $type
+	 *
 	 * @return array
 	 */
-	public function get_allowed_stages() {
-		$stages = array(
-			'initialised' => esc_html__('Initiating file scan', 'all-in-one-wp-security-and-firewall'),
-			'starting'    => esc_html__('Starting file scan', 'all-in-one-wp-security-and-firewall'),
-			'fetching'    => esc_html__('Fetching previous scan data', 'all-in-one-wp-security-and-firewall'),
-			'scanning'    => esc_html__('Scanning files', 'all-in-one-wp-security-and-firewall'),
-			'comparing'   => esc_html__('Comparing scan data', 'all-in-one-wp-security-and-firewall'),
-			'saving'      => esc_html__('Saving file change data', 'all-in-one-wp-security-and-firewall'),
+	public function get_allowed_stages($type = null) {
+		$processing_stages = array(
+			'initialised'            => esc_html__('Initiating file scan', 'all-in-one-wp-security-and-firewall'),
+			'starting'               => esc_html__('Starting file scan', 'all-in-one-wp-security-and-firewall'),
+			'fetching'               => esc_html__('Fetching previous scan data', 'all-in-one-wp-security-and-firewall'),
+			'downloading_checksums'  => esc_html__('Downloading checksums', 'all-in-one-wp-security-and-firewall'),
+			'scanning'               => esc_html__('Scanning files', 'all-in-one-wp-security-and-firewall'),
+			'comparing'              => esc_html__('Comparing scan data', 'all-in-one-wp-security-and-firewall'),
+			'saving'                 => esc_html__('Saving file change data', 'all-in-one-wp-security-and-firewall')
+		);
+		$end_stages = array(
 			'failed'      => esc_html__('File scan failed', 'all-in-one-wp-security-and-firewall'),
 			'completed'   => esc_html__('Completed file scan', 'all-in-one-wp-security-and-firewall'),
+			'cancelled'   => esc_html__('Cancelled file scan', 'all-in-one-wp-security-and-firewall')
 		);
-		return apply_filters('aios_allowed_files_scanning_stages', $stages);
+		if ('processing' === $type) {
+			$stages = $processing_stages;
+		} elseif ('end' === $type) {
+			$stages = $end_stages;
+		} else {
+			$stages = array_merge($processing_stages, $end_stages);
+		}
+		return apply_filters('aios_allowed_files_scanning_stages', $stages, $type);
 	}
 
 	/**
@@ -105,11 +132,10 @@ class AIOWPSecurity_File_Scan_Task extends Updraft_Task_1_2 {
 	public function complete() {
 		global $aio_wp_security;
 
-		if ('failed' === $this->get_option('current_stage')) {
+		if (!$this->set_current_stage('completed')) {
 			return false;
 		}
 
-		$this->set_current_stage('completed');
 		$aio_wp_security->configs->set_value('aiowps_last_scan_time', time(), true);
 
 		return parent::complete();
@@ -120,17 +146,27 @@ class AIOWPSecurity_File_Scan_Task extends Updraft_Task_1_2 {
 	 *
 	 * @param string $error_code
 	 * @param string $error_message
+	 *
 	 * @return bool
 	 */
 	public function fail($error_code = 'Unknown', $error_message = 'Unknown') {
-		$this->set_current_stage('failed');
+		if (!$this->set_current_stage('failed')) {
+			return false;
+		}
+
 		return parent::fail($error_code, $error_message);
 	}
 
 	/**
 	 * Cancel the task.
+	 *
+	 * @return bool
 	 */
 	public function cancel_task() {
-		$this->fail('cancelled', esc_html__('The file scan task was cancelled.', 'all-in-one-wp-security-and-firewall'));
+		if (!$this->set_current_stage('cancelled')) {
+			return false;
+		}
+
+		return parent::fail('cancelled', $this->get_stage_status_message('cancelled'));
 	}
 }

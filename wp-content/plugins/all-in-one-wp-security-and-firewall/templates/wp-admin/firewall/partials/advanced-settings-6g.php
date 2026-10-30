@@ -1,8 +1,12 @@
 <?php if (!defined('ABSPATH')) die('Access denied.'); ?>
 <h3><?php esc_html_e('Block request methods', 'all-in-one-wp-security-and-firewall'); ?></h3>
-<span data-tooltip="<?php echo esc_attr__('HTTP request methods are used by browsers and clients to communicate with servers to get responses.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_attr__('The below request methods are not necessary for every site to function and you may disable all HTTP request methods that are not essential for your site to function.', 'all-in-one-wp-security-and-firewall'); ?>">
-	<span class="dashicons dashicons-editor-help"></span>
-</span>
+<?php
+AIOWPSecurity_Utility_UI::tooltip(array(
+	__('HTTP request methods are used by browsers and clients to communicate with servers to get responses.', 'all-in-one-wp-security-and-firewall'),
+	'',
+	__('The below request methods are not necessary for every site to function and you may disable all HTTP request methods that are not essential for your site to function.', 'all-in-one-wp-security-and-firewall'),
+), 5);
+?>
 <div class="options">
 	<table class="form-table">
 		<?php foreach ($block_request_methods as $block_request_method) {?>
@@ -13,25 +17,31 @@
 					<div class="aiowps_switch_container">
 						<?php /* translators: %s: Block request method */ ?>
 						<?php AIOWPSecurity_Utility_UI::setting_checkbox(sprintf(__('Check this to block the %s request method', 'all-in-one-wp-security-and-firewall'), strtoupper($block_request_method)), "aiowps_block_request_method_{$block_request_method}", in_array(strtoupper($block_request_method), $methods)); ?>
-						<?php if ('put' == $block_request_method) {?>
-						<span class="aiowps_more_info_anchor"><span class="aiowps_more_info_toggle_char">+</span><span class="aiowps_more_info_toggle_text"><?php esc_html_e('More info', 'all-in-one-wp-security-and-firewall'); ?></span></span>
-						<div class="aiowps_more_info_body">
-							<?php
-								echo '<p class="description">' . esc_html__('Some WooCommerce extensions use the PUT request method in addition to GET and POST.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__("This means WooCommerce users shouldn't block the PUT request method.", 'all-in-one-wp-security-and-firewall') . '</p>';
-								echo '<p class="description">' . esc_html__('A few REST requests use the PUT request method.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('If your site is communicated by the WP REST API, you should not block the PUT request method.', 'all-in-one-wp-security-and-firewall') . '</p>';
-							?>
-						</div>
+						<?php
+						if ('put' == $block_request_method) {
+							AIOWPSecurity_Utility_UI::tooltip(array(
+								__('Some WooCommerce extensions use the PUT request method in addition to GET and POST.', 'all-in-one-wp-security-and-firewall'),
+								__("This means WooCommerce users shouldn't block the PUT request method.", 'all-in-one-wp-security-and-firewall'),
+								'',
+								__('A few REST requests use the PUT request method.', 'all-in-one-wp-security-and-firewall'),
+								'',
+								__('If your site is communicated by the WP REST API, you should not block the PUT request method.', 'all-in-one-wp-security-and-firewall'),
+							), 8);
+						}
+						?>
 					</div>
-						<?php } ?>
 				</td>
 			</tr>
 		<?php } ?>
 	</table>
 </div>
 <h3><?php esc_html_e('Other settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
-<span data-tooltip="<?php esc_attr_e('The 6G firewall provides other settings for blocking malicious query strings, request strings, referrers and user-agents; you can configure their settings below.', 'all-in-one-wp-security-and-firewall'); ?>">
-	<span class="dashicons dashicons-editor-help"></span>
-</span>
+<?php
+	AIOWPSecurity_Utility_UI::tooltip(
+		__('The 6G firewall provides other settings for blocking malicious query strings, request strings, referrers and user-agents; you can configure their settings below.', 'all-in-one-wp-security-and-firewall'),
+		6
+	);
+?>
 <div class="options">
 	<table class="form-table">
 		<tr>

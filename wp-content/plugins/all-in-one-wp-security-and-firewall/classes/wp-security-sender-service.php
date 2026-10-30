@@ -22,7 +22,7 @@ class AIOWPSecurity_Sender_Service {
 		$result = wp_mail($recipient, $subject, $message, $headers, $attachments);
 
 		// Trigger an action after sending the email
-		do_action('aiowp_security_after_send_email', $recipient, $subject, $message, $headers, $attachments, $result);
+		do_action('aios_after_send_email', $recipient, $subject, $message, $headers, $attachments, $result);
 
 		return $result;
 	}

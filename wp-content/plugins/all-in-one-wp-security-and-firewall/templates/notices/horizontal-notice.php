@@ -1,4 +1,4 @@
-<?php if (!defined('AIO_WP_SECURITY_PATH')) die('No direct access allowed'); ?>
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 
 <?php if (!empty($button_meta) && 'review' == $button_meta) : ?>
 
@@ -9,22 +9,20 @@
 			<img src="<?php echo esc_url(AIO_WP_SECURITY_URL) . '/images/' . esc_attr($image);?>" width="100" alt="<?php esc_html_e('notice image', 'all-in-one-wp-security-and-firewall');?>" />
 		</div>
 		<div class="aiowps_advert_content_right">
+			<h4><?php esc_html_e('Enjoying All-In-One Security?', 'all-in-one-wp-security-and-firewall'); ?></h4>
 			<p>
 				<?php echo wp_kses_post($text); ?>
 			</p>
-					
 			<?php if (!empty($button_link)) { ?>
 				<div class="aiowps_advert_button_container">
 					<a class="button button-primary" href="<?php echo esc_url($button_link);?>" target="_blank" onclick="jQuery(this).closest('.aiowps_ad_container').slideUp(); jQuery.post(ajaxurl, {action: 'aios_ajax', subaction: 'dismiss_notice', nonce: '<?php echo esc_js(wp_create_nonce('wp-security-ajax-nonce')); ?>', data: { notice: '<?php echo esc_js($dismiss_time);?>', dismiss_forever: '1'}});">
-						<?php esc_html_e('Review', 'all-in-one-wp-security-and-firewall'); ?>
+						<?php esc_html_e('Leave a review', 'all-in-one-wp-security-and-firewall'); ?>
 					</a>
-					<div class="dashicons dashicons-calendar"></div>
-					<a class="aiowps_notice_link" href="#" onclick="jQuery(this).closest('.aiowps_ad_container').slideUp(); jQuery.post(ajaxurl, {action: 'aios_ajax', subaction: 'dismiss_notice', nonce: '<?php echo esc_js(wp_create_nonce('wp-security-ajax-nonce')); ?>', data: { notice: '<?php echo esc_js($dismiss_time);?>', dismiss_forever: '0'}});">
+					<a class="aiowps_notice_link button button-secondary" href="#" onclick="jQuery(this).closest('.aiowps_ad_container').slideUp(); jQuery.post(ajaxurl, {action: 'aios_ajax', subaction: 'dismiss_notice', nonce: '<?php echo esc_js(wp_create_nonce('wp-security-ajax-nonce')); ?>', data: { notice: '<?php echo esc_js($dismiss_time);?>', dismiss_forever: '0'}});">
 						<?php esc_html_e('Maybe later', 'all-in-one-wp-security-and-firewall'); ?>
 					</a>
-					<div class="dashicons dashicons-no-alt"></div>
 					<a class="aiowps_notice_link" href="#" onclick="jQuery(this).closest('.aiowps_ad_container').slideUp(); jQuery.post(ajaxurl, {action: 'aios_ajax', subaction: 'dismiss_notice', nonce: '<?php echo esc_js(wp_create_nonce('wp-security-ajax-nonce')); ?>', data: { notice: '<?php echo esc_js($dismiss_time);?>', dismiss_forever: '1'}});">
-						<?php esc_html_e('Never', 'all-in-one-wp-security-and-firewall'); ?>
+						<?php esc_html_e('No, thanks', 'all-in-one-wp-security-and-firewall'); ?>
 					</a>
 				</div>
 			<?php } ?>
@@ -62,6 +60,7 @@
 					if ('inline' == $button_meta) {
 						?>
 						<br>
+						<?php // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- UpdraftPlus compatibility hook.?>
 						<a href="<?php echo esc_attr(apply_filters('updraftplus_com_link', $button_link));?>"><strong><?php echo esc_html($button_text); ?></strong></a>
 						<?php
 						echo wp_kses_post($text2);

@@ -1,12 +1,9 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Upgrade unsafe HTTP calls', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Upgrade unsafe HTTP calls', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div id="upgrade-unsafe-http-calls-badge">
-			<?php
-			// Display security info badge
-			$aiowps_feature_mgr->output_feature_details_badge('upgrade-unsafe-http-calls');
-			?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge('upgrade-unsafe-http-calls'); ?>
 		</div>
 		<form action="" id="aios-upgrade-unsafe-http-calls-settings-form">
 			<div class="aio_blue_box">
@@ -32,13 +29,13 @@
 						<textarea id="aiowps_upgrade_unsafe_http_calls_url_exceptions" name="aiowps_upgrade_unsafe_http_calls_url_exceptions" rows="5" cols="50"><?php echo esc_textarea($aiowps_upgrade_unsafe_http_calls_url_exceptions); ?></textarea>
 						<br>
 						<span class="description"><?php esc_html_e('Enter URL exceptions.', 'all-in-one-wp-security-and-firewall'); ?></span>
-						<span class="aiowps_more_info_anchor"><span class="aiowps_more_info_toggle_char">+</span><span class="aiowps_more_info_toggle_text"><?php esc_html_e('More Info', 'all-in-one-wp-security-and-firewall'); ?></span></span>
-						<div class="aiowps_more_info_body">
-							<?php
-								echo '<p class="description">' . esc_html__('Each URL must be on a new line.', 'all-in-one-wp-security-and-firewall') . '</p>';
-								echo '<p class="description">' . esc_html__('All localhost URLs are already an exception.', 'all-in-one-wp-security-and-firewall') . '</p>';
-							?>
-						</div>
+						<?php
+						AIOWPSecurity_Utility_UI::tooltip(array(
+							__('Each URL must be on a new line.', 'all-in-one-wp-security-and-firewall'),
+							'',
+							__('All localhost URLs are already an exception.', 'all-in-one-wp-security-and-firewall'),
+						));
+						?>
 					</td>
 				</tr>
 			</table>

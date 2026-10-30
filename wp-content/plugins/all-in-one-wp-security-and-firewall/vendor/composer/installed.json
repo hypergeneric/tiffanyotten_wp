@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "mlocati/ip-lib",
-            "version": "1.22.0",
-            "version_normalized": "1.22.0.0",
+            "version": "1.22.1",
+            "version_normalized": "1.22.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mlocati/ip-lib.git",
-                "reference": "4e40ffd3bf9989db19403d89c4d8be44b87b8a91"
+                "reference": "f096c0e9ec8bd4691ee45394cfb77c97c6bba272"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mlocati/ip-lib/zipball/4e40ffd3bf9989db19403d89c4d8be44b87b8a91",
-                "reference": "4e40ffd3bf9989db19403d89c4d8be44b87b8a91",
+                "url": "https://api.github.com/repos/mlocati/ip-lib/zipball/f096c0e9ec8bd4691ee45394cfb77c97c6bba272",
+                "reference": "f096c0e9ec8bd4691ee45394cfb77c97c6bba272",
                 "shasum": ""
             },
             "require": {
@@ -22,7 +22,7 @@
                 "ext-pdo_sqlite": "*",
                 "phpunit/phpunit": "^4.8 || ^5.7 || ^6.5 || ^7.5 || ^8.5 || ^9.5"
             },
-            "time": "2025-10-15T12:35:09+00:00",
+            "time": "2026-09-17T09:24:44+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -60,7 +60,7 @@
             ],
             "support": {
                 "issues": "https://github.com/mlocati/ip-lib/issues",
-                "source": "https://github.com/mlocati/ip-lib/tree/1.22.0"
+                "source": "https://github.com/mlocati/ip-lib/tree/1.22.1"
             },
             "funding": [
                 {
@@ -109,25 +109,6 @@
             ],
             "description": "These are the common libs used across all of our projects",
             "install-path": "../team-updraft/common-libs"
-        },
-        {
-            "name": "team-updraft/lib-central",
-            "version": "1.25.6",
-            "version_normalized": "1.25.6.0",
-            "source": {
-                "type": "git",
-                "url": "ssh://git@source.updraftplus.com:20022/team-updraft/lib-central.git",
-                "reference": "888161bd56e469a660c1c3607d9b16d82aead64d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://source.updraftplus.com/api/v4/projects/106/packages/composer/archives/team-updraft/lib-central.zip?sha=888161bd56e469a660c1c3607d9b16d82aead64d",
-                "reference": "888161bd56e469a660c1c3607d9b16d82aead64d",
-                "shasum": ""
-            },
-            "type": "library",
-            "installation-source": "dist",
-            "install-path": "../team-updraft/lib-central"
         },
         {
             "name": "team-updraft/lib-onboarding-wizard",

@@ -15,7 +15,7 @@
 		),
 	);
 
-	$templates = apply_filters('aiowps_modify_htaccess_firewall_rules_template', $templates);
+	$templates = apply_filters('aios_modify_htaccess_firewall_rules_template', $templates);
 
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
 	$subtab = isset($_GET['subtab']) ? sanitize_text_field(wp_unslash($_GET['subtab'])) : '';
@@ -36,10 +36,9 @@
 
 				foreach ($templates as $key => $template) {
 					// Check if the current title is the first title
-					$is_active = ($key === $subtab || $template['title'] === $first_title) ? 'class="aiowps-active"' : '';
 					$title = $template['title'];
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- PCP error. No user input to escape.
-					echo '<li data-template="' . esc_attr($key) . '" ' . $is_active . '><span class="aiowps-rule-title">' . esc_attr($title) . '</span></li>';
+					$class = ($key === $subtab || (empty($subtab) && $title === $first_title)) ? 'aiowps-active' : '';
+					echo '<li data-template="'.esc_attr($key).'" class="'.esc_attr($class).'"><span class="aiowps-rule-title">'.esc_attr($title).'</span></li>';
 				}
 				?>
 			</ul>

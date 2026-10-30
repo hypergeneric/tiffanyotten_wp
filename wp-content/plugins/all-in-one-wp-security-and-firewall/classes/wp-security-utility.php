@@ -73,25 +73,72 @@ class AIOWPSecurity_Utility {
 	}
 
 	/**
-	 * Redirects to specified URL
+	 * Redirects the user to the specified URL.
 	 *
-	 * @param type $url
-	 * @param type $delay
-	 * @param type $exit
+	 * Optionally sends no-cache headers before redirecting. If HTTP headers have
+	 * already been sent, falls back to a meta refresh redirect.
+	 *
+	 * @param string $url      The URL to redirect to.
+	 * @param bool   $exit     Whether to terminate script execution after redirecting.
+	 * @param bool   $no_cache Whether to send no-cache headers before redirecting.
+	 *
+	 * @return void
 	 */
-	public static function redirect_to_url($url, $delay = '0', $exit = '1') {
+	public static function redirect_to_url($url, $exit = true, $no_cache = false) {
 		if (empty($url)) {
-			echo "<br /><strong>Error! The URL value is empty. Please specify a correct URL value to redirect to!</strong>";
+			echo '<br><strong>';
+			esc_html_e('Error: The URL value is empty.', 'all-in-one-wp-security-and-firewall');
+			echo ' ';
+			esc_html_e('Enter a URL value to redirect to.', 'all-in-one-wp-security-and-firewall');
+			echo '</strong>';
 			exit;
 		}
 		if (!headers_sent()) {
-			header('Location: ' . $url);
+			if (true === $no_cache) {
+				header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+				header('Pragma: no-cache');
+				header('Expires: 0');
+			}
+			header('Location: ' . $url, true, 302);
 		} else {
-			echo '<meta http-equiv="refresh" content="' . esc_attr($delay) . ';url=' . esc_url($url) . '" />';
+			if (true === $no_cache) {
+				echo '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />';
+				echo '<meta http-equiv="Pragma" content="no-cache" />';
+				echo '<meta http-equiv="Expires" content="0" />';
+			}
+			echo '<meta http-equiv="refresh" content="0;url=' . esc_url($url) . '" />';
 		}
-		if ('1' == $exit) {
+		if (true === $exit) {
 			exit;
 		}
+	}
+
+	/**
+	 * Check whether a relative-path redirect slug is actually a full/protocol-relative URL rather than a same-site relative path.
+	 *
+	 * @param string $slug The user-supplied redirect value (expected to already be sanitized with sanitize_text_field()).
+	 *
+	 * @return boolean True if the value points off-site (or attempts to).
+	 */
+	public static function is_external_redirect_slug($slug) {
+		return (bool) preg_match('#^([a-z][a-z0-9+.-]*:)?//#i', $slug);
+	}
+
+	/**
+	 * Check whether a relative-path redirect slug would resolve back to wp-admin or the login page.
+	 *
+	 * Redirecting a logged-out wp-admin visitor back to wp-admin (or the login page) would either
+	 * create an infinite redirect loop or defeat the purpose of the redirect, so these are disallowed.
+	 *
+	 * @param string $slug The user-supplied redirect value (expected to already be sanitized with sanitize_text_field()).
+	 *
+	 * @return boolean True if the path resolves to an admin or login endpoint.
+	 */
+	public static function is_admin_or_login_redirect_slug($slug) {
+		// Drop any query string/fragment and leading slashes before matching the path itself.
+		$path = ltrim(preg_replace('/[?#].*$/', '', $slug), '/');
+
+		return ('wp-admin' === strtolower($path)) || (0 === stripos($path, 'wp-admin/')) || (0 === stripos($path, 'wp-login.php'));
 	}
 
 	/**
@@ -423,7 +470,7 @@ class AIOWPSecurity_Utility {
 			'event_data' => '',
 		);
 
-		$data = apply_filters('aiowps_filter_event_logger_data', $data);
+		$data = apply_filters('aios_filter_event_logger_data', $data);
 		//log to database
 		$country_code = isset($data['country_code']) ? $data['country_code'] : '';
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- PCP error. irect query required. Table name cannot be prepared pre WP 6.2.
@@ -474,13 +521,10 @@ class AIOWPSecurity_Utility {
 			return false;
 		}
 
-		$blacklisted_ips = $aio_wp_security->configs->get_value('aiowps_banned_ip_addresses');
-		$blacklisted_ips_array = explode("\n", $blacklisted_ips);
-		if (in_array($ip, $blacklisted_ips_array)) {
-			return true;
-		} else {
-			return false;
-		}
+		return AIOS_Helper::is_ip_address_within_list(
+			$ip,
+			explode("\n", $aio_wp_security->configs->get_value('aiowps_banned_ip_addresses'))
+		) != AIOS_Helper::IP_NOT_IN_LIST;
 	}
 
 	/**
@@ -625,20 +669,20 @@ class AIOWPSecurity_Utility {
 	/**
 	 * Purges old records of table
 	 *
-	 * @global type $wpdb            WP Database object
-	 * @global type $aio_wp_security AIO WP Security object
+	 * @global type $wpdb                    WP Database object
+	 * @global type $aio_wp_security         AIO WP Security object
 	 * @param type $table_name               Table name
 	 * @param type $purge_records_after_days Records after days to be deleted
-	 * @param type $date_field               Date field of table
+	 * @param type $timestamp_field          Timestamp field of table
 	 * @return void
 	 */
-	public static function purge_table_records($table_name, $purge_records_after_days, $date_field) {
+	public static function purge_table_records($table_name, $purge_records_after_days, $timestamp_field) {
 		global $wpdb, $aio_wp_security;
 
 		$older_than_date_time = strtotime('-' . $purge_records_after_days . ' days', time());
-		if ('created' != $date_field) $older_than_date_time = gmdate('Y-m-d H:i:s', $older_than_date_time);
+		
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- PCP error. Direct query required. Table name cannot be prepared pre WP 6.2.
-		$sql = $wpdb->prepare('DELETE FROM ' . $table_name . ' WHERE '.$date_field.' < %s', $older_than_date_time);
+		$sql = $wpdb->prepare('DELETE FROM ' . $table_name . ' WHERE '.$timestamp_field.' < %s', $older_than_date_time);
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- PCP warning. Prepared above.
 		$ret_deleted = $wpdb->query($sql);
 		if (false === $ret_deleted) {
@@ -1293,7 +1337,7 @@ class AIOWPSecurity_Utility {
 		$json_array = json_decode($body, true);
 
 		if (!isset($json_array['prefixes'])) {
-			return new WP_Error('invalid_json', __('The Googlebot IP ranges could not be retrieved.', 'all-in-one-wp-security-and-firewall') . ' ' . __('Please try again later or contact support if the issue persists.', 'all-in-one-wp-security-and-firewall'));
+			return new WP_Error('invalid_json', __('The Googlebot IP ranges could not be retrieved.', 'all-in-one-wp-security-and-firewall') . ' ' . __('Try again later or contact support if the issue persists.', 'all-in-one-wp-security-and-firewall'));
 		}
 
 		$ip_list_array = array();
@@ -1317,7 +1361,7 @@ class AIOWPSecurity_Utility {
 		$json_array = json_decode($body, true);
 
 		if (!isset($json_array['prefixes'])) {
-			return new WP_Error('invalid_json', __('The Bingbot IP ranges could not be retrieved.', 'all-in-one-wp-security-and-firewall') . ' ' . __('Please try again later or contact support if the issue persists.', 'all-in-one-wp-security-and-firewall'));
+			return new WP_Error('invalid_json', __('The Bingbot IP ranges could not be retrieved.', 'all-in-one-wp-security-and-firewall') . ' ' . __('Try again later or contact support if the issue persists.', 'all-in-one-wp-security-and-firewall'));
 		}
 
 		$ip_list_array = array();
@@ -1437,6 +1481,9 @@ class AIOWPSecurity_Utility {
 	/**
 	 * Unblacklists an IP address.
 	 *
+	 * This function will not remove blacklisted ranges.
+	 * Only use this function if we know the IP is blacklisted exactly.
+	 *
 	 * @global AIO_WP_Security $aio_wp_security
 	 * @global AIOWPS\Firewall\Config $aiowps_firewall_config
 	 *
@@ -1448,22 +1495,36 @@ class AIOWPSecurity_Utility {
 		global $aio_wp_security;
 		$aiowps_firewall_config = AIOS_Firewall_Resource::request(AIOS_Firewall_Resource::CONFIG);
 
-		$blacklisted_ip_addresses = $aio_wp_security->configs->get_value('aiowps_banned_ip_addresses');
+		$blacklisted_ips_array = AIOWPSecurity_Utility_IP::create_ip_list_array_from_string_with_newline(
+			$aio_wp_security->configs->get_value('aiowps_banned_ip_addresses')
+		);
+		if (empty($blacklisted_ips_array)) return false;
 
-		$ip_list_array = AIOWPSecurity_Utility_IP::create_ip_list_array_from_string_with_newline($blacklisted_ip_addresses);
-
-		if (!in_array($ip, $ip_list_array)) {
-			return false;
+		if (!(include_once AIOWPS_FIREWALL_DIR.'/../../vendor/mlocati/ip-lib/ip-lib.php')) {
+			throw new \Exception("AIOWPSecurity_Utility::unblacklist_ip failed to load ip-lib.php");
 		}
 
-		$ip_list_array = array_diff($ip_list_array, array($ip));
+		$iplib_address = \IPLib\Factory::parseAddressString($ip);
 
-		$banned_ip_data = implode("\n", $ip_list_array);
+		foreach ($blacklisted_ips_array as $key => $blacklisted_ip_address) {
+			if ($blacklisted_ip_address == $ip) {
+				unset($blacklisted_ips_array[$key]);
+			} else {
+				switch (AIOS_Helper::range_contains_ip(\IPLib\Factory::parseRangeString($blacklisted_ip_address), $iplib_address)) {
+					case AIOS_Helper::IP_RANGE_MATCH:
+						continue 2; // Skip ranges
+					case AIOS_Helper::IP_EXACT_MATCH:
+						unset($blacklisted_ips_array[$key]);
+				}
+			}
+		}
 
-		$aio_wp_security->configs->set_value('aiowps_banned_ip_addresses', $banned_ip_data);
+		$blacklisted_ips_array = array_values($blacklisted_ips_array);
+
+		$aio_wp_security->configs->set_value('aiowps_banned_ip_addresses', implode("\n", $blacklisted_ips_array));
 		$aio_wp_security->configs->save_config();
 
-		$aiowps_firewall_config->set_value('aiowps_blacklist_ips', $ip_list_array);
+		$aiowps_firewall_config->set_value('aiowps_blacklist_ips', $blacklisted_ips_array);
 
 		return true;
 	}
@@ -1593,6 +1654,31 @@ class AIOWPSecurity_Utility {
 	}
 
 	/**
+	 * Check whether the current request is for a static asset.
+	 *
+	 * Static asset requests (such as missing images, stylesheets, scripts, fonts
+	 * or media files) are typically browser-initiated resource requests rather than
+	 * direct page requests. These are ignored to prevent Smart 404 false positives
+	 * caused by broken assets.
+	 *
+	 * @return bool True if the request is for a static asset, otherwise false.
+	 */
+	public static function is_static_asset_request() {
+
+		// Get the request path.
+		$path = wp_parse_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '', PHP_URL_PATH);
+
+		if (empty($path)) return false;
+
+		// Get the file extension from the request path.
+		$extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+		// Ignore common image, media, css, js, json and fonts file extensions.
+		$ignored_extensions = array('jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico', 'bmp', 'avif', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'mp4', 'webm', 'mov', 'avi', 'mkv', 'wmv', 'mpeg', 'mpg', 'm4v', '3gp', 'woff', 'woff2', 'ttf', 'otf', 'eot', 'js', 'json', 'css');
+
+		return in_array($extension, $ignored_extensions, true);
+	}
+
+	/**
 	 * Gets the rest route starting with namespace from the REST API endpoint
 	 * It excludes rest url prefix 'wp-json' and multisite folder from the endpoint
 	 * For example 'wc/store/v1/cart', 'contact-form-7/v1/contact-forms/45/feedback'
@@ -1600,7 +1686,7 @@ class AIOWPSecurity_Utility {
 	 * @return string rest route starting with namespace
 	 */
 	public static function get_rest_route() {
-		$rest_route = !empty($_GET['rest_route']) ? sanitize_text_field(stripslashes($_GET['rest_route'])) : '';
+		$rest_route = !empty($_GET['rest_route']) ? sanitize_text_field(wp_unslash($_GET['rest_route'])) : '';
 		// If route is not found in query parameter, extract from REQUEST_URI
 		if (empty($rest_route)) {
 			$request_uri = !empty($_SERVER['REQUEST_URI']) ? sanitize_text_field(urldecode($_SERVER['REQUEST_URI'])) : '';
@@ -1633,5 +1719,110 @@ class AIOWPSecurity_Utility {
 		$route_namespaces = array_unique($rest_route_namespaces);
 		sort($route_namespaces);
 		return $route_namespaces;
+	}
+	
+	/**
+	 * This function gets the maximum upload size allowed in php.ini without applying upload_size_limit filter
+	 *
+	 * @see https://developer.wordpress.org/reference/functions/wp_max_upload_size/
+	 *
+	 * @return int - the max upload limit in MB
+	 */
+	public static function get_wp_max_upload_size() {
+		$u_bytes = wp_convert_hr_to_bytes(ini_get('upload_max_filesize'));
+		$p_bytes = wp_convert_hr_to_bytes(ini_get('post_max_size'));
+		$size = min($u_bytes, $p_bytes);
+		if (is_multisite()) $size = upload_size_limit_filter($size);
+		return round($size/1024/1024, 0);
+	}
+
+	/**
+	 * Builds a prepared SQL IN clause from an array of numeric IDs.
+	 *
+	 * Filters out non-numeric values and returns a fully-prepared SQL fragment
+	 * (e.g. "IN (1,2,3)") safe to concatenate into a WHERE clause. Returns false
+	 * when no valid IDs remain, so the caller can short-circuit.
+	 *
+	 * @param array $entries Raw array of IDs.
+	 *
+	 * @return string|false Prepared "IN (...)" fragment, or false if the filtered array is empty.
+	 */
+	public static function prepare_numeric_in_clause(array $entries) {
+		global $wpdb;
+		$entries = array_filter($entries, 'is_numeric');
+		if (empty($entries)) {
+			return false;
+		}
+		$placeholders = implode(',', array_fill(0, count($entries), '%d'));
+		return $wpdb->prepare("IN ($placeholders)", array_values($entries)); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- intentional fragment
+	}
+
+	/**
+	 * Triggers the WP-Cron runner as soon as possible.
+	 *
+	 * Wraps core's spawn_cron(). On sites which define ALTERNATE_WP_CRON, core refuses to spawn
+	 * anything when called from a POST, AJAX or XML-RPC request - which is exactly how a scan is
+	 * started from the admin UI - so the work would sit unstarted until the next ordinary page
+	 * load. In that case we make the loopback request to wp-cron.php ourselves, which is what
+	 * spawn_cron() does on a site without the constant.
+	 *
+	 * @return bool True if cron was spawned, false otherwise.
+	 */
+	public static function spawn_cron() {
+		$request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : '';
+		$core_will_bail = 'GET' !== $request_method || defined('DOING_AJAX') || defined('XMLRPC_REQUEST');
+
+		if (defined('ALTERNATE_WP_CRON') && ALTERNATE_WP_CRON && $core_will_bail) {
+			return self::spawn_cron_loopback();
+		}
+
+		return (bool) spawn_cron();
+	}
+
+	/**
+	 * Makes the non-blocking loopback request to wp-cron.php.
+	 *
+	 * Mirrors the checks core's spawn_cron() makes before its own loopback, so that the cron lock
+	 * is still honoured and we do not spawn a run with nothing due.
+	 *
+	 * @return bool True if the request was made, false if it was skipped.
+	 */
+	private static function spawn_cron_loopback() {
+		if (defined('DOING_CRON') || isset($_GET['doing_wp_cron'])) return false;
+
+		$gmt_time = microtime(true);
+
+		$lock = (float) get_transient('doing_cron');
+		if ($lock > $gmt_time + 10 * MINUTE_IN_SECONDS) $lock = 0;
+
+		// Do not run if another process is currently running it, or more than once every 60 seconds.
+		if ($lock + WP_CRON_LOCK_TIMEOUT > $gmt_time) return false;
+
+		$crons = wp_get_ready_cron_jobs();
+		if (empty($crons)) return false;
+
+		$keys = array_keys($crons);
+		if (isset($keys[0]) && $keys[0] > $gmt_time) return false;
+
+		$doing_wp_cron = sprintf('%.22F', $gmt_time);
+		set_transient('doing_cron', $doing_wp_cron);
+
+		$cron_request = apply_filters('cron_request', array(
+			'url'  => add_query_arg('doing_wp_cron', $doing_wp_cron, site_url('wp-cron.php')),
+			'key'  => $doing_wp_cron,
+			'args' => array(
+				'timeout'   => 0.01,
+				'blocking'  => false,
+				/**
+			* This filter is documented in wp-includes/class-wp-http-streams.php
+			*/
+				'sslverify' => apply_filters('https_local_ssl_verify', false),
+			),
+		), $doing_wp_cron);
+
+		// wp-cron.php dies on any request carrying a POST body, so this must be sent without one.
+		$result = wp_remote_post($cron_request['url'], $cron_request['args']);
+
+		return !is_wp_error($result);
 	}
 }

@@ -14,7 +14,7 @@ class AIOWPSecurity_Cleanup {
 	 * Class constructor added action
 	 */
 	public function __construct() {
-		add_action('aiowps_perform_db_cleanup_tasks', array($this, 'aiowps_scheduled_db_cleanup_handler'));
+		add_action('aios_perform_db_cleanup_tasks', array($this, 'aiowps_scheduled_db_cleanup_handler'));
 	}
 	
 	/**
@@ -40,8 +40,36 @@ class AIOWPSecurity_Cleanup {
 		$purge_global_meta_records_after_days = AIOS_PURGE_GLOBAL_META_DATA_RECORDS_AFTER_DAYS; //purge older records in global meta table
 		$purge_global_meta_records_after_days = apply_filters('aios_purge_global_meta_records_after_days', $purge_global_meta_records_after_days);
 		AIOWPSecurity_Utility::purge_table_records($global_meta_table_name, $purge_global_meta_records_after_days, 'created');
+		
+		//Check the debug log table
+		$purge_debug_table_after_days = 90;
 
-		//Delete any expired _aiowps_captcha_string_info_xxxx option
+		if (defined('AIOWPSEC_PURGE_DEBUG_LOGS_AFTER_DAYS')) {
+			$purge_debug_table_after_days = absint(AIOWPSEC_PURGE_DEBUG_LOGS_AFTER_DAYS);
+		}
+		$purge_debug_table_after_days = empty($purge_debug_table_after_days) ? 90 : $purge_debug_table_after_days;
+		
+		$debug_table_name = AIOWPSEC_TBL_DEBUG_LOG;
+		AIOWPSecurity_Utility::purge_table_records($debug_table_name, $purge_debug_table_after_days, 'logtime');
+
+		// Check the audit log table.
+		$purge_audit_table_after_days = absint(AIOWPS_AUDIT_LOG_DEFAULT_RETENTION);
+
+		if (defined('AIOWPSEC_PURGE_AUDIT_LOGS_AFTER_DAYS')) $purge_audit_table_after_days = AIOWPSEC_PURGE_AUDIT_LOGS_AFTER_DAYS;
+
+		$purge_audit_table_after_days = apply_filters('aios_purge_audit_log_records_after_days', $purge_audit_table_after_days);
+
+		if (!is_int($purge_audit_table_after_days) || $purge_audit_table_after_days < 0 || $purge_audit_table_after_days > 3650) {
+			$purge_audit_table_after_days = absint(AIOWPS_AUDIT_LOG_DEFAULT_RETENTION);
+		}
+
+		// Purge audit logs when retention is not set to "No cleanup" (0).
+		if ($purge_audit_table_after_days > 0) {
+			$audit_table_name = AIOWPSEC_TBL_AUDIT_LOG;
+			AIOWPSecurity_Utility::purge_table_records($audit_table_name, $purge_audit_table_after_days, 'created');
+		}
+
+		// Delete any expired _aiowps_captcha_string_info_xxxx option.
 		AIOWPSecurity_Utility::delete_expired_captcha_options();
 		//Keep adding other DB cleanup tasks as they arise...
 	}

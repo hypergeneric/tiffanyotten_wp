@@ -29,13 +29,26 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 		$error = '';
 
 		if ('' == $data['aiowps_login_page_slug'] && isset($data["aiowps_enable_rename_login_page"])) {
-			$error = __('Please enter a value for your login page slug.', 'all-in-one-wp-security-and-firewall');
+			$error = __('Enter a value for your login page slug.', 'all-in-one-wp-security-and-firewall');
 		} elseif ('' != $data['aiowps_login_page_slug']) {
 			$aiowps_login_page_slug = sanitize_text_field($data['aiowps_login_page_slug']);
 			if ('wp-admin' == $aiowps_login_page_slug) {
-				$error = '<br>' . __('You cannot use the value "wp-admin" for your login page slug.', 'all-in-one-wp-security-and-firewall');
+				$error = __('You cannot use the value "wp-admin" for your login page slug.', 'all-in-one-wp-security-and-firewall');
 			} elseif (preg_match('/[^\p{L}\p{N}_\-]/u', $aiowps_login_page_slug)) {
-				$error = '<br>' . __('You must use alphanumeric characters for your login page slug.', 'all-in-one-wp-security-and-firewall');
+				$error = __('You must use alphanumeric characters for your login page slug.', 'all-in-one-wp-security-and-firewall');
+			}
+		}
+
+		$aiowps_rename_login_redirect_slug = isset($data['aiowps_rename_login_redirect_slug']) ? sanitize_text_field($data['aiowps_rename_login_redirect_slug']) : '';
+		$info = array();
+
+		if ('' !== $aiowps_rename_login_redirect_slug) {
+			if (AIOWPSecurity_Utility::is_external_redirect_slug($aiowps_rename_login_redirect_slug)) {
+				$info[] = __('The redirect URL must be a relative path on this site, not a full web address.', 'all-in-one-wp-security-and-firewall') . ' ' . __('It has been left blank.', 'all-in-one-wp-security-and-firewall');
+				$aiowps_rename_login_redirect_slug = '';
+			} elseif (AIOWPSecurity_Utility::is_admin_or_login_redirect_slug($aiowps_rename_login_redirect_slug)) {
+				$info[] = __('The redirect URL cannot point back to wp-admin or the login page, as this would cause a redirect loop.', 'all-in-one-wp-security-and-firewall') . ' ' . __('It has been left blank.', 'all-in-one-wp-security-and-firewall');
+				$aiowps_rename_login_redirect_slug = '';
 			}
 		}
 
@@ -45,6 +58,8 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 		} else {
 			$options['aiowps_enable_rename_login_page'] = isset($data["aiowps_enable_rename_login_page"]) ? '1' : '';
 			$options['aiowps_login_page_slug'] = $aiowps_login_page_slug;
+			$options['aiowps_enable_rename_login_redirect'] = isset($data["aiowps_enable_rename_login_redirect"]) ? '1' : '';
+			$options['aiowps_rename_login_redirect_slug'] = $aiowps_rename_login_redirect_slug;
 
 			$this->save_settings($options);
 
@@ -56,6 +71,7 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 
 			$message = __('The settings have been successfully updated.', 'all-in-one-wp-security-and-firewall');
 			$args['badges'] = array("bf-rename-login-page");
+			$args['info'] = $info;
 			$args['content'] = array('aios-rename-login-notice' => $aio_wp_security->include_template('wp-admin/brute-force/partials/rename-login-notice.php', true, array('home_url' => $home_url)));
 			$args['extra_args'] = array('logout_url' => $this->get_logout_url($options));
 		}
@@ -89,18 +105,16 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 
 		if (isset($data['aiowps_enable_brute_force_attack_prevention'])) {
 			$brute_force_feature_secret_word = sanitize_text_field($data['aiowps_brute_force_secret_word']);
-			$redirect_url = sanitize_text_field($data['aiowps_cookie_based_brute_force_redirect_url']);
+			$redirect_url = esc_url_raw($data['aiowps_cookie_based_brute_force_redirect_url']);
 			if (empty($brute_force_feature_secret_word)) {
 				$brute_force_feature_secret_word = AIOS_DEFAULT_BRUTE_FORCE_FEATURE_SECRET_WORD;
 				$info[] = __('You entered an invalid value for the secret word.', 'all-in-one-wp-security-and-firewall'). ' ' . __('It has been set to the default value.', 'all-in-one-wp-security-and-firewall');
 			} elseif (!ctype_alnum($brute_force_feature_secret_word)) {
-				$message = '<p>' . __('Settings have not been saved - your secret word must consist only of alphanumeric characters i.e., letters and/or numbers only.', 'all-in-one-wp-security-and-firewall') . '</p>';
+				$message = __('Settings have not been saved - your secret word must consist only of alphanumeric characters i.e., letters and/or numbers only.', 'all-in-one-wp-security-and-firewall');
 				$success = false;
 			}
 
-			if (filter_var($redirect_url, FILTER_VALIDATE_URL)) {
-				$redirect_url = esc_url_raw($redirect_url);
-			} else {
+			if (!filter_var($redirect_url, FILTER_VALIDATE_URL)) {
 				$redirect_url = 'http://127.0.0.1';
 				$info[] = __('You entered an invalid value for the redirect url.', 'all-in-one-wp-security-and-firewall'). ' ' . __('It has been set to the default value.', 'all-in-one-wp-security-and-firewall');
 			}
@@ -111,11 +125,12 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 				$options['aiowps_enable_brute_force_attack_prevention'] = '1';
 				$options['aiowps_brute_force_secret_word'] = $brute_force_feature_secret_word;
 
-				$result = '<p>' . __('You have successfully enabled the cookie based brute force prevention feature', 'all-in-one-wp-security-and-firewall') . '</p>';
-				$result .= '<p>' . __('From now on you will need to log into your WP Admin using the following URL:', 'all-in-one-wp-security-and-firewall') . '</p>';
+				$result = '<p>' . esc_html__('You have successfully enabled the cookie based brute force prevention feature', 'all-in-one-wp-security-and-firewall') . '</p>';
+				$result .= '<p>' . esc_html__('From now on you will need to log into your WP Admin using the following URL:', 'all-in-one-wp-security-and-firewall') . '</p>';
 				$result .= '<p><strong>'.AIOWPSEC_WP_URL.'/?'.esc_html($brute_force_feature_secret_word).'=1</strong></p>';
-				$result .= '<p>' . __('It is important that you save this URL value somewhere in case you forget it, OR,', 'all-in-one-wp-security-and-firewall') . '</p>';
-				$result .= '<p>' . sprintf(__('simply remember to add a "?%s=1" to your current site URL address.', 'all-in-one-wp-security-and-firewall'), esc_html($brute_force_feature_secret_word)) . '</p>';
+				$result .= '<p>' . esc_html__('It is important that you save this URL value somewhere in case you forget it, OR,', 'all-in-one-wp-security-and-firewall') . '</p>';
+				/* Translators: User-specified secret word */
+				$result .= '<p>' . sprintf(esc_html__('simply remember to add a "?%s=1" to your current site URL address.', 'all-in-one-wp-security-and-firewall'), esc_html($brute_force_feature_secret_word)) . '</p>';
 				AIOWPSecurity_Utility::set_cookie_value(AIOWPSecurity_Utility::get_brute_force_secret_cookie_name(), AIOS_Helper::get_hash($brute_force_feature_secret_word));
 			}
 		} else {
@@ -173,11 +188,11 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 		if ($set_cookie) {
 			$aiowps_cookie_test_success = '1';
 			$message = __('The cookie test was successful, you can now enable this feature.', 'all-in-one-wp-security-and-firewall');
-			$result = '<div class="aio_green_box"><p>' . __('The cookie test was successful, you can now enable this feature.', 'all-in-one-wp-security-and-firewall') . '</p></div>';
+			$result = '<div class="aio_green_box"><p>' . esc_html__('The cookie test was successful, you can now enable this feature.', 'all-in-one-wp-security-and-firewall') . '</p></div>';
 		} else {
 			$success = false;
 			$message = __('The cookie test failed.', 'all-in-one-wp-security-and-firewall')  .' '. __('Consequently, this feature cannot be used on this site.', 'all-in-one-wp-security-and-firewall');
-			$result = '<div class="aio_red_box"><p>' . __('The cookie test failed on this server.', 'all-in-one-wp-security-and-firewall') .' '. __('Consequently, this feature cannot be used on this site.', 'all-in-one-wp-security-and-firewall') . '</p></div>';
+			$result = '<div class="aio_red_box"><p>' . esc_html__('The cookie test failed on this server.', 'all-in-one-wp-security-and-firewall') .' '. esc_html__('Consequently, this feature cannot be used on this site.', 'all-in-one-wp-security-and-firewall') . '</p></div>';
 		}
 
 		$this->save_settings(array('aiowps_cookie_test_success' => $aiowps_cookie_test_success)); // save the value
@@ -204,13 +219,13 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 		$message = '';
 
 		if (!empty($data['aiowps_allowed_ip_addresses'])) {
-			$ip_addresses = sanitize_textarea_field(stripslashes($data['aiowps_allowed_ip_addresses']));
+			$ip_addresses = sanitize_textarea_field($data['aiowps_allowed_ip_addresses']);
 			$ip_list_array = AIOWPSecurity_Utility_IP::create_ip_list_array_from_string_with_newline($ip_addresses);
 			$validated_ip_list_array = AIOWPSecurity_Utility_IP::validate_ip_list($ip_list_array, 'whitelist');
 			if (is_wp_error($validated_ip_list_array)) {
 				$result = -1;
 				$success = false;
-				$message = nl2br($validated_ip_list_array->get_error_message());
+				$message = $validated_ip_list_array->get_error_message();
 			} else {
 				$result = 1;
 				$whitelist_ip_data = implode("\n", $validated_ip_list_array);
@@ -282,37 +297,32 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 
 		$captcha_themes = $aio_wp_security->captcha_obj->get_captcha_themes();
 		$supported_captchas = $aio_wp_security->captcha_obj->get_supported_captchas();
+
 		$options = array();
 
 		$default_captcha = isset($data['aiowps_default_captcha']) ? sanitize_text_field($data['aiowps_default_captcha']) : '';
+		$options['aiowps_default_captcha'] = array_key_exists($default_captcha, $supported_captchas) ? $default_captcha : 'none';
 
-		$default_captcha = array_key_exists($default_captcha, $supported_captchas) ? $default_captcha : 'none';
+		$options['aiowps_captcha_secret_key'] = AIOWPSecurity_Utility::generate_alpha_numeric_random_string(20); // Generate random 20 char string for use during CAPTCHA encode/decode
+		$options['aiowps_enable_login_captcha'] = isset($data['aiowps_enable_login_captcha']) ? '1' : '';
+		$options['aiowps_enable_registration_page_captcha'] = isset($data['aiowps_enable_registration_page_captcha']) ? '1' : '';
+		$options['aiowps_enable_comment_captcha'] = isset($data['aiowps_enable_comment_captcha']) ? '1' : '';
+		$options['aiowps_enable_bp_register_captcha'] = isset($data['aiowps_enable_bp_register_captcha']) ? '1' : '';
+		$options['aiowps_enable_bbp_new_topic_captcha'] = isset($data['aiowps_enable_bbp_new_topic_captcha']) ? '1' : '';
+		$options['aiowps_enable_woo_login_captcha'] = isset($data['aiowps_enable_woo_login_captcha']) ? '1' : '';
+		$options['aiowps_enable_woo_register_captcha'] = isset($data['aiowps_enable_woo_register_captcha']) ? '1' : '';
+		$options['aiowps_enable_woo_lostpassword_captcha'] = isset($data['aiowps_enable_woo_lostpassword_captcha']) ? '1' : '';
+		$options['aiowps_enable_woo_checkout_captcha'] = isset($data['aiowps_enable_woo_checkout_captcha']) ? '1' : '';
+		$options['aiowps_enable_custom_login_captcha'] = isset($data['aiowps_enable_custom_login_captcha']) ? '1' : '';
+		$options['aiowps_enable_lost_password_captcha'] = isset($data['aiowps_enable_lost_password_captcha']) ? '1' : '';
+		$options['aiowps_enable_contact_form_7_captcha'] = isset($data['aiowps_enable_contact_form_7_captcha']) ? '1' : '';
+		$options['aiowps_enable_password_protected_captcha'] = isset($data['aiowps_enable_password_protected_captcha']) ? '1' : '';
 
-		$options['aiowps_default_captcha'] = $default_captcha;
-
-		// Save all the form values to the options
-		$random_20_digit_string = AIOWPSecurity_Utility::generate_alpha_numeric_random_string(20); // Generate random 20 char string for use during CAPTCHA encode/decode
-		$options['aiowps_captcha_secret_key'] = $random_20_digit_string;
-		$options['aiowps_enable_login_captcha'] = isset($data["aiowps_enable_login_captcha"]) ? '1' : '';
-		$options['aiowps_enable_registration_page_captcha'] = isset($data["aiowps_enable_registration_page_captcha"]) ? '1' : '';
-		$options['aiowps_enable_comment_captcha'] = isset($data["aiowps_enable_comment_captcha"]) ? '1' : '';
-		$options['aiowps_enable_bp_register_captcha'] = isset($data["aiowps_enable_bp_register_captcha"]) ? '1' : '';
-		$options['aiowps_enable_bbp_new_topic_captcha'] = isset($data["aiowps_enable_bbp_new_topic_captcha"]) ? '1' : '';
-		$options['aiowps_enable_woo_login_captcha'] = isset($data["aiowps_enable_woo_login_captcha"]) ? '1' : '';
-		$options['aiowps_enable_woo_register_captcha'] = isset($data["aiowps_enable_woo_register_captcha"]) ? '1' : '';
-		$options['aiowps_enable_woo_lostpassword_captcha'] = isset($data["aiowps_enable_woo_lostpassword_captcha"]) ? '1' : '';
-		$options['aiowps_enable_woo_checkout_captcha'] = isset($data["aiowps_enable_woo_checkout_captcha"]) ? '1' : '';
-		$options['aiowps_enable_custom_login_captcha'] = isset($data["aiowps_enable_custom_login_captcha"]) ? '1' : '';
-		$options['aiowps_enable_lost_password_captcha'] = isset($data["aiowps_enable_lost_password_captcha"]) ? '1' : '';
-		$options['aiowps_enable_contact_form_7_captcha'] = isset($data["aiowps_enable_contact_form_7_captcha"]) ? '1' : '';
-		$options['aiowps_enable_password_protected_captcha'] = isset($data["aiowps_enable_password_protected_captcha"]) ? '1' : '';
-
-		$options['aiowps_turnstile_site_key'] = sanitize_text_field(stripslashes($data['aiowps_turnstile_site_key']));
-		$options['aiowps_recaptcha_site_key'] = sanitize_text_field(stripslashes($data['aiowps_recaptcha_site_key']));
+		$options['aiowps_turnstile_site_key'] = sanitize_text_field($data['aiowps_turnstile_site_key']);
+		$options['aiowps_recaptcha_site_key'] = sanitize_text_field($data['aiowps_recaptcha_site_key']);
 
 		$turnstile_theme = isset($data['aiowps_turnstile_theme']) ? sanitize_text_field($data['aiowps_turnstile_theme']) : '';
-		$turnstile_theme = array_key_exists($turnstile_theme, $captcha_themes) ? $turnstile_theme : 'auto';
-		$options['aiowps_turnstile_theme'] = $turnstile_theme;
+		$options['aiowps_turnstile_theme'] = array_key_exists($turnstile_theme, $captcha_themes) ? $turnstile_theme : 'auto';
 
 		// If secret key is masked then don't resave it
 		$turnstile_secret_key = sanitize_text_field($data['aiowps_turnstile_secret_key']);
@@ -326,32 +336,31 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 			$options['aiowps_recaptcha_secret_key'] = $recaptcha_secret_key;
 		}
 
-		if ('google-recaptcha-v2' == $aio_wp_security->configs->get_value('aiowps_default_captcha') && false === $aio_wp_security->captcha_obj->google_recaptcha_verify_configuration($aio_wp_security->configs->get_value('aiowps_recaptcha_site_key'), $aio_wp_security->configs->get_value('aiowps_recaptcha_secret_key'))) {
-			$options['aios_google_recaptcha_invalid_configuration'] = '1';
-		} elseif ('1' == $aio_wp_security->configs->get_value('aios_google_recaptcha_invalid_configuration')) {
-			$aio_wp_security->configs->delete_value('aios_google_recaptcha_invalid_configuration');
-		}
-
 		$this->save_settings($options);
 
-		$success = false;
+		$success = true;
 		$message = '';
-		if ('cloudflare-turnstile' == $aio_wp_security->configs->get_value('aiowps_default_captcha') && false === $aio_wp_security->captcha_obj->cloudflare_turnstile_verify_configuration($aio_wp_security->configs->get_value('aiowps_turnstile_site_key'), $aio_wp_security->configs->get_value('aiowps_turnstile_secret_key'))) {
-			$message = __('Your Cloudflare Turnstile configuration is invalid.', 'all-in-one-wp-security-and-firewall').' '.__('Please enter the correct Cloudflare Turnstile keys below to use the Turnstile feature.', 'all-in-one-wp-security-and-firewall');
-		} elseif ('google-recaptcha-v2' == $aio_wp_security->configs->get_value('aiowps_default_captcha') && '1' == $aio_wp_security->configs->get_value('aios_google_recaptcha_invalid_configuration')) {
-			$message = __('Your Google reCAPTCHA configuration is invalid.', 'all-in-one-wp-security-and-firewall').' '.__('Please enter the correct reCAPTCHA keys below to use the reCAPTCHA feature.', 'all-in-one-wp-security-and-firewall');
-		} else {
-			$success = true;
-		}
-
-		$features = array(
-			"user-login-captcha",
-			"user-registration-captcha",
-			"lost-password-captcha",
-			"custom-login-captcha",
-			"comment-form-captcha",
-			"password_protected-captcha",
+		$args = array(
+			'content' => array(
+				'aios-invalid-captcha-config-notice' => ''
+			),
+			'badges' => array(
+				"user-login-captcha",
+				"user-registration-captcha",
+				"lost-password-captcha",
+				"custom-login-captcha",
+				"comment-form-captcha",
+				"password_protected-captcha",
+			)
 		);
+
+		if (!$aio_wp_security->captcha_obj->verify_captcha_configuration($options['aiowps_default_captcha'])) {
+			$success = false;
+			$message = AIOWPSecurity_Captcha::display_invalid_config_message($options['aiowps_default_captcha'], '', true);
+			$args['content'] = array(
+				'aios-invalid-captcha-config-notice' => '<div class="aio_red_box"><p>'.$message.'</p></div>'
+			);
+		}
 
 		if (AIOWPSecurity_Utility::is_woocommerce_plugin_active()) {
 			$woocommerce_features = array(
@@ -360,26 +369,74 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 				"woo-register-captcha",
 				"woo-checkout-captcha",
 			);
-			$features = array_merge($features, $woocommerce_features);
+			$args['badges'] = array_merge($args['badges'], $woocommerce_features);
 		}
 
 		if (AIOWPSecurity_Utility::is_buddypress_plugin_active()) {
-			$features[] = "bp-register-captcha";
+			$args['badges'][] = "bp-register-captcha";
 		}
 
 		if (AIOWPSecurity_Utility::is_bbpress_plugin_active()) {
-			$features[] = "bbp-new-topic-captcha";
+			$args['badges'][] = "bbp-new-topic-captcha";
 		}
 
 		if (AIOWPSecurity_Utility::is_contact_form_7_plugin_active()) {
-			$features[] = "contact-form-7-captcha";
+			$args['badges'][] = "contact-form-7-captcha";
 		}
 
-		$args = array(
-			'badges' => $features
+		return $this->handle_response($success, $message, $args);
+	}
+
+	/**
+	 * Export 404 detection logs to a CSV format.
+	 *
+	 * This method prepares and exports the 404 detection logs by rendering the 404 detection table
+	 * and extracting necessary fields for output in CSV format.
+	 *
+	 * @return array Returns an associative array containing the title and data of the CSV export.
+	 */
+	public function export_404_detection_logs() {
+
+		// Needed for rendering the 404 detection table
+		include_once(AIO_WP_SECURITY_PATH.'/admin/wp-security-list-404.php');
+		$list_404 = new AIOWPSecurity_List_404();
+
+		$list_404->prepare_items(true);
+		
+		// Prevent empty CSV downloads when no records exist.
+		if (empty($list_404->items)) {
+			return array(
+				'success' => false,
+				'status'  => 'error',
+				'message' => __('No 404 event logs available to export.', 'all-in-one-wp-security-and-firewall')
+			);
+		}
+
+		$export_keys = array(
+			'id' => __('Id', 'all-in-one-wp-security-and-firewall'),
+			'event_type' => __('Event Type', 'all-in-one-wp-security-and-firewall'),
+			'ip_or_host' => __('IP Address', 'all-in-one-wp-security-and-firewall'),
+			'url' => __('Attempted URL', 'all-in-one-wp-security-and-firewall'),
+			'referer_info' => __('Referer', 'all-in-one-wp-security-and-firewall'),
+			'created' => __('Date and time', 'all-in-one-wp-security-and-firewall'),
+			'status' => __('Lock Status', 'all-in-one-wp-security-and-firewall'),
 		);
 
-		return $this->handle_response($success, $message, $args);
+		// Add country column for Premium.
+		if (AIOWPSecurity_Utility_Permissions::is_premium_installed()) {
+			$export_keys['country_code'] = __('Country', 'all-in-one-wp-security-and-firewall');
+		}
+
+		$title = '404_event_logs.csv';
+		ob_start();
+		AIOWPSecurity_Admin_Init::aiowps_output_csv($list_404->items, $export_keys, $title);
+
+		$data = ob_get_clean();
+
+		return array(
+			'title' => $title,
+			'data' => $data
+		);
 	}
 
 	/**
@@ -398,8 +455,8 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 		$options['aiowps_enable_404_logging'] = isset($data["aiowps_enable_404_IP_lockout"]) ? '1' : ''; //the "aiowps_enable_404_IP_lockout" checkbox currently controls both the 404 lockout and 404 logging
 		$options['aiowps_enable_404_IP_lockout'] = isset($data["aiowps_enable_404_IP_lockout"]) ? '1' : '';
 
-		$lockout_time_length = isset($data['aiowps_404_lockout_time_length']) ? sanitize_text_field($data['aiowps_404_lockout_time_length']) : '';
-		$redirect_url = isset($data['aiowps_404_lock_redirect_url']) ? sanitize_text_field(trim($data['aiowps_404_lock_redirect_url'])) : '';
+		$lockout_time_length = isset($data['aiowps_404_lockout_time_length']) ? absint($data['aiowps_404_lockout_time_length']) : '';
+		$redirect_url = isset($data['aiowps_404_lock_redirect_url']) ? esc_url_raw(trim($data['aiowps_404_lock_redirect_url'])) : '';
 
 		if (isset($data["aiowps_enable_404_IP_lockout"])) {
 			if (!is_numeric($lockout_time_length) || $lockout_time_length < 1) {
@@ -407,7 +464,7 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 				$lockout_time_length = '60'; // Set it to the default value for this field
 			}
 
-			if ('' == $redirect_url || '' == esc_url($redirect_url, array('http', 'https'))) {
+			if (!filter_var($redirect_url, FILTER_VALIDATE_URL)) {
 				$info[] = __('You entered an incorrect format for the "Redirect URL" field.', 'all-in-one-wp-security-and-firewall') . ' ' . __('It has been set to the default value.', 'all-in-one-wp-security-and-firewall');
 				$redirect_url = 'http://127.0.0.1';
 			}
@@ -449,11 +506,69 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 			$aio_wp_security->debug_logger->log_debug("404 Detection Feature - Delete all 404 event logs operation failed. $error", 4);
 			$success = false;
 			$message = __('404 Detection Feature - The operation to delete all the 404 event logs failed', 'all-in-one-wp-security-and-firewall');
+		} elseif (0 === $result) {
+			$success = false;
+			$message = __('No 404 event logs available to delete.', 'all-in-one-wp-security-and-firewall');
 		} else {
 			$message = __('All 404 event logs were deleted from the database successfully.', 'all-in-one-wp-security-and-firewall');
 		}
 
 		return $this->handle_response($success, $message);
+	}
+
+	/**
+	 * Save Smart 404 settings.
+	 *
+	 * @param array $data AJAX request data.
+	 *
+	 * @return array Response array.
+	 */
+	public function save_smart_404_settings($data) {
+		return apply_filters('aios_save_smart_404_settings', $this->handle_response(false, __('This feature is only available on AIOS Premium.', 'all-in-one-wp-security-and-firewall')), $data);
+	}
+
+	/**
+	 * Save Instant 404 Block settings.
+	 *
+	 * @param array $data Data from AJAX request.
+	 *
+	 * @return array Response array.
+	 */
+	public function save_instant_404_block_settings($data) {
+		return apply_filters('aios_save_instant_404_block_settings', $this->handle_response(false, __('This feature is only available on AIOS Premium.', 'all-in-one-wp-security-and-firewall')), $data);
+	}
+
+	/**
+	 * Save Smart 404 whitelist settings.
+	 *
+	 * @param array $data Data from AJAX request.
+	 *
+	 * @return array Response array.
+	 */
+	public function save_smart_404_whitelist_settings($data) {
+		return apply_filters('aios_save_smart_404_whitelist_settings', $this->handle_response(false, __('This feature is only available on AIOS Premium.', 'all-in-one-wp-security-and-firewall')), $data);
+	}
+
+	/**
+	 * Render the Smart 404 blocked IPs table.
+	 *
+	 * @param array $data Smart 404 blocked IP table data.
+	 *
+	 * @return array Response array.
+	 */
+	public function render_smart_404_blocked_ips_table($data) {
+		return apply_filters('aios_render_smart_404_blocked_ips_table', $this->handle_response(false, __('This feature is only available on AIOS Premium.', 'all-in-one-wp-security-and-firewall')), $data);
+	}
+
+	/**
+	 * Unblock a Smart 404 blocked IP address.
+	 *
+	 * @param array $data Data from AJAX request.
+	 *
+	 * @return array Response array.
+	 */
+	public function unblock_smart404_ip($data) {
+		return apply_filters('aios_unblock_smart404_ip', $this->handle_response(false, __('This feature is only available on AIOS Premium.', 'all-in-one-wp-security-and-firewall')), $data);
 	}
 
 	/**
@@ -492,11 +607,16 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 
 		$aiowps_enable_rename_login_page = $aio_wp_security->configs->get_value('aiowps_enable_rename_login_page');
 		$aiowps_login_page_slug = $aio_wp_security->configs->get_value('aiowps_login_page_slug');
+		$aiowps_enable_rename_login_redirect = $aio_wp_security->configs->get_value('aiowps_enable_rename_login_redirect');
+		$aiowps_rename_login_redirect_slug = $aio_wp_security->configs->get_value('aiowps_rename_login_redirect_slug');
 
 		return array(
 			'home_url' => $home_url,
+			'redirect_home_url' => trailingslashit(home_url()),
 			'aiowps_enable_rename_login_page' => $aiowps_enable_rename_login_page,
 			'aiowps_login_page_slug' => $aiowps_login_page_slug,
+			'aiowps_enable_rename_login_redirect' => $aiowps_enable_rename_login_redirect,
+			'aiowps_rename_login_redirect_slug' => $aiowps_rename_login_redirect_slug,
 		);
 	}
 
@@ -562,8 +682,6 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 
 		$aiowps_turnstile_site_key = $aio_wp_security->configs->get_value('aiowps_turnstile_site_key');
 		$aiowps_turnstile_secret_key = $aio_wp_security->configs->get_value('aiowps_turnstile_secret_key');
-		$cloudflare_turnstile_verify_configuration = $aio_wp_security->captcha_obj->cloudflare_turnstile_verify_configuration($aiowps_turnstile_site_key, $aiowps_turnstile_secret_key);
-		$aios_google_recaptcha_invalid_configuration = $aio_wp_security->configs->get_value('aios_google_recaptcha_invalid_configuration');
 		$aiowps_recaptcha_site_key = $aio_wp_security->configs->get_value('aiowps_recaptcha_site_key');
 		$aiowps_recaptcha_secret_key = $aio_wp_security->configs->get_value('aiowps_recaptcha_secret_key');
 
@@ -597,8 +715,6 @@ trait AIOWPSecurity_Brute_Force_Commands_Trait {
 			'aiowps_default_captcha' => $aiowps_default_captcha,
 			'aiowps_turnstile_site_key' => $aiowps_turnstile_site_key,
 			'aiowps_turnstile_secret_key' => AIOWPSecurity_Utility::mask_string($aiowps_turnstile_secret_key),
-			'cloudflare_turnstile_verify_configuration' => $cloudflare_turnstile_verify_configuration,
-			'aios_google_recaptcha_invalid_configuration' => $aios_google_recaptcha_invalid_configuration,
 			'aiowps_recaptcha_site_key' => $aiowps_recaptcha_site_key,
 			'aiowps_recaptcha_secret_key' => $aiowps_recaptcha_secret_key,
 			'is_woocommerce_plugin_active' => $is_woocommerce_plugin_active,

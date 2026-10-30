@@ -18,7 +18,7 @@ class AIOWPSecurity_Block_Htaccess extends AIOWPSecurity_Block_File {
 		if (!is_writable($home_path)) {
 			return new WP_Error(
 				'file_wrong_permissions',
-				'The file has incorrect write permissions. Please double check its permissions and try again.',
+				'The file has incorrect write permissions. Check the file permissions and try again.',
 				$this->file_path
 			);
 		}

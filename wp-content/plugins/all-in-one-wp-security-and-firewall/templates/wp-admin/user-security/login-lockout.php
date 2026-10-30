@@ -1,22 +1,35 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <h2><?php esc_html_e('Login lockout configuration', 'all-in-one-wp-security-and-firewall'); ?></h2>
 <div class="aio_blue_box">
-	<?php
-	$brute_force_login_feature_link = '<a href="admin.php?page=' . AIOWPSEC_BRUTE_FORCE_MENU_SLUG . '&tab=cookie-based-brute-force-prevention">' . esc_html__('Cookie-based brute force login prevention', 'all-in-one-wp-security-and-firewall').'</a>';
-	echo '<p>' . esc_html__('One of the ways hackers try to compromise sites is via a', 'all-in-one-wp-security-and-firewall') . ' ' .'<strong>' . esc_html__('Brute force login attack', 'all-in-one-wp-security-and-firewall') . '</strong>. ' . esc_html__('This is where attackers use repeated login attempts until they guess the password.', 'all-in-one-wp-security-and-firewall').'
-	<br />' . esc_html__('Apart from choosing strong passwords, monitoring and blocking IP addresses which are involved in repeated login failures in a short period of time is a very effective way to stop these types of attacks.', 'all-in-one-wp-security-and-firewall').
-	/* translators: %s: Brute force feature link. */
-	'<p>' . sprintf(esc_html__('You may also want to checkout our %s feature for another secure way to protect against these types of attacks.', 'all-in-one-wp-security-and-firewall'), $brute_force_login_feature_link) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Link already escaped.
-	?>
+	<p>
+		<?php
+		printf(
+			/* translators: 1: Opening <strong> tag. 2: Closing </strong> tag. */
+			esc_html__('One of the ways hackers try to compromise sites is via a %1$sBrute force login attack%2$s.', 'all-in-one-wp-security-and-firewall'),
+			'<strong>',
+			'</strong>',
+		);
+		?>
+		<?php esc_html_e('This is where attackers use repeated login attempts until they guess the password.', 'all-in-one-wp-security-and-firewall'); ?>
+		<br>
+		<?php esc_html_e('Apart from choosing strong passwords, monitoring and blocking IP addresses which are involved in repeated login failures in a short period of time is a very effective way to stop these types of attacks.', 'all-in-one-wp-security-and-firewall'); ?>
+		<br>
+		<br>
+		<?php
+			printf(
+				/* translators: 1: Opening link tag. 2: Closing link tag. */
+				esc_html__('You may also want to checkout our %1$sCookie-based brute force login prevention%2$s feature for another secure way to protect against these types of attacks.', 'all-in-one-wp-security-and-firewall'),
+				'<a href="admin.php?page='.esc_attr(AIOWPSEC_BRUTE_FORCE_MENU_SLUG).'&tab=cookie-based-brute-force-prevention">',
+				'</a>'
+			);
+		?>
+	</p>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Login lockout options', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Login lockout options', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div id="user-login-login-lockdown-badge">
-			<?php
-				// Display security info badge
-				$aiowps_feature_mgr->output_feature_details_badge("user-login-login-lockdown");
-			?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge("user-login-login-lockdown"); ?>
 		</div>
 		<form action="" method="POST" id="aios-user-login-lockdown-form">
 			<table class="form-table">
@@ -38,13 +51,13 @@
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="aiowps_max_login_attempts"><?php esc_html_e('Max login attempts', 'all-in-one-wp-security-and-firewall'); ?>:</label></th>
-					<td><input id="aiowps_max_login_attempts" type="text" size="5" name="aiowps_max_login_attempts" value="<?php echo esc_html($user_security_data['aiowps_max_login_attempts']); ?>" />
+					<td><input id="aiowps_max_login_attempts" type="number" min="1" name="aiowps_max_login_attempts" value="<?php echo esc_html($user_security_data['aiowps_max_login_attempts']); ?>" />
 					<span class="description"><?php esc_html_e('Set the value for the maximum login retries before IP address is locked out', 'all-in-one-wp-security-and-firewall'); ?></span>
 					</td>
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="aiowps_retry_time_period"><?php esc_html_e('Login retry time period (min)', 'all-in-one-wp-security-and-firewall'); ?>:</label></th>
-					<td><input id="aiowps_retry_time_period" type="text" size="5" name="aiowps_retry_time_period" value="<?php echo esc_html($user_security_data['aiowps_retry_time_period']); ?>" />
+					<td><input id="aiowps_retry_time_period" type="number" min="1" name="aiowps_retry_time_period" value="<?php echo esc_html($user_security_data['aiowps_retry_time_period']); ?>" />
 					<span class="description"><?php esc_html_e('If the maximum number of failed login attempts for a particular IP address occur within this time period the plugin will lock out that address', 'all-in-one-wp-security-and-firewall'); ?></span>
 					</td>
 				</tr>
@@ -53,7 +66,7 @@
 						<label for="aiowps_lockout_time_length"><?php esc_html_e('Minimum lockout time length', 'all-in-one-wp-security-and-firewall'); ?>:</label>
 					</th>
 					<td>
-					<input type="text" size="5" name="aiowps_lockout_time_length" id="aiowps_lockout_time_length" value="<?php echo esc_attr($user_security_data['aiowps_lockout_time_length']); ?>" />
+					<input type="number" min="1" name="aiowps_lockout_time_length" id="aiowps_lockout_time_length" value="<?php echo esc_attr($user_security_data['aiowps_lockout_time_length']); ?>" />
 					<span class="description">
 						<?php
 						echo esc_html__('Set the minimum time period in minutes of lockout.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('This failed login lockout time will be tripled on each failed login.', 'all-in-one-wp-security-and-firewall');
@@ -65,7 +78,7 @@
 					<th scope="row">
 						<label for="aiowps_max_lockout_time_length"><?php esc_html_e('Maximum lockout time length', 'all-in-one-wp-security-and-firewall'); ?>:</label>
 					</th>
-					<td><input type="text" size="5" name="aiowps_max_lockout_time_length" id="aiowps_max_lockout_time_length" value="<?php echo esc_attr($user_security_data['aiowps_max_lockout_time_length']); ?>" />
+					<td><input type="number" min="1" name="aiowps_max_lockout_time_length" id="aiowps_max_lockout_time_length" value="<?php echo esc_attr($user_security_data['aiowps_max_lockout_time_length']); ?>" />
 					<span class="description">
 						<?php
 						echo esc_html__('Set the maximum time period in minutes of lockout.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('No IP address will be blocked for more than this time period after making a failed login attempt.', 'all-in-one-wp-security-and-firewall')
@@ -114,16 +127,17 @@
 						<br />
 						<textarea id="aiowps_email_address" name="aiowps_email_address" cols="50" rows="5"><?php echo esc_textarea($user_security_data['aiowps_email_address']); ?></textarea><br>
 						<span class="description"><?php esc_html_e('Fill in one email address per line.', 'all-in-one-wp-security-and-firewall'); ?></span>
-						<span class="aiowps_more_info_anchor"><span class="aiowps_more_info_toggle_char">+</span><span class="aiowps_more_info_toggle_text"><?php esc_html_e('More info', 'all-in-one-wp-security-and-firewall'); ?></span></span>
-						<div class="aiowps_more_info_body">
-								<?php
-								echo '<p class="description">' . esc_html__('Each email address must be on a new line.', 'all-in-one-wp-security-and-firewall') . '</p>';
-								echo '<p class="description">' . esc_html__('If a valid email address has not been filled in, it will not be saved.', 'all-in-one-wp-security-and-firewall') . '</p>';
-								echo '<p class="description">' . esc_html__('The valid email address format is userid@example.com', 'all-in-one-wp-security-and-firewall') . '</p>';
-								/* translators: %s: Email example. */
-								echo '<p class="description">' . sprintf(esc_html__('Example: %s', 'all-in-one-wp-security-and-firewall'), 'rick@wordpress.org') . '</p>';
-								?>
-						</div>
+						<?php
+						AIOWPSecurity_Utility_UI::tooltip(array(
+							__('Each email address must be on a new line.', 'all-in-one-wp-security-and-firewall'),
+							__('If a valid email address has not been filled in, it will not be saved.', 'all-in-one-wp-security-and-firewall'),
+							'',
+							__('The valid email address format is userid@example.com', 'all-in-one-wp-security-and-firewall'),
+							'',
+							/* translators: %s: Email example. */
+							sprintf(__('Example: %s', 'all-in-one-wp-security-and-firewall'), 'rick@wordpress.org'),
+						));
+						?>
 					</td>
 				</tr>
 				<tr valign="top">
@@ -144,25 +158,27 @@
 	</div>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Currently locked out IP address ranges', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Currently locked out IP address ranges', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div class="aio_blue_box aio_width_80">
+			<p>
 			<?php
-			$locked_ips_link = '<a href="admin.php?page=' . AIOWPSEC_MAIN_MENU_SLUG . '&tab=locked-ip">Locked IP addresses</a>';
-			/* translators: %s: Locked IP link. */
-			echo '<p>' . sprintf(esc_html__('To see a list of all locked IP addresses and ranges go to the %s tab in the dashboard menu.', 'all-in-one-wp-security-and-firewall'), $locked_ips_link) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Link already escaped.
+			printf(
+				/* translators: 1: Opening link tag 2: closing link tag. */
+				esc_html__('To see a list of all locked IP addresses and ranges go to the %1$sLocked IP addresses tab%2$s in the dashboard menu.', 'all-in-one-wp-security-and-firewall'),
+				'<a href="admin.php?page='.esc_attr(AIOWPSEC_MAIN_MENU_SLUG).'&tab=locked-ip">',
+				'</a>'
+			);
 			?>
+			</p>
 		</div>
 	</div>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Login lockout IP whitelist settings', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Login lockout IP whitelist settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div id="user-login-lockout-ip-whitelisting-badge">
-			<?php
-			// Display security info badge
-			$aiowps_feature_mgr->output_feature_details_badge("user-login-lockout-ip-whitelisting");
-			?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge("user-login-lockout-ip-whitelisting"); ?>
 		</div>
 		<form action="" method="POST" id="aios-user-login-lockout-whitelist-settings-form">
 			<table class="form-table">

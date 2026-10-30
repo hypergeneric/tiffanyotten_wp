@@ -28,8 +28,11 @@ trait AIOWPSecurity_File_Scan_Commands_Trait {
 		$fcd_scan_frequency = sanitize_text_field($data['aiowps_fcd_scan_frequency']);
 
 		if (!is_numeric($fcd_scan_frequency)) {
-			$errors[] = esc_html__('You entered a non numeric value for the "backup time interval" field, it has been set to the default value.', 'all-in-one-wp-security-and-firewall');
-			$fcd_scan_frequency = '4'; // Set it to the default value for this field
+			$errors[] = __('You entered a non numeric value for the "backup time interval" field, it has been set to the default value.', 'all-in-one-wp-security-and-firewall');
+			$fcd_scan_frequency = '4'; // Set it to the default value for this field.
+		} elseif ((int) $fcd_scan_frequency < 1) {
+			$errors[] = __('You must enter an integer greater than zero for the "scan time interval" field; it has been set to the default value.', 'all-in-one-wp-security-and-firewall');
+			$fcd_scan_frequency = '4';// Set it to the default value for this field.
 		}
 
 		if (!empty($data['aiowps_fcd_exclude_filetypes'])) {
@@ -54,13 +57,13 @@ trait AIOWPSecurity_File_Scan_Commands_Trait {
 		foreach ($email_list_array as $key => $value) {
 			$email_sane = sanitize_email($value);
 			if (!is_email($email_sane)) {
-				$errors[] = esc_html__('The following address was removed because it is not a valid email address:', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html($value);
+				$errors[] = __('The following address was removed because it is not a valid email address:', 'all-in-one-wp-security-and-firewall') . ' ' . $value;
 				unset($email_list_array[$key]);
 			}
 		}
 		$email_address = implode("\n", $email_list_array);
 		if (!empty($errors)) {
-			$info[] = implode('<br>', $errors);
+			$info[] = implode("\n", $errors);
 		}
 
 		// Save all the form values to the options
@@ -85,7 +88,7 @@ trait AIOWPSecurity_File_Scan_Commands_Trait {
 
 		if ($reset_scan_data) {
 			$this->initiate_file_scan();
-			$new_scan_alert = esc_html__('New scan completed: The plugin has detected that you have made changes to the "File Types To Ignore" or "Files To Ignore" fields.', 'all-in-one-wp-security-and-firewall').' '.esc_html__('In order to ensure that future scan results are accurate, the old scan data has been refreshed.', 'all-in-one-wp-security-and-firewall');
+			$new_scan_alert = __('New scan completed: The plugin has detected that you have made changes to the "File Types To Ignore" or "Files To Ignore" fields.', 'all-in-one-wp-security-and-firewall') . ' ' . __('In order to ensure that future scan results are accurate, the old scan data has been refreshed.', 'all-in-one-wp-security-and-firewall');
 			$info[] = $new_scan_alert;
 		}
 
@@ -117,7 +120,7 @@ trait AIOWPSecurity_File_Scan_Commands_Trait {
 	 *
 	 * Checks for an existing active `file_scan` task. If none exists, creates a new
 	 * scan task, assigns it a unique task name, and schedules the background cron
-	 * event (`aiowps_process_file_scan_tasks`) if it is not already scheduled.
+	 * event (`aios_process_file_scan_tasks`) if it is not already scheduled.
 	 *
 	 * Once a task exists, retrieves its current stage data and status message,
 	 * then formats the response payload for the caller.
@@ -138,9 +141,10 @@ trait AIOWPSecurity_File_Scan_Commands_Trait {
 
 			if (!$task) return $this->handle_response(false, false);
 
-			if (!wp_next_scheduled('aiowps_process_file_scan_tasks')) {
-				wp_schedule_single_event(time() + 3, 'aiowps_process_file_scan_tasks');
+			if (!wp_next_scheduled('aios_process_file_scan_tasks')) {
+				wp_schedule_single_event(time() - 1, 'aios_process_file_scan_tasks');
 			}
+			AIOWPSecurity_Utility::spawn_cron();
 		}
 
 		$extra_args = $task->get_all_options();
@@ -210,7 +214,7 @@ trait AIOWPSecurity_File_Scan_Commands_Trait {
 
 		if (!$fcd_data || !isset($fcd_data['last_scan_result'])) {
 			// no fcd data found
-			$message = esc_html__('No previous scan data was found; either run a manual scan or schedule regular file scans', 'all-in-one-wp-security-and-firewall');
+			$message = __('No previous scan data was found; either run a manual scan or schedule regular file scans', 'all-in-one-wp-security-and-firewall');
 			return $this->handle_response(false, $message);
 		}
 
@@ -234,7 +238,7 @@ trait AIOWPSecurity_File_Scan_Commands_Trait {
 		$task_id = isset($data['task_id']) ? absint($data['task_id']) : 0;
 		$task = $this->task_manager->get_task_instance($task_id);
 
-		if (!$task) return $this->handle_response(false, esc_html__('No file scan task found', 'all-in-one-wp-security-and-firewall'));
+		if (!$task) return $this->handle_response(false, __('No file scan task found', 'all-in-one-wp-security-and-firewall'));
 
 		$content = array();
 
@@ -276,17 +280,68 @@ trait AIOWPSecurity_File_Scan_Commands_Trait {
 		$task_id = isset($data['task_id']) ? absint($data['task_id']) : 0;
 		$task = $this->task_manager->get_task_instance($task_id);
 
-		if (!$task) return $this->handle_response(false, esc_html__('No file scan task found', 'all-in-one-wp-security-and-firewall'));
-		if ('completed' === $task->get_all_options()['current_stage']) return $this->handle_response(false, esc_html__('The file scan task has already been completed and cannot be cancelled.', 'all-in-one-wp-security-and-firewall'));
+		if (!$task) return $this->handle_response(false, __('No file scan task found', 'all-in-one-wp-security-and-firewall'));
+
+		$options = $task->get_all_options();
+
+		if ('failed' === $options['current_stage']) {
+			/* translators: %s: Task error message */
+			return $this->handle_response(false, sprintf(__('The file scan task has already failed: %s', 'all-in-one-wp-security-and-firewall'), $options['error_message']));
+		} elseif ('completed' === $options['current_stage']) {
+			return $this->handle_response(false, __('The file scan task has already been completed and cannot be cancelled.', 'all-in-one-wp-security-and-firewall'));
+		}
 
 		$task->cancel_task();
 
-		$options = $task->get_all_options();
-		$message = esc_html__('The file scan has been cancelled.', 'all-in-one-wp-security-and-firewall');
+		$message = $task->get_stage_status_message('cancelled');
 
 		$args = array('extra_args' => $options);
 
 		return $this->handle_response(true, $message, $args);
+	}
+
+	/**
+	 * Performs the operation to quarantine malware files, this is a premium feature so we return a message to the user about upgrading to premium.
+	 *
+	 * @param array $data The data containing the file information to be quarantined.
+	 *
+	 * @return array An array containing the status of the operation and a message about upgrading to premium.
+	 */
+	public function perform_quarantine_malware_files($data) {
+		return apply_filters('aios_perform_quarantine_malware_files', $this->handle_response(false, __('This feature is only available in the premium version of the plugin.', 'all-in-one-wp-security-and-firewall')), $data);
+	}
+
+	/**
+	 * Performs the operation to delete malware files, this is a premium feature so we return a message to the user about upgrading to premium.
+	 *
+	 * @param array $data The data containing the file information to be deleted.
+	 *
+	 * @return array An array containing the status of the operation and a message about upgrading to premium.
+	 */
+	public function perform_delete_malware_files($data) {
+		return apply_filters('aios_perform_delete_malware_files', $this->handle_response(false, __('This feature is only available in the premium version of the plugin.', 'all-in-one-wp-security-and-firewall')), $data);
+	}
+
+	/**
+	 * Performs the operation to restore malware files, this is a premium feature so we return a message to the user about upgrading to premium.
+	 *
+	 * @param array $data The data containing the file information to be restored.
+	 *
+	 * @return array An array containing the status of the operation and a message about upgrading to premium.
+	 */
+	public function perform_restore_malware_files($data) {
+		return apply_filters('aios_perform_restore_malware_files', $this->handle_response(false, __('This feature is only available in the premium version of the plugin.', 'all-in-one-wp-security-and-firewall')), $data);
+	}
+
+	/**
+	 * Performs the operation to repair malware files, this is a premium feature so we return a message to the user about upgrading to premium.
+	 *
+	 * @param array $data The data containing the file information to be repaired.
+	 *
+	 * @return array An array containing the status of the operation and a message about upgrading to premium.
+	 */
+	public function perform_repair_malware_files($data) {
+		return apply_filters('aios_perform_repair_malware_files', $this->handle_response(false, __('This feature is only available in the premium version of the plugin.', 'all-in-one-wp-security-and-firewall')), $data);
 	}
 
 	/**

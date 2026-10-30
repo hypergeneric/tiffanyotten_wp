@@ -27,7 +27,7 @@ class AIOWPSecurity_Utility_Permissions {
 	public static function has_manage_cap() {
 		$cap = apply_filters('aios_management_permission', 'manage_options');
 		// This filter will useful when the administrator would like to give permission to access AIOWPS to Security Analyst.
-		return apply_filters('aiowps_management_capability', current_user_can($cap));
+		return apply_filters('aios_management_capability', current_user_can($cap));
 	}
 
 	/**
@@ -46,6 +46,17 @@ class AIOWPSecurity_Utility_Permissions {
 	 */
 	public static function is_main_site_and_super_admin() {
 		return (is_main_site() && is_super_admin());
+	}
+
+	/**
+	 * Checks whether it's a multisite subsite, or the current user is a super admin
+	 *
+	 * Used for settings whose main-site copy is also used network-wide, so only a super admin may manage them on the main site.
+	 *
+	 * @return Bool - true on a multisite subsite or if the current user is a super admin (on a single site, an administrator), otherwise false
+	 */
+	public static function is_subsite_or_super_admin() {
+		return (!is_main_site() || is_super_admin());
 	}
 	
 	/**

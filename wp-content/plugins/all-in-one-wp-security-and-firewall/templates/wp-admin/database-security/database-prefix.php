@@ -6,22 +6,20 @@
 	?>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Database prefix options', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Database prefix options', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
-		<?php
-			// Display security info badge
-			$aiowps_feature_mgr->output_feature_details_badge("db-security-db-prefix");
-		?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge("db-security-db-prefix"); ?>
 		<div class="aio_red_box">
-			<p>
-				<strong>
-					<?php
-					$backup_tab_link = '<a href="admin.php?page=' . AIOWPSEC_DB_SEC_MENU_SLUG . '&tab=database-backup">' . esc_html__('database backup', 'all-in-one-wp-security-and-firewall') . '</a>';
-					/* translators: %s: Backup link. */
-					printf(esc_html__('It is recommended that you perform a %s before using this feature', 'all-in-one-wp-security-and-firewall'), $backup_tab_link); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- URL already escaped.
-					?>
-				</strong>
-			</p>
+			<p><strong>
+				<?php
+				printf(
+					/* translators: 1: Opening link tag. 2: closing link tag */
+					esc_html__('It is recommended that you perform a %1$sdatabase backup%2$s before using this feature', 'all-in-one-wp-security-and-firewall'),
+					'<a href="admin.php?page='.esc_attr(AIOWPSEC_DB_SEC_MENU_SLUG).'&tab=database-backup">',
+					'</a>'
+				);
+				?>				
+			</strong></p>
 		</div>
 		<form action="" method="POST">
 			<?php wp_nonce_field('aiowpsec-db-prefix-change-nonce'); ?>

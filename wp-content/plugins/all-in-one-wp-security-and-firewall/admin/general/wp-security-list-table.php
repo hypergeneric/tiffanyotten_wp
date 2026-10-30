@@ -449,7 +449,7 @@ class AIOWPSecurity_List_Table {
 		 *
 		 * @param string[] $views An array of available list table views.
 		 */
-		$views = apply_filters("views_{$this->screen->id}", $views);
+		$views = apply_filters("views_{$this->screen->id}", $views); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		if (empty($views)) {
 			return;
@@ -500,7 +500,7 @@ class AIOWPSecurity_List_Table {
 			 *
 			 * @param string[] $actions An array of the available bulk actions.
 			 */
-			$this->_actions = apply_filters("bulk_actions-{$this->screen->id}", $this->_actions);
+			$this->_actions = apply_filters("bulk_actions-{$this->screen->id}", $this->_actions); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 			$two            = '';
 		} else {
 			$two = '2';
@@ -510,16 +510,85 @@ class AIOWPSecurity_List_Table {
 			return;
 		}
 
-		echo '<label for="bulk-action-selector-' . esc_attr($which) . '" class="screen-reader-text">' . esc_html__('Select bulk action', 'all-in-one-wp-security-and-firewall') . '</label>';
-		echo '<select name="action' . esc_attr($two) . '" id="bulk-action-selector-' . esc_attr($which) . "\">\n";
-		echo '<option value="-1">' . esc_html__('Bulk actions', 'all-in-one-wp-security-and-firewall') . "</option>\n";
+		if (empty($this->_args['custom_bulk_action_selector'])) {
+			echo '<label for="bulk-action-selector-'.esc_attr($which).'" class="screen-reader-text">'.esc_html__('Select bulk action', 'all-in-one-wp-security-and-firewall').'</label>';
+			echo '<select name="action' . esc_attr($two) . '" id="bulk-action-selector-' . esc_attr($which) . "\">\n";
+			echo '<option value="-1">' . esc_html__('Bulk actions', 'all-in-one-wp-security-and-firewall') . "</option>\n";
 
-		foreach ($this->_actions as $name => $title) {
-			$class = 'edit' === $name ? 'hide-if-no-js' : '';
-			echo "\t" . '<option value="' . esc_attr($name) . '" class="' . esc_attr($class) . '">' . esc_html($title) . "</option>\n";
+			foreach ($this->_actions as $name => $title) {
+				$class = 'edit' === $name ? 'hide-if-no-js' : '';
+				echo "\t" . '<option value="' . esc_attr($name) . '" class="' . esc_attr($class) . '">' . esc_html($title) . "</option>\n";
+			}
+
+			echo "</select>\n";
+		} else {
+			?>
+			<div class="aios-selector">
+				<div id="bulk-action-selector-<?php echo esc_attr($which); ?>" class="aios-selector-selected" value="-1" name="action<?php echo esc_attr($two); ?>" aria-label="<?php esc_html_e('Select bulk action', 'all-in-one-wp-security-and-firewall'); ?>">
+					<div class="aios-selector-selected-title"><?php esc_html_e('Bulk actions', 'all-in-one-wp-security-and-firewall'); ?></div>
+					<div class="dashicons dashicons-arrow-down-alt2"></div>
+				</div>
+				<div class="aios-selector-items">
+					<?php
+					$is_premium_installed = AIOWPSecurity_Utility_Permissions::is_premium_installed();
+					$any_locked = false;
+
+					foreach ($this->_actions as $name => $action) {
+						if (is_array($action)) {
+							$title = $action['title'];
+							$locked = $action['premium'] && !$is_premium_installed;
+						} else {
+							$title = $action;
+							$locked = false;
+						}
+
+						if ($locked) {
+							$any_locked = true;
+							$premium_item_bubble_link = add_query_arg(
+								array(
+									'utm_source'  => 'aios',
+									'utm_medium'  => 'referral',
+									'utm_content'  => 'locked-premium-actions',
+									'utm_campaign' => 'paac-free-malware-scanner',
+									'utm_creative_format'  => 'tag',
+								),
+								'https://teamupdraft.com/all-in-one-security/pricing/'
+							);
+
+							echo '<div class="aios-selector-premium-item" value="'.esc_attr($name).'" aria-disabled="true">';
+							echo esc_html($title);
+							echo '<a class="aios-selector-premium-item-bubble" href="'.esc_url($premium_item_bubble_link).'">'.esc_html__('Premium', 'all-in-one-wp-security-and-firewall').'</a>';
+							echo '</div>';
+						} else {
+							echo '<div value="'.esc_attr($name).'">'.esc_html($title).'</div>';
+						}
+					}
+
+					if ($any_locked) {
+						$premium_upsell_link = add_query_arg(
+							array(
+								'utm_source'  => 'aios',
+								'utm_medium'  => 'referral',
+								'utm_content'  => 'locked-premium-actions',
+								'utm_campaign' => 'paac-free-malware-scanner',
+								'utm_creative_format'  => 'text',
+							),
+							'https://teamupdraft.com/all-in-one-security/pricing/'
+						);
+
+						echo '<div class="aios-selector-premium-item aios-selector-premium-upsell">';
+						echo '<p>';
+						/* translators: 1: Opening strong tag 2: Closing strong tag  */
+						printf(esc_html__('Quarantine, repair and delete are available in %1$sAIOS Premium%2$s.', 'all-in-one-wp-security-and-firewall'), '<strong>', '</strong>');
+						echo '</p>';
+						echo '<a target="_blank" href="'.esc_url($premium_upsell_link).'">'.esc_html__('Upgrade to unlock', 'all-in-one-wp-security-and-firewall').'</a>';
+						echo '</div>';
+					}
+					?>
+				</div>
+			</div>
+			<?php
 		}
-
-		echo "</select>\n";
 
 		$submit_attributes = array('id' => "doaction$two");
 
@@ -620,7 +689,7 @@ class AIOWPSecurity_List_Table {
 		 * @param bool   $disable   Whether to disable the drop-down. Default false.
 		 * @param string $post_type The post type.
 		 */
-		if (apply_filters('disable_months_dropdown', false, $post_type)) {
+		if (apply_filters('disable_months_dropdown', false, $post_type)) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 			return;
 		}
 
@@ -654,7 +723,7 @@ class AIOWPSecurity_List_Table {
 		 * @param object $months    The months drop-down query results.
 		 * @param string $post_type The post type.
 		 */
-		$months = apply_filters('months_dropdown_results', $months, $post_type);
+		$months = apply_filters('months_dropdown_results', $months, $post_type); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		$month_count = count($months);
 
@@ -1071,7 +1140,7 @@ class AIOWPSecurity_List_Table {
 		 * @param string $default Column name default for the specific list table, e.g. 'name'.
 		 * @param string $context Screen ID for specific list table, e.g. 'plugins'.
 		 */
-		$column = apply_filters('list_table_primary_column', $default, $this->screen->id);
+		$column = apply_filters('list_table_primary_column', $default, $this->screen->id); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		if (empty($column) || ! isset($columns[$column])) {
 			$column = $default;
@@ -1114,7 +1183,7 @@ class AIOWPSecurity_List_Table {
 		 *
 		 * @param array $sortable_columns An array of sortable columns.
 		 */
-		$_sortable = apply_filters("manage_{$this->screen->id}_sortable_columns", $sortable_columns);
+		$_sortable = apply_filters("manage_{$this->screen->id}_sortable_columns", $sortable_columns); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 
 		$sortable = array();
 		foreach ($_sortable as $id => $data) {

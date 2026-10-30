@@ -34,13 +34,14 @@ class Simba_TFA_Frontend {
 		global $current_user;
 		
 		$return_array = array();
-		
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Not needed for nonce.
 		if (empty($_POST) || empty($_POST['subaction']) || !isset($_POST['nonce']) || !is_user_logged_in() || !wp_verify_nonce($_POST['nonce'], 'tfa_frontend_nonce')) die('Security check');
 		
 		if ('savesettings' == $_POST['subaction']) {
 			if (empty($_POST['settings']) || !is_string($_POST['settings'])) die;
 			
-			parse_str(stripslashes($_POST['settings']), $posted_settings);
+			parse_str(sanitize_text_field(wp_unslash($_POST['settings'])), $posted_settings);
 			
 			if (isset($posted_settings['tfa_algorithm_type'])) {
 				$old_algorithm = $totp_controller->get_user_otp_algorithm($current_user->ID);
@@ -135,7 +136,7 @@ class Simba_TFA_Frontend {
 	 * Paints out the 'save settings' button
 	 */
 	public function save_settings_button() {
-		echo '<button style="margin-left: 4px;margin-bottom: 10px" class="simbatfa_settings_save button button-primary">'.__('Save Settings', 'all-in-one-wp-security-and-firewall').'</button>';
+		echo '<button style="margin-left: 4px;margin-bottom: 10px" class="simbatfa_settings_save button button-primary">' . esc_html__('Save Settings', 'all-in-one-wp-security-and-firewall').'</button>';
 	}
 
 	/**
@@ -149,7 +150,7 @@ class Simba_TFA_Frontend {
 		?>
 			<div class="simbatfa_frontend_settings_box tfa_settings_form">
 				<p><?php $this->mother->paint_enable_tfa_radios($current_user->ID, true, $style); ?></p>
-				<button style="margin-left: 4px; margin-bottom: 10px;" class="button button-primary simbatfa_settings_save"><?php _e('Save Settings', 'all-in-one-wp-security-and-firewall'); ?></button>
+				<button style="margin-left: 4px; margin-bottom: 10px;" class="button button-primary simbatfa_settings_save"><?php esc_html_e('Save Settings', 'all-in-one-wp-security-and-firewall'); ?></button>
 			</div>
 		<?php
 	}
@@ -164,11 +165,11 @@ class Simba_TFA_Frontend {
 		$is_already_added = true;
 		
 		$suffix = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
-		wp_register_script('jquery-blockui', $this->mother->includes_url().'/jquery.blockUI' . $suffix . '.js', array('jquery'), '2.60');
+		wp_register_script('jquery-blockui', $this->mother->includes_url().'/jquery.blockUI' . $suffix . '.js', array('jquery'), '2.60', false);
 		
 		$script_ver = (defined('WP_DEBUG') && WP_DEBUG) ? time() : filemtime($this->mother->includes_dir().'/frontend-settings.js');
 		
-		wp_enqueue_script('simba-tfa-frontend-settings', $this->mother->includes_url().'/frontend-settings.js', array('jquery-blockui'), $script_ver);
+		wp_enqueue_script('simba-tfa-frontend-settings', $this->mother->includes_url().'/frontend-settings.js', array('jquery-blockui'), $script_ver, false);
 		
 		$ajax_url = admin_url('admin-ajax.php');
 		// It's possible that FORCE_ADMIN_SSL will make that SSL, whilst the user is on the front-end having logged in over non-SSL - and as a result, their login cookies won't get sent, and they're not registered as logged in.

@@ -166,7 +166,7 @@ class AIOWPSecurity_Utility_Htaccess {
 
 		if (in_array($serverType, array('-1', 'nginx', 'iis')) && !defined('WP_CLI')) {
 			if ($show_error) {
-				AIOWPSecurity_Admin_Menu::show_msg_error_st(__('The .htaccess file is not supported by your web server.', 'all-in-one-wp-security-and-firewall'), !$show_error);
+				AIOWPSecurity_Admin_Menu::show_msg_error_st(__('The .htaccess file is not supported by your web server.', 'all-in-one-wp-security-and-firewall'));
 			}
 			$aio_wp_security->debug_logger->log_debug("Unable to write to .htaccess - server type not supported.", 4);
 			return false; // unable to write to the file
@@ -210,7 +210,7 @@ class AIOWPSecurity_Utility_Htaccess {
 		$rules = AIOWPSecurity_Utility_Htaccess::getrules();
 
 		$rulesarray = explode("\n", $rules);
-		$rulesarray = apply_filters('aiowps_htaccess_rules_before_writing', $rulesarray);
+		$rulesarray = apply_filters('aios_htaccess_rules_before_writing', $rulesarray);
 		$contents = array_merge($rulesarray, $ht);
 
 		$f = @fopen($temp_htaccess, 'w+'); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged -- ignore warning as we try to handle it below
@@ -571,7 +571,7 @@ class AIOWPSecurity_Utility_Htaccess {
 			return -1;
 		}
 
-		if ((strpos($file_contents, '# BEGIN WordPress') !== false) || (strpos($file_contents, '# BEGIN') !== false)) {
+		if ((false !== strpos($file_contents, '# BEGIN WordPress') || false !== strpos($file_contents, '# BEGIN')) && (false !== strpos($file_contents, '# END WordPress') || false !== strpos($file_contents, '# END'))) {
 			$is_htaccess = true; // It appears that we have some sort of .htaccess file
 		} else {
 			//see if we're at the end of the section

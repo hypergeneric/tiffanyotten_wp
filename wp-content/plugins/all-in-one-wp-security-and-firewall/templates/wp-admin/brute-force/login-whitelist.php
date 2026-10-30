@@ -1,23 +1,42 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <h2><?php esc_html_e('Login whitelist', 'all-in-one-wp-security-and-firewall'); ?></h2>
 <div class="aio_blue_box">
-	<?php
-		echo '<p>' . esc_html__('The All-In-One Security Whitelist feature gives you the option of only allowing certain IP addresses or ranges to have access to your WordPress login page.', 'all-in-one-wp-security-and-firewall') . '<br>' . esc_html__('This feature will deny login access for all IP addresses which are not in your whitelist as configured in the settings below.', 'all-in-one-wp-security-and-firewall') . '<br>' . esc_html__('By allowing/blocking IP addresses, you are using the most secure first line of defence because login access will only be granted to whitelisted IP addresses and other addresses will be blocked as soon as they try to access your login page.', 'all-in-one-wp-security-and-firewall') .'</p>';
-	?>
+	<p>
+	<?php esc_html_e('The All-In-One Security Whitelist feature gives you the option of only allowing certain IP addresses or ranges to have access to your WordPress login page.', 'all-in-one-wp-security-and-firewall'); ?>
+	<br>
+	<?php esc_html_e('This feature will deny login access for all IP addresses which are not in your whitelist as configured in the settings below.', 'all-in-one-wp-security-and-firewall'); ?>
+	<br>
+	<?php esc_html_e('By allowing/blocking IP addresses, you are using the most secure first line of defence because login access will only be granted to whitelisted IP addresses and other addresses will be blocked as soon as they try to access your login page.', 'all-in-one-wp-security-and-firewall');?>
+	</p>
 </div>
 <div class="aio_grey_box">
+	<p>
 	<?php
-		/* translators: %s: AIOS Constant. */
-		echo '<p>' . sprintf(esc_html__('If you are locked out by the login whitelist feature and you do not have a static IP address, define the following constant %s in wp-config.php to disable the feature.', 'all-in-one-wp-security-and-firewall'), '<strong>define(\'AIOS_DISABLE_LOGIN_WHITELIST\', true);</strong>') . '</p>';
+	printf(
+		/* translators: %s: Specific code that should not be translated. */
+		esc_html__('If you are locked out by the login whitelist feature and you do not have a static IP address, define the following constant %s in wp-config.php to disable the feature.', 'all-in-one-wp-security-and-firewall'),
+		'<strong>define(\'AIOS_DISABLE_LOGIN_WHITELIST\', true);</strong>'
+	);
 	?>
+	</p>
 </div>
 <div class="aio_yellow_box">
+	<p>
 	<?php
-		$brute_force_login_feature_link = '<a href="admin.php?page='.AIOWPSEC_BRUTE_FORCE_MENU_SLUG.'&tab=cookie-based-brute-force-prevention" target="_blank">' . esc_html__('Cookie-Based brute force login prevention', 'all-in-one-wp-security-and-firewall') . '</a>';
-		$rename_login_feature_link = '<a href="admin.php?page='.AIOWPSEC_BRUTE_FORCE_MENU_SLUG.'&tab=rename-login" target="_blank">' . esc_html__('Rename login page', 'all-in-one-wp-security-and-firewall') . '</a>';
-		/* translators: 1: Brute force link, 2: Rename login link 3: Open strong tag, 4: Close strong tag. */
-		echo '<p>' . sprintf(esc_html__('Attention: If in addition to enabling the white list feature, you also have one of the %1$s or %2$s features enabled, %3$s you will still need to use your secret word or special slug in the URL when trying to access your WordPress login page %4$s', 'all-in-one-wp-security-and-firewall'), $brute_force_login_feature_link, $rename_login_feature_link, '<strong>', '</strong>') . '</p><p>' . esc_html__('These features are NOT functionally related.', 'all-in-one-wp-security-and-firewall') . ' ' . esc_html__('Having both of them enabled on your site means you are creating 2 layers of security.', 'all-in-one-wp-security-and-firewall') . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Variables already escaped.
+		printf(
+			/* translators: 1: Opening Brute force link, 2: Closing link tag 3: Rename login link 4: Open strong tag, 5: Close strong tag. */
+			esc_html__('Attention: If in addition to enabling the white list feature, you also have one of the %1$sCookie-Based brute force login prevention%2$s or %3$sRename login page%2$s features enabled, %4$syou will still need to use your secret word or special slug in the URL when trying to access your WordPress login page%5$s.', 'all-in-one-wp-security-and-firewall'),
+			'<a href="admin.php?page='.esc_attr(AIOWPSEC_BRUTE_FORCE_MENU_SLUG).'&tab=cookie-based-brute-force-prevention" target="_blank">',
+			'</a>',
+			'<a href="admin.php?page='.esc_attr(AIOWPSEC_BRUTE_FORCE_MENU_SLUG).'&tab=rename-login" target="_blank">',
+			'<strong>',
+			'</strong>'
+		);
 	?>
+	<p>
+	<?php esc_html_e('These features are NOT functionally related.', 'all-in-one-wp-security-and-firewall'); ?>
+	<?php esc_html_e('Having both of them enabled on your site means you are creating 2 layers of security.', 'all-in-one-wp-security-and-firewall'); ?>
+	</p>
 </div>
 <?php
 	if (defined('AIOS_DISABLE_LOGIN_WHITELIST') && AIOS_DISABLE_LOGIN_WHITELIST) {
@@ -25,13 +44,10 @@
 	}
 ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Login IP whitelist settings', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Login IP whitelist settings', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div id="whitelist-manager-ip-login-whitelisting-badge">
-			<?php
-				// Display security info badge
-				$aiowps_feature_mgr->output_feature_details_badge("whitelist-manager-ip-login-whitelisting");
-			?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge("whitelist-manager-ip-login-whitelisting"); ?>
 		</div>
 		<form action="" id="aios-login-whitelist-settings-form">
 			<table class="form-table">

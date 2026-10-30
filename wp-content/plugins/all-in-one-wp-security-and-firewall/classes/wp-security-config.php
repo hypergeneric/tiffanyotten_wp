@@ -14,12 +14,16 @@ class AIOWPSecurity_Config {
 
 	public function load_config() {
 		$this->configs = get_option('aio_wp_security_configs');
+
+		if (!is_array($this->configs)) {
+			$this->configs = array();
+		}
 	}
 
 	public function get_value($key) {
 		return isset($this->configs[$key]) ? $this->configs[$key] : '';
 	}
-	
+
 	/**
 	 * Gets for main site config value for a given $key.
 	 *
@@ -56,10 +60,6 @@ class AIOWPSecurity_Config {
 	}
 
 	public function add_value($key, $value) {
-		if (!is_array($this->configs)) {
-			$this->configs = array();
-		}
-
 		if (array_key_exists($key, $this->configs)) {
 			//Don't update the value for this key
 		} else {//It is safe to update the value for this key

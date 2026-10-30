@@ -58,18 +58,20 @@ trait AIOWPSecurity_Log_Commands_Trait {
 	 * @return array
 	 */
 	public function delete_locked_ip_record($data) {
-
 		if (!isset($data['id'])) {
-			return $this->handle_response(false, AIOWPSecurity_Admin_Menu::show_msg_error_st(__('No locked IP record ID provided.', 'all-in-one-wp-security-and-firewall'), true));
+			return $this->handle_response(false, __('No locked IP record ID provided.', 'all-in-one-wp-security-and-firewall'));
 		}
 
 		include_once AIO_WP_SECURITY_PATH . '/admin/wp-security-list-locked-ip.php';
 
 		$locked_ip_list = new AIOWPSecurity_List_Locked_IP();
-		$result = $locked_ip_list->delete_lockout_records($data['id']);
-		return $this->handle_response(true, $result);
+		$locked_ip_list->delete_lockout_records($data['id']);
+
+		$list_message = AIOS_Helper::get_message('aios_list_message');
+
+		return $this->handle_response('error' != $list_message['type'], $list_message['message']);
 	}
-		
+
 	/**
 	 * Clear debug logs
 	 *
@@ -79,11 +81,11 @@ trait AIOWPSecurity_Log_Commands_Trait {
 		global $aio_wp_security;
 
 		$ret = $aio_wp_security->debug_logger->clear_logs();
-		
+
 		if (is_wp_error($ret)) {
-			return $this->handle_response(false, AIOWPSecurity_Admin_Menu::show_msg_error_st(esc_html($ret->get_error_message()).'<p>'.esc_html($ret->get_error_data()).'</p>', true));
+			return $this->handle_response(false, $ret->get_error_message() . "\n" . $ret->get_error_data());
 		} else {
-			return $this->handle_response(true, AIOWPSecurity_Admin_Menu::show_msg_updated_st(__('The debug logs have been cleared.', 'all-in-one-wp-security-and-firewall'), true));
+			return $this->handle_response(true, __('The debug logs have been cleared.', 'all-in-one-wp-security-and-firewall'));
 		}
 	}
 
@@ -106,6 +108,50 @@ trait AIOWPSecurity_Log_Commands_Trait {
 		include_once(AIO_WP_SECURITY_PATH.'/admin/wp-security-list-audit.php');
 		$audit_log_list = new AIOWPSecurity_List_Audit_Log($data);
 		$audit_log_list->ajax_response();
+	}
+
+	/**
+	 * Renders the locked ip tab content.
+	 *
+	 * This function handles the rendering of the locked ip tab content based on the
+	 * provided data via AJAX request.
+	 *
+	 * @access public
+	 *
+	 * @param array $data Locked IP list request data.
+	 *
+	 * @return void
+	 */
+	public function render_locked_ip_tab($data) {
+
+		$data = empty($data) ? array() : $data;
+
+		// Needed for rendering the locked IP list table.
+		include_once(AIO_WP_SECURITY_PATH.'/admin/wp-security-list-locked-ip.php');
+		$locked_ip_list = new AIOWPSecurity_List_Locked_IP($data);
+		$locked_ip_list->ajax_response();
+	}
+
+	/**
+	 * Renders the debug log table content.
+	 *
+	 * This function handles the rendering of the debug log table content based on the
+	 * provided data via AJAX request. The data is used to perform actions.
+	 *
+	 * @access public
+	 *
+	 * @param array $data Debug log data.
+	 *
+	 * @return void
+	 */
+	public function render_debug_log_tab($data) {
+
+		$data = empty($data) ? array() : $data;
+
+		// Needed for rendering the debug log table.
+		include_once(AIO_WP_SECURITY_PATH.'/admin/wp-security-list-debug.php');
+		$debug_log_list = new AIOWPSecurity_List_Debug_Log($data);
+		$debug_log_list->ajax_response();
 	}
 
 	/**
@@ -335,13 +381,19 @@ trait AIOWPSecurity_Log_Commands_Trait {
 						$item[$key] = AIOWPSecurity_Utility::convert_timestamp($value);
 						break;
 					case 'event_type':
-						$item[$key] = $audit_log_list->column_event_type($db_item);
+						ob_start();
+						$audit_log_list->column_event_type($db_item);
+						$item[$key] = ob_get_clean();
 						break;
 					case 'details':
-						$item[$key] = $audit_log_list->column_details($db_item);
+						ob_start();
+						$audit_log_list->column_details($db_item);
+						$item[$key] = ob_get_clean();
 						break;
 					case 'stacktrace':
-						$item[$key] = $audit_log_list->column_stacktrace($db_item);
+						ob_start();
+						$audit_log_list->column_stacktrace($db_item);
+						$item[$key] = ob_get_clean();
 						break;
 					default:
 						$item[$key] = $value;
@@ -353,6 +405,17 @@ trait AIOWPSecurity_Log_Commands_Trait {
 		}
 
 		return $items;
+	}
+
+	/**
+	 * Save Audit log retention settings.
+	 *
+	 * @param array $data AJAX request data.
+	 *
+	 * @return array Response array.
+	 */
+	public function save_audit_log_retention($data) {
+		return apply_filters('aios_save_audit_log_retention', $this->handle_response(false, __('This feature is only available on AIOS Premium.', 'all-in-one-wp-security-and-firewall')), $data);
 	}
 
 	/**

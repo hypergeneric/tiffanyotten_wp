@@ -3,23 +3,31 @@ if (!defined('ABSPATH')) {
 	exit;//Exit if accessed directly
 }
 
-class AIOWPSecurity_List_Debug_Log extends AIOWPSecurity_List_Table {
+/**
+ * Debug log list table class.
+ *
+ * Handles rendering and pagination for the debug log table.
+ */
+class AIOWPSecurity_List_Debug_Log extends AIOWPSecurity_Ajax_Data_Table {
 
 	/**
-	 * Sets up some table attributes (i.e: the plurals and whether it's ajax or not)
+	 * Constructs the table object and sets up its attributes.
+	 *
+	 * @param array $data - An array containing additional data for the table. Default is an empty array.
+	 * @return void
 	 */
-	public function __construct() {
+	public function __construct($data = array()) {
 
-
-		//Set parent defaults
+		// Set parent defaults
 		parent::__construct(array(
-			'singular' => 'entry',     //singular name of the listed records
-			'plural' => 'entries',    //plural name of the listed records
-			'ajax' => false        //does this table support ajax?
+			'singular' => 'item', // singular name of the listed records
+			'plural' => 'items',  // plural name of the listed records
+			'ajax' => true,       // does this table support ajax?
+			'data' => $data       // Request data
 		));
 
 	}
-	
+
 	/**
 	 * Renders logtime column in datetime format as per user setting time zone.
 	 *
@@ -97,15 +105,9 @@ class AIOWPSecurity_List_Debug_Log extends AIOWPSecurity_List_Table {
 
 		/* -- Ordering parameters -- */
 
-		//Parameters that are going to be used to order the result
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
-		isset($_GET["orderby"]) ? $orderby = sanitize_text_field(wp_unslash($_GET["orderby"])) : $orderby = '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- PCP warning. No nonce.
-		isset($_GET["order"]) ? $order = sanitize_text_field(wp_unslash($_GET["order"])) : $order = '';
-
-		// By default show the most recent debug log entries.
-		$orderby = !empty($orderby) ? esc_sql($orderby) : 'logtime';
-		$order = !empty($order) ? esc_sql($order) : 'DESC';
+		// Parameters that are going to be used to order the result
+		$orderby = isset($this->_args['data']["orderby"]) ? sanitize_text_field($this->_args['data']["orderby"]) : '';
+		$order = isset($this->_args['data']["order"]) ? sanitize_text_field($this->_args['data']["order"]) : '';
 
 		$orderby = AIOWPSecurity_Utility::sanitize_value_by_array($orderby, $sortable);
 		$order = AIOWPSecurity_Utility::sanitize_value_by_array($order, array('DESC' => '1', 'ASC' => '1'));
@@ -113,17 +115,34 @@ class AIOWPSecurity_List_Debug_Log extends AIOWPSecurity_List_Table {
 		$orderby = sanitize_sql_orderby($orderby);
 		$order = sanitize_sql_orderby($order);
 
-		$where_sql = (!is_super_admin()) ? 'WHERE site_id = '.get_current_blog_id() : '';
+		$where_sql = '';
+		$params = array();
 
-		if ($ignore_pagination) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
-			$data = $wpdb->get_results("SELECT * FROM {$debug_log_tbl}$where_sql ORDER BY $orderby $order", 'ARRAY_A');
-		} else {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
-			$data = $wpdb->get_results("SELECT * FROM {$debug_log_tbl} $where_sql ORDER BY $orderby $order LIMIT $per_page OFFSET $offset", 'ARRAY_A');
+		if (!is_super_admin()) {
+			$where_sql = 'WHERE site_id = %d';
+			$params[] = get_current_blog_id();
 		}
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
-		$total_items = $wpdb->get_var("SELECT COUNT(*) FROM {$debug_log_tbl} $where_sql");
+
+		$query = "SELECT * FROM {$debug_log_tbl} {$where_sql} ORDER BY {$orderby} {$order}";
+
+		if (!$ignore_pagination) {
+			$query .= " LIMIT %d OFFSET %d";
+			$params[] = $per_page;
+			$params[] = $offset;
+		}
+
+		/* phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching */
+		$data = $wpdb->get_results($wpdb->prepare($query, $params), 'ARRAY_A');
+
+		$count_query = "SELECT COUNT(*) FROM {$debug_log_tbl} {$where_sql}";
+
+		if (!empty($where_sql)) {
+			$count_query = $wpdb->prepare($count_query, $params[0]);
+		}
+
+		$total_items = $wpdb->get_var($count_query);
+		/* phpcs:enable PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching */
+
 		$this->items = $data;
 
 		if ($ignore_pagination) return;

@@ -33,7 +33,7 @@ class AIOWPSecurity_Utility_File {
 			//Add as many files or dirs as needed by following the convention above
 		);
 
-		return apply_filters('aiowpsecurity_file_permission_list', $file_list);
+		return apply_filters('aios_file_permission_list', $file_list);
 	}
 
 	/**
@@ -404,7 +404,19 @@ class AIOWPSecurity_Utility_File {
 	 * @return bool
 	 */
 	public static function check_if_wp_config_contents($file_contents) {
-		return !empty($file_contents) && preg_match("/define\(\s*['\"]DB_NAME['\"]/i", $file_contents);
+		if (empty($file_contents)) return false;
+		$is_valid_php = false;
+		$is_settings_included = false;
+		$tokens = token_get_all($file_contents, T_OPEN_TAG);
+		// check if the php open tag found in the fist line.
+		if (is_array($tokens) && is_array($tokens[0]) && 'T_OPEN_TAG' == token_name($tokens[0][0])) {
+			$is_valid_php = true;
+		}
+		if (preg_match("/require\_once\s*ABSPATH\s*\.\s*['\"]wp\-settings\.php['\"]/i", $file_contents)) {
+			// wp-settings.php included but commented out using [//], [/*] or [#]
+			$is_settings_included = (preg_match("/\/\/\s*require\_once\s*ABSPATH\s*\.\s*['\"]wp\-settings\.php['\"]/i", $file_contents) || preg_match("/\/\*\s*require\_once\s*ABSPATH\s*\.\s*['\"]wp\-settings\.php['\"]/i", $file_contents) || preg_match("/#\s*require\_once\s*ABSPATH\s*\.\s*['\"]wp\-settings\.php['\"]/i", $file_contents)) ? false : true;
+		}
+		return $is_valid_php && $is_settings_included;
 	}
 
 	/**
@@ -565,5 +577,82 @@ class AIOWPSecurity_Utility_File {
 			'aiowps_fcd_scan_email_address' => $aiowps_fcd_scan_email_address,
 			'aiowps_last_scan_time' => AIOWPSecurity_Utility::convert_timestamp($aiowps_last_scan_time, 'D, F j, Y H:i'),
 		);
+	}
+	
+	/**
+	 * This functions gets file (example wp-config.php) and permission details
+	 *
+	 * @param string $filename - file name
+	 *
+	 * @return array - file and permission details.
+	 */
+	public static function get_file_permission_details($filename) {
+		$file_details = array();
+		$detected_os = strtoupper(PHP_OS);
+		if (!empty($filename) && false === strpos($detected_os, "WIN")) {
+			$files_dirs_to_check = AIOWPSecurity_Utility_File::get_files_and_dirs_to_check();
+			$file_dirs_filtered = array_filter($files_dirs_to_check, function ($values) use ($filename) {
+				if ($filename == $values['name']) return true;
+			});
+			$file_details = current($file_dirs_filtered); // gets the wp-config related element from the filtered list;
+			$file_details['actual_permission'] = AIOWPSecurity_Utility_File::get_file_permission($file_details['path']);
+			$require_fix = false;
+			$isworld_writable = AIOWPSecurity_Utility_File::is_file_world_writable($file_details['actual_permission']);
+			if ($isworld_writable) {
+				$require_fix = true;
+			} elseif ($file_details['permissions'] != $file_details['actual_permission'] && !AIOWPSecurity_Utility_File::is_file_permission_secure($file_details['permissions'], $file_details['actual_permission'])) {
+				$require_fix = true;
+			}
+			$file_details['require_fix'] = $require_fix;
+		}
+		return $file_details;
+	}
+	
+	/**
+	 * This method saves hash value of wp-config.php, .htaccess file contents.
+	 *
+	 * @param string $file_contents file contents.
+	 * @param string $file_type     file type wp-config or htacess.
+	 *
+	 * @return void
+	 */
+	public static function save_file_hash($file_contents, $file_type) {
+		if (!empty($file_contents)) {
+			// Make sure while saving file hash newline considered "\n" so OS based file format do not make issue.
+			$file_contents = preg_replace("/\R/", "\n", $file_contents); //\R line break: matches \n, \r and \r\n
+			$file_hash = AIOS_Helper::get_hash($file_contents, 'sha256');
+			// Save the hash in the database
+			$file_hashes = get_option('aios_backup_file_hash_' . $file_type);
+			if (!is_array($file_hashes)) $file_hashes = array();
+			$file_hashes[] = array('time' => time(), 'hash' => $file_hash);
+			update_option('aios_backup_file_hash_'.$file_type, $file_hashes);
+		}
+	}
+	
+	/**
+	 * This method verifies restoring the wp-config.php, .htaccess file contents.
+	 *
+	 * @param string $file_contents file contents.
+	 * @param string $file_type     file type wp-config or htacess.
+	 *
+	 * @return boolean
+	 */
+	public static function verify_file_hash($file_contents, $file_type) {
+		
+		if (defined('AIOS_DISABLE_VERIFY_FILE_HASH') && AIOS_DISABLE_VERIFY_FILE_HASH) return true;
+		
+		$hash_matches = false;
+		if (!empty($file_contents)) {
+			// Make sure while verifying file hash newline considered "\n" so OS based file format do not make issue.
+			$file_contents = preg_replace("/\R/", "\n", $file_contents); //\R line break: matches \n, \r and \r\n
+			$file_hash = AIOS_Helper::get_hash($file_contents, 'sha256');
+			$file_hashes = get_option('aios_backup_file_hash_' . $file_type);
+			if (empty($file_hashes)) return true; // If no hash saved allow old files to import
+			foreach ($file_hashes as $hash_val) {
+				// Verify the hash with saved in database
+				if (hash_equals($hash_val['hash'], $file_hash)) $hash_matches = true;
+			}
+		}
+		return $hash_matches;
 	}
 }

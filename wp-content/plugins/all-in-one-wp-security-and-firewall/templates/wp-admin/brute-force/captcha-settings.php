@@ -17,7 +17,7 @@
 
 	$aio_wp_security->include_template('wp-admin/brute-force/captcha-provider.php', false, $captcha_settings_data);
 
-	$templates = apply_filters('aiowps_modify_captcha_settings_template', $templates);
+	$templates = apply_filters('aios_modify_captcha_settings_template', $templates);
 
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce check occurred outside of template.
 	$subtab = isset($_GET['subtab']) ? sanitize_text_field(wp_unslash($_GET['subtab'])) : '';
@@ -40,12 +40,9 @@
 					foreach ($templates as $key => $template) {
 						// Check if the current title is the first title
 						$title = $template['title'];
-						$class = 'class="aiowps-template-list-item';
-						$class .= ($key === $subtab || $title === $first_title) ? " aiowps-active" : '';
-						$class .= '"';
-
-						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- No user input for $class.
-						echo '<li data-template="' . esc_attr($key) . '" ' . $class . '><span class="aiowps-rule-title">' . esc_html($title) . '</span></li>';
+						$active_class = ($key === $subtab || (empty($subtab) && $title === $first_title)) ? "aiowps-active" : '';
+						
+						echo '<li data-template="'.esc_attr($key).'" class="aiowps-template-list-item '.esc_attr($active_class).'"><span class="aiowps-rule-title">'.esc_html($title).'</span></li>';
 					}
 					?>
 				</ul>

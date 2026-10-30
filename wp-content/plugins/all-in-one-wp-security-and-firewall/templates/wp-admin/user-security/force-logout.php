@@ -7,13 +7,10 @@
 	?>
 </div>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Force user logout options', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Force user logout options', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div id="user-login-force-logout-badge">
-			<?php
-				// Display security info badge
-				$aiowps_feature_mgr->output_feature_details_badge("user-login-force-logout");
-			?>
+			<?php $aiowps_feature_mgr->output_feature_details_badge("user-login-force-logout"); ?>
 		</div>
 		<form action="" method="POST" id="aios-force-user-logout-form">
 			<table class="form-table">
@@ -27,7 +24,7 @@
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="aiowps_logout_time_period"><?php esc_html_e('Logout the user after X minutes', 'all-in-one-wp-security-and-firewall'); ?></label>:</th>
-					<td><input id="aiowps_logout_time_period" type="text" size="5" name="aiowps_logout_time_period" value="<?php echo esc_attr($aiowps_logout_time_period); ?>" />
+					<td><input id="aiowps_logout_time_period" type="number" min="1" name="aiowps_logout_time_period" value="<?php echo esc_attr($aiowps_logout_time_period); ?>" />
 					<span class="description"><?php esc_html_e('(Minutes) The user will be forced to log back in after this time period has elapased.', 'all-in-one-wp-security-and-firewall'); ?></span>
 					</td> 
 				</tr>

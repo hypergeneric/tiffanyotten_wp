@@ -2,30 +2,22 @@
 <h2><?php esc_html_e('Custom .htaccess rules settings', 'all-in-one-wp-security-and-firewall'); ?></h2>
 		<form action="" method="POST" id="aiowpsec-save-custom-rules-settings-form">
 			<div class="aio_blue_box">
-				<?php
-				$info_msg = '';
-
-				$info_msg .= '<p>'. esc_html__('This feature can be used to apply your own custom .htaccess rules and directives.', 'all-in-one-wp-security-and-firewall').'</p>';
-				$info_msg .= '<p>'. esc_html__('It is useful for when you want to tweak our existing firewall rules or when you want to add your own.', 'all-in-one-wp-security-and-firewall').'</p>';
-				$info_msg .= '<p>'. esc_html__('NOTE: This feature can only be used if your site is hosted using the Apache webserver, or another that uses .htaccess files.', 'all-in-one-wp-security-and-firewall').'</p>';
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped earlier.
-				echo $info_msg;
-				?>
+				<p><?php esc_html_e('This feature can be used to apply your own custom .htaccess rules and directives.', 'all-in-one-wp-security-and-firewall'); ?></p>
+				<p><?php esc_html_e('It is useful for when you want to tweak our existing firewall rules or when you want to add your own.', 'all-in-one-wp-security-and-firewall'); ?></p>
+				<p><?php esc_html_e('Note: This feature can only be used if your site is hosted using the Apache webserver, or another that uses .htaccess files.', 'all-in-one-wp-security-and-firewall'); ?></p>
 			</div>
 			<div class="aio_yellow_box">
-				<?php
-				/* translators: %s: Warning */
-				$info_msg_2 = '<p>'. sprintf(esc_html__('%s: Only use this feature if you know what you are doing.', 'all-in-one-wp-security-and-firewall'), '<strong>' . esc_html__('Warning', 'all-in-one-wp-security-and-firewall') . '</strong>').'</p>';
-				$info_msg_2 .= '<p>'.esc_html__('Incorrect .htaccess rules or directives can break or prevent access to your site.', 'all-in-one-wp-security-and-firewall').'</p>';
-				$info_msg_2 .= '<p>'.esc_html__('It is your responsibility to ensure that you are entering the correct code!', 'all-in-one-wp-security-and-firewall').'</p>';
-				$info_msg_2 .= '<p>'.esc_html__('If you break your site you will need to access your server via FTP or something similar and then edit your .htaccess file and delete the changes you made.', 'all-in-one-wp-security-and-firewall').'</p>';
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped earlier.
-				echo $info_msg_2;
-				?>
+				<p>
+					<strong><?php esc_html_e('Warning:', 'all-in-one-wp-security-and-firewall'); ?></strong>
+					 <?php esc_html_e('Only use this feature if you know what you are doing.', 'all-in-one-wp-security-and-firewall'); ?>
+				</p>
+				<p><?php esc_html_e('Incorrect .htaccess rules or directives can break or prevent access to your site.', 'all-in-one-wp-security-and-firewall'); ?></p>
+				<p><?php esc_html_e('It is your responsibility to ensure that you are entering the correct code!', 'all-in-one-wp-security-and-firewall'); ?></p>
+				<p><?php esc_html_e('If you break your site you will need to access your server via FTP or something similar and then edit your .htaccess file and delete the changes you made.', 'all-in-one-wp-security-and-firewall'); ?></p>
 			</div>
 
 			<div class="postbox">
-				<h3 class="hndle"><label for="title"><?php esc_html_e('Custom .htaccess rules', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+				<h3 class="hndle"><?php esc_html_e('Custom .htaccess rules', 'all-in-one-wp-security-and-firewall'); ?></h3>
 				<div class="inside">
 					<table class="form-table">
 						<tr valign="top">

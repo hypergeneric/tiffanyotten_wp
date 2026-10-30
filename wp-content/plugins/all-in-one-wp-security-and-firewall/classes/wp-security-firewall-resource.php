@@ -14,7 +14,6 @@ class AIOS_Firewall_Resource {
 	 * Different possible resources.
 	 */
 	const CONFIG        = 'aiowps_firewall_config';
-	const MESSAGE_STORE = 'aiowps_firewall_message_store';
 	const CONSTANTS     = 'aiowps_firewall_constants';
 	const ALLOW_LIST    = '\AIOWPS\Firewall\Allow_List';
 	const UTILITY       = '\AIOWPS\Firewall\Utility';
@@ -24,12 +23,11 @@ class AIOS_Firewall_Resource {
 	 *
 	 * @param string $resource
 	 *
-	 * @return \AIOWPS\Firewall\Config|\AIOWPS\Firewall\Message_Store|\AIOWPS\Firewall\Constants|\AIOWPS\Firewall\Allow_List|\AIOWPS\Firewall\Utility
+	 * @return \AIOWPS\Firewall\Config|\AIOWPS\Firewall\Constants|\AIOWPS\Firewall\Allow_List|\AIOWPS\Firewall\Utility
 	 */
 	public static function request($resource) {
 		switch ($resource) {
 			case self::CONFIG:
-			case self::MESSAGE_STORE:
 			case self::CONSTANTS:
 				return isset($GLOBALS[$resource]) ? $GLOBALS[$resource] : new AIOS_Firewall_Resource_Unavailable($resource);
 			case self::ALLOW_LIST:
@@ -45,7 +43,6 @@ class AIOS_Firewall_Resource {
 	 */
 	public static function all_loaded() {
 		return isset($GLOBALS[self::CONFIG])
-			&& isset($GLOBALS[self::MESSAGE_STORE])
 			&& isset($GLOBALS[self::CONSTANTS])
 			&& class_exists(self::ALLOW_LIST)
 			&& class_exists(self::UTILITY);

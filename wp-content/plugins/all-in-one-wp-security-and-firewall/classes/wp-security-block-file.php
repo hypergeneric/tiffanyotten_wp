@@ -60,7 +60,7 @@ abstract class AIOWPSecurity_Block_File {
 		if (!is_readable($this->file_path) || !is_writable($this->file_path)) {
 			return new WP_Error(
 				'file_wrong_permissions',
-				'The file has incorrect read or write permissions. Please double check its permissions and try again.',
+				'The file has incorrect read or write permissions. Check the directory permissions and try again.',
 				$this->file_path
 			);
 		}
@@ -70,7 +70,7 @@ abstract class AIOWPSecurity_Block_File {
 		if (false === $contents) {
 			return new WP_Error(
 				'file_unable_to_read',
-				'Unable to read the file. Please double check its permissions and try again.',
+				'Unable to read the file. Check the file permissions and try again.',
 				$this->file_path
 			);
 		}
@@ -125,7 +125,7 @@ abstract class AIOWPSecurity_Block_File {
 		if (!is_readable($this->file_path)) {
 			return new WP_Error(
 				'file_wrong_permissions',
-				'The file has incorrect read permissions. Please double check its permissions and try again.',
+				'The file has incorrect read permissions. Check the file permissions and try again.',
 				$this->file_path
 			);
 		}
@@ -135,7 +135,7 @@ abstract class AIOWPSecurity_Block_File {
 		if (false === $contents) {
 			return new WP_Error(
 				'file_unable_to_read',
-				'Unable to read the file. Please double check its permissions and try again.',
+				'Unable to read the file. Check the file permissions and try again.',
 				$this->file_path
 			);
 		}
@@ -153,7 +153,7 @@ abstract class AIOWPSecurity_Block_File {
 		if (!is_readable($this->file_path) || !is_writable($this->file_path)) {
 			return new WP_Error(
 				'file_wrong_permissions',
-				'The file has incorrect read or write permissions. Please double check its permissions and try again.',
+				'The file has incorrect read or write permissions. Check the file permissions and try again.',
 				$this->file_path
 			);
 		}
@@ -163,7 +163,7 @@ abstract class AIOWPSecurity_Block_File {
 		if (false === $contents) {
 			return new WP_Error(
 				'file_unable_to_read',
-				'Unable to read the file. Please double check its permissions and try again.',
+				'Unable to read the file. Check the file permissions and try again.',
 				$this->file_path
 			);
 		}
@@ -182,7 +182,7 @@ abstract class AIOWPSecurity_Block_File {
 		if (false === @file_put_contents($this->file_path, $contents, LOCK_EX)) { // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged -- ignore this
 			return new WP_Error(
 				'file_unable_to_write',
-				'Unable to write to the file. Please double check its permissions and try again.',
+				'Unable to write to the file. Check the file permissions and try again.',
 				$this->file_path
 			);
 		}

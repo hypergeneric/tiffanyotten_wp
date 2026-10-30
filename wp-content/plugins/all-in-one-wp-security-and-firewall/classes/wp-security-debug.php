@@ -32,7 +32,7 @@ class AIOWPSecurity_Debug {
 	 * @return void
 	 */
 	public function __construct() {
-		add_action('aiowp_security_additional_report_actions', array($this, 'add_sender_report_actions'));
+		add_action('aios_additional_report_actions', array($this, 'add_sender_report_actions'));
 	}
 
 	/**
@@ -53,7 +53,7 @@ class AIOWPSecurity_Debug {
 			$aios_info['AIOS Premium version'] = AIOWPS_PREMIUM_VERSION;
 		}
 
-		return apply_filters('aiowp_security_get_aios_info', $aios_info);
+		return apply_filters('aios_get_aios_info', $aios_info);
 	}
 
 	/**
@@ -75,7 +75,7 @@ class AIOWPSecurity_Debug {
 				'Used space' => AIOWPSecurity_Utility::convert_numeric_size_to_text(disk_total_space('/') - disk_free_space('/')),
 			));
 		}
-		return apply_filters('aiowp_security_get_server_info', $server_info);
+		return apply_filters('aios_get_server_info', $server_info);
 	}
 
 	/**
@@ -106,7 +106,7 @@ class AIOWPSecurity_Debug {
 			'Checking display_errors' => ini_get('display_errors') ? 'Enabled' : 'Disabled',
 		);
 
-		return apply_filters('aiowp_security_get_php_info', $php_info);
+		return apply_filters('aios_get_php_info', $php_info);
 	}
 
 	/**
@@ -185,7 +185,7 @@ class AIOWPSecurity_Debug {
 			'AUTOMATIC_UPDATER_DISABLED' => defined('AUTOMATIC_UPDATER_DISABLED') ? (AUTOMATIC_UPDATER_DISABLED ? 'Yes' : 'No') : 'No' // Checking if AUTOMATIC_UPDATER_DISABLED is defined
 		);
 	
-		return apply_filters('aiowp_security_get_wordpress_info', $wp_info);
+		return apply_filters('aios_get_wordpress_info', $wp_info);
 	}
 
 	/**
@@ -214,7 +214,7 @@ class AIOWPSecurity_Debug {
 			$plugins_list[$plugin_key] = $plugin_status;
 		}
 	
-		return apply_filters('aiowp_security_get_plugins_info', $plugins_list);
+		return apply_filters('aios_get_plugins_info', $plugins_list);
 	}
 
 	/**
@@ -240,7 +240,7 @@ class AIOWPSecurity_Debug {
 			$themes_list[$theme_key] = $theme_status;
 		}
 
-		return apply_filters('aiowp_security_get_themes_info', $themes_list);
+		return apply_filters('aios_get_themes_info', $themes_list);
 	}
 
 	/**
@@ -263,7 +263,7 @@ class AIOWPSecurity_Debug {
 			'TRUNCATE' => self::check_mysql_privilege('DROP')
 		);
 	
-		return apply_filters('aiowp_security_get_database_info', $database_info);
+		return apply_filters('aios_get_database_info', $database_info);
 	}
 
 	/**
@@ -289,7 +289,7 @@ class AIOWPSecurity_Debug {
 			$mu_plugins_list[$mu_plugin_key] = 'Active';
 		}
 	
-		return apply_filters('aiowp_security_get_mu_plugins_info', $mu_plugins_list);
+		return apply_filters('aios_get_mu_plugins_info', $mu_plugins_list);
 	}
 
 	/**
@@ -313,7 +313,7 @@ class AIOWPSecurity_Debug {
 			$dropins_list[$dropin_key] = $dropin_status;
 		}
 	
-		return apply_filters('aiowp_security_get_dropin_plugins_info', $dropins_list);
+		return apply_filters('aios_get_dropin_plugins_info', $dropins_list);
 	}
 
 	/**
@@ -345,7 +345,7 @@ class AIOWPSecurity_Debug {
 			}
 		}
 	
-		return apply_filters('aiowp_security_get_cron_jobs_info', $cron_jobs_list);
+		return apply_filters('aios_get_cron_jobs_info', $cron_jobs_list);
 	}
 
 	/**
@@ -394,7 +394,7 @@ class AIOWPSecurity_Debug {
 				}
 			}
 			
-			return apply_filters('aiowp_security_get_debug_log_info', $debug_log);
+			return apply_filters('aios_get_debug_log_info', $debug_log);
 		}
 	}
 
@@ -486,7 +486,7 @@ class AIOWPSecurity_Debug {
 
 		$main_content .= self::get_debug_log();
 
-		$report_content = apply_filters('aiowp_security_generate_report_content', $report_content . $main_content);
+		$report_content = apply_filters('aios_generate_report_content', $report_content . $main_content);
 
 		$escaped_content = esc_textarea($report_content);
 

@@ -49,9 +49,14 @@ class AIOWPSecurity_Logger {
 			$ret = new WP_Error('db_unable_delete', __('Unable to clear the logs', 'all-in-one-wp-security-and-firewall'), $error_msg);
 		}
 
+		// No debug logs found to clear.
+		if (0 === $ret) {
+			$ret = new WP_Error('no_logs_found', __('No debug logs to clear.', 'all-in-one-wp-security-and-firewall'));
+		}
+
 		return $ret;
 	}
-	
+
 	/**
 	 * Logs the debug messages to the database
 	 *

@@ -1,4 +1,4 @@
-<?php if (!defined('AIO_WP_SECURITY_PATH')) die('No direct access allowed'); ?>
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 
 <div id="aiowps-dashnotice" class="updated">
 	<?php /* translators: %s: Number of months */ ?>

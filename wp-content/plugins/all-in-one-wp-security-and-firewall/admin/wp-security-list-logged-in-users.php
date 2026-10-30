@@ -4,20 +4,28 @@ if (!defined('ABSPATH')) {
 	exit; // Exit if accessed directly
 }
 
-class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
+/**
+ * Handles the logged in users list table.
+ */
+class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_Ajax_Data_Table {
 
-	public function __construct() {
+	/**
+	 * Constructs the table object and sets up its attributes.
+	 *
+	 * @param array $data - An array containing additional data for the table. Default is an empty array.
+	 * @return void
+	 */
+	public function __construct($data = array()) {
 
-		
-		//Set parent defaults
+		// Set parent defaults
 		parent::__construct(array(
-			'singular'  => 'item',     //singular name of the listed records
-			'plural'    => 'items',    //plural name of the listed records
-			'ajax'      => false        //does this table support ajax?
+			'singular' => 'item', // singular name of the listed records
+			'plural' => 'items',  // plural name of the listed records
+			'ajax' => true,       // does this table support ajax?
+			'data' => $data       // Request data
 		));
-		
 	}
-	
+
 	/**
 	 * Renders user id column html.
 	 *
@@ -37,7 +45,7 @@ class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
 				)
 			)
 		);
-		
+
 		echo esc_html($item['user_id']);
 		$this->row_actions($actions);
 	}
@@ -86,7 +94,7 @@ class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
 			'site_id' => array('site_id',false),
 		);
 	}
-	
+
 	/**
 	 * Adds a bulk action user interface
 	 *
@@ -100,25 +108,31 @@ class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
 	}
 
 	/**
-	 * Process Bulk action from menu
+	 * Process bulk actions from the menu.
+	 *
+	 * This method processes bulk actions such as forcing user logouts.
+	 * Depending on the action passed, it will either log out all users
+	 * or only selected users.
+	 *
+	 * @param string $action The bulk action to be performed.
+	 *                       Possible values are 'force_logout_all' or 'force_logout_selected'.
+	 * @param array  $items  Optional. An array of user IDs to be logged out when the action is 'force_logout_selected'.
+	 *                       Defaults to an empty array.
+	 *
+	 * @global string $aios_list_message Global variable used to store a message to be displayed to the user.
 	 *
 	 * @return void
 	 */
-	private function process_bulk_action() {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput -- PCP warning. Nonce used.
-		if (empty($_REQUEST['_wpnonce']) || !isset($_REQUEST['_wp_http_referer'])) return;
-		$result = AIOWPSecurity_Utility_Permissions::check_nonce_and_user_cap($_REQUEST['_wpnonce'], 'bulk-items');
-		if (is_wp_error($result)) return;
-
-		if ('force_logout_all' === $this->current_action()) {
+	private function process_bulk_action($action, $items = array()) {
+		if ('force_logout_all' === $action) {
 			$this->force_user_logout(array(), true);
-		} elseif ('force_logout_selected' === $this->current_action()) {
-			if (isset($_REQUEST['item'])) {
-
-				if (is_array($_REQUEST['item'])) $this->force_user_logout(wp_unslash($_REQUEST['item']));
+		} elseif ('force_logout_selected' === $action) {
+			if (empty($items)) {
+				AIOS_Helper::set_message('aios_list_message', __('Select some users using the checkboxes', 'all-in-one-wp-security-and-firewall'), 'error');
+			} else {
+				if (is_array($items)) $this->force_user_logout($items);
 			}
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended -- PCP warning. Nonce used.
 	}
 
 	/**
@@ -133,17 +147,26 @@ class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
 		global $wpdb, $aio_wp_security;
 
 		$logged_in_users_table = AIOWPSEC_TBL_LOGGED_IN_USERS;
+		$current_user_id = get_current_user_id();
 
 		if ($logout_all) {
-			// get all user_id(except for the admin) in the table and make it an array for users
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
-			$users = $wpdb->get_col("SELECT user_id FROM $logged_in_users_table");
+			// get all user_id(except for the admin) in the table and make it an array for users.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- No suitable alternative available because direct database access is required for this custom table query.
+			$users = $wpdb->get_col(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name interpolation is required because %i is only supported in WordPress 6.2+.
+					"SELECT user_id FROM $logged_in_users_table WHERE user_id != %d",
+					$current_user_id
+				)
+			);
+
+			$message = __('All users have been successfully logged out.', 'all-in-one-wp-security-and-firewall');
 		}
 
 		if (is_array($users)) {
 
 			if (empty($users)) {
-				AIOWPSecurity_Admin_Menu::show_msg_record_not_deleted_st();
+				AIOS_Helper::set_message('aios_list_message', __("No valid user id was passed", 'all-in-one-wp-security-and-firewall'), 'error');
 				return;
 			}
 
@@ -153,7 +176,7 @@ class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
 			$users = array_map('esc_sql', $users);
 
 			foreach ($users as $user_id) {
-				if (is_numeric($user_id) && !is_super_admin($user_id) && AIOWPSecurity_Utility::is_user_member_of_blog($user_id)) {
+				if (is_numeric($user_id) && !is_super_admin($user_id) && AIOWPSecurity_Utility::is_user_member_of_blog($user_id) && $current_user_id != $user_id) {
 					if ($aio_wp_security->user_login_obj->delete_logged_in_user($user_id)) {
 						$this->logout_user($user_id);
 						continue;
@@ -163,14 +186,13 @@ class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
 			}
 
 			if ($errors > 0) {
-				AIOWPSecurity_Admin_Menu::show_msg_error_st(__("Some users were not logged out due to the ID being invalid, or them being a super admin or a member of a different subsite on a multisite", 'all-in-one-wp-security-and-firewall'));
+				AIOS_Helper::set_message('aios_list_message', __("Some users were not logged out due to the ID being invalid, or them being a super admin or a member of a different subsite on a multisite", 'all-in-one-wp-security-and-firewall'), 'error');
 				return;
 			}
 
-			AIOWPSecurity_Admin_Menu::show_msg_record_deleted_st();
+			AIOS_Helper::set_message('aios_list_message', $logout_all ? $message : __('The selected user(s) has been successfully logged out', 'all-in-one-wp-security-and-firewall'));
 		}
 	}
-
 
 	/**
 	 * This function handles logging out a user using user_id
@@ -204,15 +226,9 @@ class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
 		$current_page = $this->get_pagenum();
 		$offset = ($current_page - 1) * $per_page;
 
-		// Parameters that are going to be used to order the result
-		// phpcs:disable -- Rule won't be silenced any other way. No nonce.
-		$orderby = isset($_GET["orderby"]) ? sanitize_text_field(wp_unslash($_GET["orderby"])) : '';
-		$order = isset($_GET["order"]) ? sanitize_text_field(wp_unslash($_GET["order"])) : '';
-		// phpcs:enable -- Rule won't be silenced any other way. No nonce.
-
-		// By default show the most recent logged in user entries.
-		$orderby = empty($orderby) ? 'created' : esc_sql($orderby);
-		$order = empty($order) ? 'DESC' : esc_sql($order);
+		// Parameters that are going to be used to order the result.
+		$orderby = isset($this->_args['data']['orderby']) ? sanitize_text_field($this->_args['data']['orderby']) : 'created';
+		$order = isset($this->_args['data']['order']) ? sanitize_text_field($this->_args['data']['order']) : 'DESC';
 
 		$orderby = AIOWPSecurity_Utility::sanitize_value_by_array($orderby, $sortable);
 		$order = AIOWPSecurity_Utility::sanitize_value_by_array($order, array('DESC' => '1', 'ASC' => '1'));
@@ -220,19 +236,42 @@ class AIOWPSecurity_List_Logged_In_Users extends AIOWPSecurity_List_Table {
 		$orderby = sanitize_sql_orderby($orderby);
 		$order = sanitize_sql_orderby($order);
 
+		$no_action = '-1';
+
 		$this->_column_headers = array($columns, $hidden, $sortable);
-		
-		$this->process_bulk_action(); // Process bulk actions
+		$items = array();
+
+		if (isset($this->_args['data']['items'])) {
+			if (is_array($this->_args['data']['items'])) {
+				foreach ($this->_args['data']['items'] as $item) {
+					$items[] = sanitize_text_field($item);
+				}
+			} else {
+				$items[] = sanitize_text_field($this->_args['data']['items']);
+			}
+		} else {
+			$items = null;
+		}
+
+		if (isset($this->_args['data']['bulk_apply']) && 'true' === $this->_args['data']['bulk_apply']) {
+			$action = isset($this->_args['data']['action']) ? sanitize_text_field($this->_args['data']['action']) : $no_action;
+
+			if ($no_action !== $action) {
+				$this->process_bulk_action($action, $items);
+			} else {
+				AIOS_Helper::set_message('aios_list_message', __('Select a bulk action from the dropdown.', 'all-in-one-wp-security-and-firewall'), 'error');
+			}
+		}
 
 		$where_sql = $this->get_where_sql();
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
+		// phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Table name interpolation is required because %i is only supported in WordPress 6.2+.
 		$total_items = $wpdb->get_var("SELECT COUNT(*) FROM `{$logged_in_users_table}` $where_sql");
 
 		if ($ignore_pagination) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
+			// phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Table name interpolation is required because %i is only supported in WordPress 6.2+.
 			$data = $wpdb->get_results("SELECT * FROM `{$logged_in_users_table}` $where_sql ORDER BY $orderby $order", 'ARRAY_A');
 		} else {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
+			// phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Table name interpolation is required because %i is only supported in WordPress 6.2+.
 			$data = $wpdb->get_results("SELECT * FROM `{$logged_in_users_table}` $where_sql ORDER BY $orderby $order LIMIT $per_page OFFSET $offset", 'ARRAY_A');
 		}
 

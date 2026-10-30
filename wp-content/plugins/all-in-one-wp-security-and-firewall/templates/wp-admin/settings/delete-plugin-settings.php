@@ -1,11 +1,11 @@
 <?php if (!defined('ABSPATH')) die('No direct access.'); ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Manage delete plugin tasks', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Manage delete plugin tasks', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<form action="" id="aiowpsec-delete-plugin-settings-form">
 			<div class="aio_yellow_box">
 				<p>
-				<?php echo esc_html__('NOTE: Even if these options are disabled, the plugin settings will still be inactive when the plugin is uninstalled, but they will be remembered for the next time the plugin is installed and activated.', 'all-in-one-wp-security-and-firewall'); ?>
+				<?php echo esc_html__('Note: Even if these options are disabled, the plugin settings will still be inactive when the plugin is uninstalled, but they will be remembered for the next time the plugin is installed and activated.', 'all-in-one-wp-security-and-firewall'); ?>
 				</p>
 			</div>
 			<table class="form-table">

@@ -15,6 +15,7 @@ if (!trait_exists('AIOWPSecurity_Firewall_Commands_Trait')) require_once(AIO_WP_
 if (!trait_exists('AIOWPSecurity_Tools_Commands_Trait')) require_once(AIO_WP_SECURITY_PATH.'/classes/commands/wp-security-tools-commands.php');
 if (!trait_exists('AIOWPSecurity_File_Scan_Commands_Trait')) require_once(AIO_WP_SECURITY_PATH.'/classes/commands/wp-security-file-scan-commands.php');
 if (!trait_exists('AIOWPSecurity_Tfa_Commands_Trait')) require_once(AIO_WP_SECURITY_PATH.'/classes/commands/wp-security-tfa-commands.php');
+if (!trait_exists('AIOWPSecurity_Updraft_Commands_Trait')) require_once(AIO_WP_SECURITY_PATH.'/classes/commands/wp-security-updraft-commands.php');
 
 if (!class_exists('Updraft_Task_Manager_Commands_1_0')) require_once(AIO_WP_SECURITY_PATH . '/vendor/team-updraft/common-libs/src/updraft-tasks/class-updraft-task-manager-commands.php');
 
@@ -31,22 +32,7 @@ class AIOWPSecurity_Commands extends Updraft_Task_Manager_Commands_1_0 {
 	use AIOWPSecurity_Tools_Commands_Trait;
 	use AIOWPSecurity_File_Scan_Commands_Trait;
 	use AIOWPSecurity_Tfa_Commands_Trait;
-
-	/**
-	 * Retrieves a list of allowed heartbeat commands.
-	 *
-	 * Defines heartbeat commands specifically allowed for scanner-related actions. The list
-	 * can be extended using the 'aios_allowed_heartbeat_commands' filter.
-	 *
-	 * @return array Filtered list of allowed heartbeat commands.
-	 */
-	public static function get_allowed_heartbeat_commands() {
-		$commands = array(
-			'get_file_scan_update'
-		);
-
-		return apply_filters('aios_allowed_heartbeat_commands', $commands);
-	}
+	use AIOWPSecurity_Updraft_Commands_Trait;
 
 	/**
 	 * This variable holds an instance of AIOWPSecurity_Feature_Item_Manager.
@@ -217,11 +203,20 @@ class AIOWPSecurity_Commands extends Updraft_Task_Manager_Commands_1_0 {
 				$aio_wp_security->configs->delete_value('aiowps_firewall_active_upgrade');
 		} elseif ('php_73_eol_dismiss_forever' == $data['notice']) {
 			$aio_wp_security->configs->set_value('php_73_eol_dismiss_forever', $time_now + (100 * 365.25 * 86400));
+		} elseif ('dismiss_convert_to_innodb' == $data['notice']) {
+			$aio_wp_security->configs->set_value('aios_innodb_skipped_tables', array());
+		} elseif ('dismiss_blackfriday26' == $data['notice']) {
+			$aio_wp_security->configs->set_value('dismiss_blackfriday26', $time_now + (100 * 365.25 * 86400));
+		} elseif ('dismiss_xsell26' == $data['notice']) {
+			$aio_wp_security->configs->set_value('dismiss_xsell26', $time_now + (100 * 365.25 * 86400));
+		} elseif ('maxmind-admin-notice' == $data['notice'] && AIOWPSecurity_Utility_Permissions::is_premium_installed()) {
+			global $aio_wp_security_premium;
+			$aio_wp_security_premium->configs->set_value('aiowps_premium_is_maxmind_notice_dismissed', '1');
+			$aio_wp_security_premium->configs->save_config();
 		}
-		
 
 		$aio_wp_security->configs->save_config();
-		
+
 		return array();
 	}
 
@@ -251,9 +246,18 @@ class AIOWPSecurity_Commands extends Updraft_Task_Manager_Commands_1_0 {
 			call_user_func($callback, $options);
 		}
 
-		$aiowps_feature_mgr->calculate_total_feature_points();
+		$this->update_feature_points();
 
 		return true;
+	}
+
+	/**
+	 * This function will update the feature points
+	 *
+	 * @return void
+	 */
+	protected function update_feature_points() {
+		$this->get_feature_mgr_object()->calculate_total_feature_points();
 	}
 
 	/**
@@ -314,7 +318,19 @@ class AIOWPSecurity_Commands extends Updraft_Task_Manager_Commands_1_0 {
 		$allowed_keys = array('badges', 'info', 'values', 'content', 'extra_args');
 		foreach ($allowed_keys as $key) {
 			if (!empty($args[$key])) {
-				$response[$key] = 'badges' === $key ? $this->get_features_id_and_html($args[$key]) : $args[$key];
+				if ('info' == $key) {
+					if (is_array($args['info'])) {
+						$response['info'] = array_map(function($info) {
+							return nl2br(esc_html($info));
+						}, $args['info']);
+					} else {
+						$response['info'] = nl2br(esc_html($args['info']));
+					}
+				} elseif ('badges' == $key) {
+					$response['badges'] = $this->get_features_id_and_html($args['badges']);
+				} else {
+					$response[$key] = $args[$key];
+				}
 			}
 		}
 
@@ -331,9 +347,9 @@ class AIOWPSecurity_Commands extends Updraft_Task_Manager_Commands_1_0 {
 	 */
 	private function get_message($success, $message) {
 		if ('' === $message) {
-			return $success ? __('The settings have been successfully updated.', 'all-in-one-wp-security-and-firewall') : __('The settings update was unsuccessful.', 'all-in-one-wp-security-and-firewall');
+			$message = $success ? __('The settings have been successfully updated.', 'all-in-one-wp-security-and-firewall') : __('The settings update was unsuccessful.', 'all-in-one-wp-security-and-firewall');
 		}
-		return $message;
+		return nl2br(esc_html($message));
 	}
 
 	/**
@@ -343,7 +359,7 @@ class AIOWPSecurity_Commands extends Updraft_Task_Manager_Commands_1_0 {
 	 */
 	public function get_antibot_keys() {
 		global $aio_wp_security;
-		
+
 		$response = array(
 			'status' => 'success',
 			'data' => array(),
@@ -362,7 +378,7 @@ class AIOWPSecurity_Commands extends Updraft_Task_Manager_Commands_1_0 {
 				AIOWPSecurity_Comment::insert_antibot_keys_in_cookie();
 			}
 		}
-		
+
 		echo wp_json_encode($response);
 		exit;
 	}

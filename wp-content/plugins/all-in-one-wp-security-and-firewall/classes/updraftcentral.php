@@ -32,6 +32,7 @@ class WP_Security_UpdraftCentral {
 		if ('UpdraftCentral_WP_Security_Commands' == $command_php_class) {
 			// This fragment is only needed for compatibility with UD < 1.12.30 - thenceforth, the class can be assumed to exist.
 			if (!class_exists('UpdraftCentral_Commands')) {
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- UpdraftCentral compatibility filter.
 				include_once(apply_filters('updraftcentral_command_base_class_at', UPDRAFTPLUS_DIR.'/central/commands.php'));
 			}
 			include_once(AIO_WP_SECURITY_PATH.'/classes/updraftcentral-wp-security-commands.php');

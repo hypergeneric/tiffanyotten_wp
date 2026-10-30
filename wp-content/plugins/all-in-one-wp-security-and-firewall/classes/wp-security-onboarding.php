@@ -55,7 +55,7 @@ class AIOWPSecurity_Onboarding {
 			$onboarding->privacy_url_label              = __('Privacy Policy.', 'all-in-one-wp-security-and-firewall');
 			$onboarding->privacy_statement_url          = $this->add_utm_params('https://teamupdraft.com/privacy/', 'privacy-statement');
 			$onboarding->forgot_password_url            = $this->add_utm_params('https://teamupdraft.com/my-account/lost-password/', 'forgot-password');
-			$onboarding->documentation_url              = $this->add_utm_params('https://teamupdraft.com/documentation/all-in-one-security/', 'documentation');
+			$onboarding->documentation_url              = $this->add_utm_params('https://teamupdraft.com/docs/aios/intro/', 'documentation');
 			$onboarding->upgrade_url                    = $this->add_utm_params('https://teamupdraft.com/all-in-one-security/pricing/', 'upgrade-to-premium', 'button');
 			$onboarding->support_url                    = $this->is_premium ? $this->add_utm_params('https://teamupdraft.com/support/premium-support/', 'premium-support') : 'https://wordpress.org/support/plugin/all-in-one-wp-security-and-firewall/';
 			$onboarding->page_prefix                    = AIOWPSEC_MAIN_MENU_SLUG;

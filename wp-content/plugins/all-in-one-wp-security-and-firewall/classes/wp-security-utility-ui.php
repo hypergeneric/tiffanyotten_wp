@@ -18,19 +18,42 @@ class AIOWPSecurity_Utility_UI {
 	 * @return void
 	 */
 	public static function setting_checkbox($label, $option, $is_active, $attributes = '') {
-		$other_attributes = '';
-		if (is_array($attributes) && !empty($attributes)) {
-			foreach ($attributes as $attribute => $value) {
-				$other_attributes .= $attribute . '="' . esc_attr($value) . '" ';
-			}
-		}
 		?>
-			<label class="aiowps_switch">
-                <?php // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $other_attributes is already escaped ?>
-				<input type="checkbox" id="<?php echo esc_attr($option);?>" name="<?php echo esc_attr($option);?>" <?php if ($is_active) echo ' checked="checked"'; ?> <?php echo $other_attributes;?> value="1">
+			<label class="aiowps_switch">                
+				<input type="checkbox" id="<?php echo esc_attr($option); ?>" name="<?php echo esc_attr($option); ?>" <?php checked($is_active); ?> value="1" <?php
+				if (is_array($attributes) && !empty($attributes)) {
+					foreach ($attributes as $attribute => $value) {
+						echo esc_attr($attribute).'="'.esc_attr($value).'" ';
+					}
+				}
+				?>
+				>
 				<span class="aiowps_slider round"></span>
 			</label>
 			<label for="<?php echo esc_attr($option);?>" class="description"><?php echo esc_html($label); ?></label>
+		<?php
+	}
+
+	/**
+	 * Output a tooltip icon with help text on hover/click.
+	 *
+	 * @param string|array $tooltip    Tooltip text or array of lines.
+	 * @param int          $margin_top Pixels of top margin to apply.
+	 * @return void
+	 */
+	public static function tooltip($tooltip, $margin_top = 0) {
+
+		if (is_array($tooltip)) {
+			$tooltip = implode("\n", $tooltip);
+		}
+		?>
+		<span class="aios-tooltip dashicons dashicons-editor-help" title="<?php echo esc_attr($tooltip); ?>" 
+		<?php
+		if (!empty($margin_top)) {
+			echo 'style="margin-top:'.intval($margin_top).'px"';
+		}
+		?>
+		></span>
 		<?php
 	}
 
@@ -48,14 +71,31 @@ class AIOWPSecurity_Utility_UI {
 	 * @return void
 	 */
 	public static function ip_input_textarea($label, $name, $value, $description) {
-		global $aio_wp_security;
 		?>
 			<th scope="row"><label for="<?php echo esc_attr($name);?>"><?php echo esc_html($label); ?></label></th>
 			<td>
 				<textarea id="<?php echo esc_attr($name);?>" name="<?php echo esc_attr($name);?>" rows="5" cols="50"><?php echo esc_textarea($value); ?></textarea>
 				<br>
 				<span class="description"><?php echo esc_html($description); ?></span>
-				<?php $aio_wp_security->include_template('info/ip-address-ip-range-info.php'); ?>
+				<?php
+				AIOWPSecurity_Utility_UI::tooltip(array(
+					__('Each IP address must be on a new line.', 'all-in-one-wp-security-and-firewall'),
+					'',
+					__('You can add comments to the IP entries by placing a "#" at the start of a line.', 'all-in-one-wp-security-and-firewall'),
+					'',
+					__('This can be useful for annotating each IP address with notes (e.g., identifying the individual or system associated with the IP).', 'all-in-one-wp-security-and-firewall'),
+					'',
+					__('To specify an IPv4 range use a wildcard "*" character, acceptable ways to use wildcards is shown in the examples below:', 'all-in-one-wp-security-and-firewall'),
+					'',
+					__('Example 1: 195.47.89.*', 'all-in-one-wp-security-and-firewall'),
+					__('Example 2: 195.47.*.*', 'all-in-one-wp-security-and-firewall'),
+					__('Example 3: 195.*.*.*', 'all-in-one-wp-security-and-firewall'),
+					'',
+					__('To specify an IPv6 range use CIDR format as shown in the examples below:', 'all-in-one-wp-security-and-firewall'),
+					__('Example 4: 2401:4900:54c3:af15:2:2:5dc0:0/112', 'all-in-one-wp-security-and-firewall'),
+					__('Example 5: 2001:db8:1263::/48', 'all-in-one-wp-security-and-firewall'),
+				), -1);
+				?>
 			</td>
 		<?php
 	}

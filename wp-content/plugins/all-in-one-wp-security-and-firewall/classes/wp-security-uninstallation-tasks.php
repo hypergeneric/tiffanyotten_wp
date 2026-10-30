@@ -1,4 +1,7 @@
 <?php
+
+use AIOWPS\Firewall\Session_Storage;
+
 if (!defined('ABSPATH')) {
 	exit; // Exit if accessed directly.
 }
@@ -51,7 +54,6 @@ class AIOWPSecurity_Uninstallation_Tasks extends AIOWPSecurity_Base_Tasks {
 			$wpdb->prefix.'aiowps_debug_log',
 			$wpdb->prefix.'aiowps_audit_log',
 			$wpdb->prefix.'aiowps_logged_in_users',
-			$wpdb->prefix.'aiowps_message_store',
 		);
 
 		$aio_wp_security->configs->load_config();
@@ -70,6 +72,10 @@ class AIOWPSecurity_Uninstallation_Tasks extends AIOWPSecurity_Base_Tasks {
 				$firewall_rules_path = AIOWPSecurity_Utility_Firewall::get_firewall_rules_path();
 				AIOWPSecurity_Utility_File::remove_local_directory($firewall_rules_path);
 
+				global $aiowps_firewall_session;
+				if (isset($aiowps_firewall_session)) $aiowps_firewall_session->destroy();
+				
+
 				delete_metadata('user', '0', 'aiowps_account_status', '', true);
 				delete_metadata('user', '0', 'aiowps_registrant_ip', '', true);
 			}
@@ -79,6 +85,8 @@ class AIOWPSecurity_Uninstallation_Tasks extends AIOWPSecurity_Base_Tasks {
 			delete_option('aiowpsec_firewall_version');
 			delete_option('aiowpsec_htaccess_version');
 			delete_option('aios_antibot_key_map_info');
+			delete_transient('aios_recaptcha_key_validity');
+			delete_transient('aios_turnstile_key_validity');
 		}
 	}
 }

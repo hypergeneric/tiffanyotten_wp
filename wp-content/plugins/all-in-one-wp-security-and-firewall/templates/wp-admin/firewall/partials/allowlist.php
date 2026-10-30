@@ -1,5 +1,6 @@
+<?php if (!defined('ABSPATH')) die('No direct access allowed'); ?>
 <div class="postbox">
-	<h3 class="hndle"><label for="title"><?php esc_html_e('Allow list', 'all-in-one-wp-security-and-firewall'); ?></label></h3>
+	<h3 class="hndle"><?php esc_html_e('Allow list', 'all-in-one-wp-security-and-firewall'); ?></h3>
 	<div class="inside">
 		<div class="aio_blue_box">
 			<p>

@@ -65,7 +65,7 @@ class AIOWPSecurity_Blocking {
 	public static function add_ip_to_block_list($ip_address, $reason = '') {
 		global $wpdb, $aio_wp_security;
 		$user = wp_get_current_user();
-		$roles_allowed_to_block_ips = apply_filters('aio_roles_allowed_to_block_ips', array('administrator', 'editor', 'author'));
+		$roles_allowed_to_block_ips = apply_filters('aios_roles_allowed_to_block_ips', array('administrator', 'editor', 'author'));
 		if ('spam_discard' != $reason && array_intersect($roles_allowed_to_block_ips, $user->roles) && AIOWPSecurity_Utility_IP::get_user_ip_address() == $ip_address) {
 			return false;
 		}
@@ -80,7 +80,7 @@ class AIOWPSecurity_Blocking {
 				'block_reason'=>$reason,
 				'blocked_date'=>$time_now
 			);
-			$data = apply_filters('aiowps_pre_add_to_permanent_block', $data);
+			$data = apply_filters('aios_pre_add_to_permanent_block', $data);
 			$perm_block_tbl_name = AIOWPSEC_TBL_PERM_BLOCK;
 			$country_origin = isset($data['country_origin']) ? $data['country_origin'] : '';
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.QuotedSimplePlaceholder, WordPress.DB.DirectDatabaseQuery -- PCP warning. Ignore.
@@ -91,7 +91,7 @@ class AIOWPSecurity_Blocking {
 				$aio_wp_security->debug_logger->log_debug("AIOWPSecurity_Blocking::add_ip_to_block_list - Error inserting record into AIOWPSEC_TBL_PERM_BLOCK table for IP ".$ip_address);
 				return false;
 			}
-			do_action('aiowpsecurity_update_country_blocking_data', $country_origin, $reason);
+			do_action('aios_update_country_blocking_data', $country_origin, $reason);
 			return true;
 		}
 		return true;
@@ -127,7 +127,7 @@ class AIOWPSecurity_Blocking {
 		} else {
 			//block this visitor!!
 			$redirect_url = esc_url_raw(apply_filters('aios_blocked_request_redirect_url', 'http://127.0.0.1'));
-			AIOWPSecurity_Utility::redirect_to_url($redirect_url);
+			AIOWPSecurity_Utility::redirect_to_url($redirect_url, true, true);
 		}
 		return;
 
