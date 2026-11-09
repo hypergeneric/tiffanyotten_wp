@@ -8,6 +8,9 @@ $current_page   = get_request_uri();
 <div id="primary" class="menu">
 	<?php foreach ( $root_node as $menu_item ) {
 		$linkage           = $menu_item['linkage'];
+		if ( ! is_front_page() && ! empty( $linkage['url'] ) && strpos( $linkage['url'], '#' ) === 0 && $linkage['url'] !== tiffanyotten_popup_form_hash() ) {
+			$linkage['url'] = home_url( '/' ) . $linkage['url'];
+		}
 		$blurb             = $menu_item['blurb'];
 		$sub_linkage       = $menu_item['sub_linkage'];
 		$sub_nodes         = $menu_item['sub_nodes'];
