@@ -23,7 +23,7 @@ $content = tiffanyotten_block_value('content', $args);
 	<div class="container">
 		<div class="inner">
 			<?php if ($content) : ?>
-			<div class="entry-content">
+			<div class="entry-content p body-text">
 				<?php echo wp_kses($content, tiffanyotten_allowed_html()); ?>
 			</div>
 			<?php endif; ?>
